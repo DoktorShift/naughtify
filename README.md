@@ -2,7 +2,7 @@
 
 The **LNbits Balance Monitor aka. Naughtify** is a Python-based application that monitors a single LNbits wallet and provides notifications via Telegram. It checks wallet balances, tracks changes, and fetches transaction details to keep you updated on your LNbits activity.
 
-Its by far not perfect but maybe someone can use or even modify it. Feel free to use it under the MIT License.
+Its by far not perfect it just fullfiles the need to get notified about lnbits wallet movements. Feel free to write issues or provide PR's. This code is free to use under the MIT License.
 
 ---
 
