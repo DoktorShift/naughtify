@@ -87,32 +87,6 @@ APP_PORT=5009                       # Port number for the Flask server
 
 ---
 
-### API Endpoints
-- **Home**: `GET /`  
-  Returns a simple message to indicate the bot is running.
-
-- **Status**: `GET /status`  
-  Returns JSON with the latest balance and transactions:
-  ```json
-  {
-      "latest_balance": {
-          "balance_sats": 123456,
-          "last_change": "Balance increased by 1000 sats.",
-          "memo": "Payment received for coffee."
-      },
-      "latest_payments": [
-          {
-              "payment_hash": "abcd1234",
-              "amount_sats": 500,
-              "memo": "Donation",
-              "status": "completed"
-          }
-      ]
-  }
-  ```
-
----
-
 ### Customization Options
 Modify the `.env` file to change default behavior:
 - **Balance Threshold**: Adjust the `BALANCE_CHANGE_THRESHOLD` to define the minimum change to trigger notifications.
