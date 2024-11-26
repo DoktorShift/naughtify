@@ -166,11 +166,15 @@ pm2 start python3 --name naughtify -- naughtify.py
 ```
 
  **c): Save PM2 Processes**
-To ensure the script runs automatically after a reboot, save the PM2 processes:
+To ensure the script is saved as process:
 ```bash
 pm2 save
 ```
-
+**c.1): Save PM2 Processes**
+To ensure the script runs automatically after a reboot:
+```bash
+pm2 startup
+```
  **d): Useful PM2 Commands**
 - **View logs:**  
   ```bash
