@@ -9,6 +9,9 @@ Its by far not perfect it just fullfiles the need to get notified about lnbits w
 
 
 ![Screenshot from 2024-11-26 05-29-43](https://github.com/user-attachments/assets/247ad2a9-09e5-4581-ab9d-1ddda721138a)
+![Screenshot from 2024-11-26 05-59-40](https://github.com/user-attachments/assets/dafc3244-cb6a-469d-b39f-adb1d2058117)
+
+
 ---
 
 ### Step-by-Step Setup
