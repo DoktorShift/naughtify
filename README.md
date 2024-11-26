@@ -3,7 +3,12 @@
 The **LNbits Balance Monitor aka. Naughtify** is a Python-based application that monitors a single LNbits wallet and provides notifications via Telegram. It checks wallet balances, tracks changes, and fetches transaction details to keep you updated on your LNbits activity.
 
 Its by far not perfect it just fullfiles the need to get notified about lnbits wallet movements. Feel free to write issues or provide PR's. This code is free to use under the MIT License.
+---
 
+### Screenshot:
+
+
+![Screenshot from 2024-11-26 05-29-43](https://github.com/user-attachments/assets/247ad2a9-09e5-4581-ab9d-1ddda721138a)
 ---
 
 ### Step-by-Step Setup
@@ -45,28 +50,61 @@ pip install -r requirements.txt
 
 ```plaintext
 # --------------------- Telegram Configuration ---------------------
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token_here
-CHAT_ID=your_telegram_chat_id_here
+# Token for your Telegram bot (obtained from BotFather)
+TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN_HERE
+
+# Telegram Chat ID where notifications will be sent
+# Use tools like @userinfobot to find your Chat ID
+CHAT_ID=YOUR_TELEGRAM_CHAT_ID_HERE
 
 # --------------------- LNbits Configuration ---------------------
-LNBITS_READONLY_API_KEY=your_lnbits_readonly_api_key_here
-LNBITS_URL=https://YourDomain.de  # Replace with your LNbits instance URL
-INSTANCE_NAME=My LNbits Instance  # Replace with a custom name for your notifications
+# Read-only API key for retrieving wallet balances and authenticating webhooks
+LNBITS_READONLY_API_KEY=YOUR_LNBITS_READONLY_API_KEY_HERE
+
+# Base URL of your LNbits instance (ensure it includes the protocol, e.g., https://)
+LNBITS_URL=https://your-lnbits-instance-url.com
+
+# Custom name for your LNbits instance (used in Telegram notifications)
+# Enclosed in quotes because it contains spaces
+INSTANCE_NAME="Your_Instance_Name"
 
 # --------------------- Notification Settings ---------------------
-BALANCE_CHANGE_THRESHOLD=1000       # Notify if balance changes by at least 1 sat. Enter amount in msat. 1000 msat = 1 sat
-LATEST_TRANSACTIONS_COUNT=21        # Fetch the latest 21 transactions for notification
+# Threshold for balance changes in Satoshis to trigger a notification.
+BALANCE_CHANGE_THRESHOLD=10
+
+# Number of latest transactions to fetch for notifications. Default is 21
+# Duplicates will be ignored.
+LATEST_TRANSACTIONS_COUNT=21
 
 # --------------------- Scheduler Intervals ---------------------
-WALLET_INFO_UPDATE_INTERVAL=60      # Check wallet balance change every 60 seconds
-PAYMENTS_FETCH_INTERVAL=172800      # Fetch payments every 48 hours (172800 seconds)
+# Interval in seconds for checking balance changes
+# Set to 0 to disable the notification
+WALLET_INFO_UPDATE_INTERVAL=60
+
+# Interval in seconds for sending daily wallet balance notifications
+# Default: 86400 seconds (24 hours)
+# Set to 0 to disable the daily notification
+WALLET_BALANCE_NOTIFICATION_INTERVAL=86400
+
+# Interval in seconds for fetching the latest payments
+# Default: 86400 seconds (24 hours)
+# Set to 0 to disable fetching payments
+PAYMENTS_FETCH_INTERVAL=86400
 
 # --------------------- Flask Server Configuration ---------------------
-APP_HOST=0.0.0.0                     # Listen on all interfaces (use 127.0.0.1 for localhost only)
-APP_PORT=5009                       # Port number for the Flask server
-```
+# Host address for the Flask server
+APP_HOST=127.0.0.1
 
----
+# Port number for the Flask server
+APP_PORT=5009
+
+# --------------------- File Paths ---------------------
+# File to track processed payments
+PROCESSED_PAYMENTS_FILE=processed_payments.txt
+
+# File to store the current balance
+CURRENT_BALANCE_FILE=current-balance.txt
+  ```
 
 #### Step 5: Run the Application
 1. Start the bot:
