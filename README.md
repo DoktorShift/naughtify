@@ -118,8 +118,8 @@ CURRENT_BALANCE_FILE=current-balance.txt
 ### Features Summary
 
 - **Balance Monitoring**: Check and notify wallet balance changes every 60 seconds (configurable).
-- **Daily Wallet Balance Report**: Send a summary of the wallet balance every 24 hours.
-- **Transactions Summary**: Fetch the latest 21 transactions and notify every 48 hours.
+- **Daily Wallet Balance Report**: Send a summary of the wallet balance every 24 hours (configurable).
+- **Transactions Summary**: Fetch the latest 21 transactions and notify every 24 hours (configurable).
 - **Customizable Intervals**: Configure notification thresholds and scheduler intervals via the `.env` file.
 - **Flask API**: A lightweight server to fetch wallet status via `/status`.
 
@@ -128,7 +128,7 @@ CURRENT_BALANCE_FILE=current-balance.txt
 ### Customization Options
 Modify the `.env` file to change default behavior:
 - **Balance Threshold**: Adjust the `BALANCE_CHANGE_THRESHOLD` to define the minimum change to trigger notifications.
-- **Transaction Count**: Set `LATEST_TRANSACTIONS_COUNT` for the number of transactions to fetch.
+- **Transaction Count**: Set `LATEST_TRANSACTIONS_COUNT` for the number of transactions to fetch. Already displayed transactions will not show up again.
 - **Scheduler Intervals**:
   - `WALLET_INFO_UPDATE_INTERVAL`: Frequency of balance checks.
   - `PAYMENTS_FETCH_INTERVAL`: Frequency of transaction summary notifications.
