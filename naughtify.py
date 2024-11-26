@@ -231,7 +231,7 @@ async def send_latest_payments():
 
             # Extract necessary fields
             amount_msat = payment.get("amount", 0)
-            memo = payment.get("description", "No memo provided")
+            memo = payment.get("memo", "No memo provided")  # LOL ....
             status = payment.get("status", "completed")  # Default to 'completed' if not present
 
             # Convert amount to integer
