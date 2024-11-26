@@ -156,9 +156,6 @@ pm2 save
   ```bash
   pm2 restart naughtify.py
   ```
-```
-
----
 
 ### Features Summary
 
