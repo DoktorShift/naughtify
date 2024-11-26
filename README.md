@@ -109,7 +109,7 @@ CURRENT_BALANCE_FILE=current-balance.txt
 #### Step 5: Run the Application
 1. Start the bot:
    ```bash
-   python lnbits_balance_monitor.py
+   python naughtify.py
    ```
 2. Logs will display in the console and are saved to `app.log`.
 
