@@ -7,9 +7,9 @@ Its by far not perfect it just fullfiles the need to get notified about lnbits w
 
 ### Screenshot:
 
+![Screenshot from 2024-11-26 16-24-02](https://github.com/user-attachments/assets/cbb8959a-45d5-4272-a582-bd96227868d1)
 
-![Screenshot from 2024-11-26 05-29-43](https://github.com/user-attachments/assets/247ad2a9-09e5-4581-ab9d-1ddda721138a)
-![Screenshot from 2024-11-26 05-59-40](https://github.com/user-attachments/assets/dafc3244-cb6a-469d-b39f-adb1d2058117)
+
 
 
 ---
@@ -110,11 +110,53 @@ CURRENT_BALANCE_FILE=current-balance.txt
   ```
 
 #### Step 5: Run the Application
-1. Start the bot:
+1. Start the app manually
    ```bash
    python naughtify.py
    ```
 2. Logs will display in the console and are saved to `app.log`.
+
+#### Step 6: Run the Application 24/7 with PM2
+ **a) : Install PM2 in the Virtual Environment**
+Activate your virtual environment and install PM2:
+```bash
+source venv/bin/activate
+pip install pm2
+```
+
+ **b): Start the Script with PM2**
+Navigate to the script's directory and start it with PM2:
+```bash
+pm2 start python -- naughtify.py
+```
+
+ **c): Save PM2 Processes**
+To ensure the script runs automatically after a reboot, save the PM2 processes:
+```bash
+pm2 save
+```
+
+ **d): Useful PM2 Commands**
+- **View logs:**  
+  ```bash
+  pm2 logs
+  ```
+
+- **List processes:**  
+  ```bash
+  pm2 list
+  ```
+
+- **Stop the process:**  
+  ```bash
+  pm2 stop naughtify.py
+  ```
+
+- **Restart the process:**  
+  ```bash
+  pm2 restart naughtify.py
+  ```
+```
 
 ---
 
