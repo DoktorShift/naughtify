@@ -1,6 +1,7 @@
-Flask==2.3.3
-python-telegram-bot==20.5
-python-dotenv==1.0.0
-requests==2.31.0
-APScheduler==3.10.4
+aiohttp==3.8.4
+aiofiles==23.1.0
+apscheduler==3.9.1
 pytz==2023.3
+python-telegram-bot==20.3
+flask==2.3.2
+python-dotenv==1.0.0
