@@ -156,13 +156,13 @@ CURRENT_BALANCE_FILE=current-balance.txt
 Activate your virtual environment and install PM2:
 ```bash
 source venv/bin/activate
-pip install pm2
+npm install -g pm2
 ```
 
  **b): Start the Script with PM2**
 Navigate to the script's directory and start it with PM2:
 ```bash
-pm2 start python -- naughtify.py
+pm2 start python3 --name naughtify -- naughtify.py
 ```
 
  **c): Save PM2 Processes**
