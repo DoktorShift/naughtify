@@ -1,9 +1,44 @@
+Its by far not perfect - it just fullfiles the need to get notified about lnbits wallet movements. Feel free to write issues or provide PR's. This code is free to use under the MIT License.
+
 ### Introduction
 
-The **LNbits Balance Monitor aka. Naughtify** is a Python-based application that monitors a single LNbits wallet and provides notifications via Telegram. It checks wallet balances, tracks changes, and fetches transaction details to keep you updated on your LNbits activity.
+The **LNbits Balance Monitor aka. Naughtify** is a Python-based skript that monitors a single LNbits wallet and provides notifications via Telegram. It checks wallet balances, tracks changes, and fetches transaction details to keep you updated on your LNbits activity.
 
-Its by far not perfect it just fullfiles the need to get notified about lnbits wallet movements. Feel free to write issues or provide PR's. This code is free to use under the MIT License.
+### **Features Summary**
+
+- **Balance Monitoring:**  
+  Continuously checks wallet balance every 60 seconds (configurable) and sends notifications if a change exceeds the defined threshold.
+
+- **Daily Wallet Balance Report:**  
+  Provides a detailed summary of your wallet balance, including total incoming and outgoing amounts, sent once every 24 hours (configurable).
+
+- **Transactions Summary:**  
+  Fetches and notifies about the latest 21 transactions (configurable) every 24 hours. Prevents duplicate notifications for already processed transactions.
+
+- **Customizable Intervals:**  
+  Fine-tune notification frequencies and thresholds via the `.env` file.
+
+- **Flask API:**  
+  Offers a lightweight API to check wallet status via the `/status` endpoint.
+
 ---
+
+### **Customization Options**
+
+You can modify the `.env` file to adjust default behaviors:
+
+- **Balance Change Threshold:**  
+  Set `BALANCE_CHANGE_THRESHOLD` to define the minimum Satoshi change required to trigger a notification. Example: 10 sats.
+
+- **Transaction Count:**  
+  Adjust `LATEST_TRANSACTIONS_COUNT` to set how many transactions are fetched for notifications. Already displayed transactions won't be notified again.
+
+- **Scheduler Intervals:**  
+  - `WALLET_INFO_UPDATE_INTERVAL`: Frequency of wallet balance checks. Default: 60 seconds.  
+  - `WALLET_BALANCE_NOTIFICATION_INTERVAL`: Frequency of daily wallet balance reports. Default: 24 hours (86400 seconds).  
+  - `PAYMENTS_FETCH_INTERVAL`: Frequency of transaction summary notifications. Default: 24 hours (86400 seconds).
+---
+
 
 ### Screenshot:
 
@@ -157,22 +192,5 @@ pm2 save
   pm2 restart naughtify.py
   ```
 
-### Features Summary
-
-- **Balance Monitoring**: Check and notify wallet balance changes every 60 seconds (configurable).
-- **Daily Wallet Balance Report**: Send a summary of the wallet balance every 24 hours (configurable).
-- **Transactions Summary**: Fetch the latest 21 transactions and notify every 24 hours (configurable).
-- **Customizable Intervals**: Configure notification thresholds and scheduler intervals via the `.env` file.
-- **Flask API**: A lightweight server to fetch wallet status via `/status`.
-
----
-
-### Customization Options
-Modify the `.env` file to change default behavior:
-- **Balance Threshold**: Adjust the `BALANCE_CHANGE_THRESHOLD` to define the minimum change to trigger notifications.
-- **Transaction Count**: Set `LATEST_TRANSACTIONS_COUNT` for the number of transactions to fetch. Already displayed transactions will not show up again.
-- **Scheduler Intervals**:
-  - `WALLET_INFO_UPDATE_INTERVAL`: Frequency of balance checks.
-  - `PAYMENTS_FETCH_INTERVAL`: Frequency of transaction summary notifications.
 
 ---
