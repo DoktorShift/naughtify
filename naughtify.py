@@ -1,8 +1,7 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram import ParseMode
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup, ParseMode
 from dotenv import load_dotenv
 import requests
 import traceback
@@ -284,7 +283,7 @@ def send_latest_payments():
                 f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
             )
         message_lines.append("")  
-        
+    
     if outgoing_payments:
         message_lines.append("🔴 *Outgoing Payments:*")
         for idx, payment in enumerate(outgoing_payments, 1):
