@@ -1,18 +1,16 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from telegram import Bot
+from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import ParseMode
 from dotenv import load_dotenv
-import aiohttp
-import asyncio
+import requests
 import traceback
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from pytz import utc
-from flask import Flask, jsonify
+from apscheduler.schedulers.background import BackgroundScheduler
+from flask import Flask, jsonify, request
 from datetime import datetime, timedelta
-import aiofiles
-import sys
-from threading import Thread
+import threading
+import time
 
 # --------------------- Configuration and Setup ---------------------
 
@@ -21,7 +19,7 @@ load_dotenv()
 
 # Telegram Configuration
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-CHAT_ID = os.getenv("CHAT_ID")
+CHAT_ID = int(os.getenv("CHAT_ID"))
 
 # LNbits Configuration
 LNBITS_READONLY_API_KEY = os.getenv("LNBITS_READONLY_API_KEY")
@@ -83,15 +81,15 @@ logger.addHandler(console_handler)
 
 # --------------------- Helper Functions ---------------------
 
-async def load_processed_payments():
+def load_processed_payments():
     """
-    Asynchronously load processed payment hashes from the tracking file into a set.
+    Load processed payment hashes from the tracking file into a set.
     """
     processed = set()
     if os.path.exists(PROCESSED_PAYMENTS_FILE):
         try:
-            async with aiofiles.open(PROCESSED_PAYMENTS_FILE, mode='r') as f:
-                async for line in f:
+            with open(PROCESSED_PAYMENTS_FILE, 'r') as f:
+                for line in f:
                     processed.add(line.strip())
             logger.debug(f"Loaded {len(processed)} processed payment hashes.")
         except Exception as e:
@@ -99,28 +97,28 @@ async def load_processed_payments():
             logger.debug(traceback.format_exc())
     return processed
 
-async def add_processed_payment(payment_hash):
+def add_processed_payment(payment_hash):
     """
-    Asynchronously add a processed payment hash to the tracking file.
+    Add a processed payment hash to the tracking file.
     """
     try:
-        async with aiofiles.open(PROCESSED_PAYMENTS_FILE, mode='a') as f:
-            await f.write(f"{payment_hash}\n")
+        with open(PROCESSED_PAYMENTS_FILE, 'a') as f:
+            f.write(f"{payment_hash}\n")
         logger.debug(f"Added payment hash {payment_hash} to processed payments.")
     except Exception as e:
         logger.error(f"Failed to add processed payment: {e}")
         logger.debug(traceback.format_exc())
 
-async def load_last_balance():
+def load_last_balance():
     """
-    Asynchronously load the last known balance from the balance file.
+    Load the last known balance from the balance file.
     """
     if not os.path.exists(CURRENT_BALANCE_FILE):
-        logger.info("Balance file does not exist. Creating with current balance.")
+        logger.info("Balance file does not exist. Initializing with current balance.")
         return None
     try:
-        async with aiofiles.open(CURRENT_BALANCE_FILE, mode='r') as f:
-            content = (await f.read()).strip()
+        with open(CURRENT_BALANCE_FILE, 'r') as f:
+            content = f.read().strip()
             if not content:
                 logger.warning("Balance file is empty. Setting last balance to 0.")
                 return 0.0
@@ -136,20 +134,20 @@ async def load_last_balance():
         logger.debug(traceback.format_exc())
         return 0.0
 
-async def save_current_balance(balance):
+def save_current_balance(balance):
     """
-    Asynchronously save the current balance to the balance file.
+    Save the current balance to the balance file.
     """
     try:
-        async with aiofiles.open(CURRENT_BALANCE_FILE, mode='w') as f:
-            await f.write(str(balance))
+        with open(CURRENT_BALANCE_FILE, 'w') as f:
+            f.write(str(balance))
         logger.debug(f"Saved current balance: {balance} sats.")
     except Exception as e:
         logger.error(f"Failed to save current balance: {e}")
         logger.debug(traceback.format_exc())
 
 # Initialize the set of processed payments
-processed_payments = asyncio.run(load_processed_payments())
+processed_payments = load_processed_payments()
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -163,87 +161,94 @@ latest_balance = {
 
 latest_payments = []
 
-# --------------------- Async Functions ---------------------
+# --------------------- Functions ---------------------
 
-async def fetch_api(session, endpoint):
+def fetch_api(endpoint):
     """
-    Asynchronously fetch data from the LNbits API.
+    Fetch data from the LNbits API.
     """
     url = f"{LNBITS_URL}/api/v1/{endpoint}"
     headers = {"X-Api-Key": LNBITS_READONLY_API_KEY}
     try:
-        async with session.get(url, headers=headers, timeout=10) as response:
-            if response.status == 200:
-                data = await response.json()
-                logger.debug(f"Fetched data from {endpoint}: {data}")
-                return data
-            else:
-                logger.error(f"Failed to fetch {endpoint}. Status Code: {response.status}")
-                return None
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            logger.debug(f"Fetched data from {endpoint}: {data}")
+            return data
+        else:
+            logger.error(f"Failed to fetch {endpoint}. Status Code: {response.status_code}")
+            return None
     except Exception as e:
         logger.error(f"Error fetching {endpoint}: {e}")
         logger.debug(traceback.format_exc())
         return None
 
-async def send_latest_payments():
+def send_latest_payments():
     """
-    Fetch the latest payments and notify Telegram with incoming and outgoing transactions.
+    Fetch the latest payments and notify Telegram with incoming, outgoing, and pending transactions.
     """
     logger.info("Fetching latest payments for notification...")
-    async with aiohttp.ClientSession() as session:
-        payments = await fetch_api(session, "payments")
-        if payments is None:
-            return
+    payments = fetch_api("payments")
+    if payments is None:
+        return
 
-        if not isinstance(payments, list):
-            logger.error("Unexpected payments data format.")
-            return
+    if not isinstance(payments, list):
+        logger.error("Unexpected payments data format.")
+        return
 
-        # Sort payments by creation time descending
-        sorted_payments = sorted(payments, key=lambda x: x.get("created_at", ""), reverse=True)
-        latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]  # Get the latest transactions
+    # Sort payments by creation time descending
+    sorted_payments = sorted(payments, key=lambda x: x.get("created_at", ""), reverse=True)
+    latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]  # Get the latest transactions
 
-        if not latest:
-            logger.info("No payments found to notify.")
-            return
+    if not latest:
+        logger.info("No payments found to notify.")
+        return
 
-        # Initialize lists for incoming and outgoing payments
-        incoming_payments = []
-        outgoing_payments = []
+    # Initialize lists for incoming, outgoing, and pending payments
+    incoming_payments = []
+    outgoing_payments = []
+    pending_payments = []
 
-        new_processed_hashes = []
+    new_processed_hashes = []
 
-        for payment in latest:
-            payment_hash = payment.get("payment_hash")
-            if not payment_hash:
-                # Try to extract 'payment_hash' from 'extra.query' if not present
-                extra = payment.get("extra", {})
-                if isinstance(extra, dict):
-                    payment_hash = extra.get("query", None)
+    for payment in latest:
+        payment_hash = payment.get("payment_hash")
+        if not payment_hash:
+            # Try to extract 'payment_hash' from 'extra.query' if not present
+            extra = payment.get("extra", {})
+            if isinstance(extra, dict):
+                payment_hash = extra.get("query", None)
 
-            if not payment_hash:
-                logger.warning("Payment without payment_hash found. Skipping.")
-                continue
+        if not payment_hash:
+            logger.warning("Payment without payment_hash found. Skipping.")
+            continue
 
+        # Extract necessary fields
+        amount_msat = payment.get("amount", 0)
+        memo = payment.get("memo", "No memo provided")
+        status = payment.get("status", "completed")  # Default to 'completed' if not present
+
+        # Convert amount to integer
+        try:
+            amount_msat = int(amount_msat)
+        except ValueError:
+            logger.error(f"Invalid amount value in payment: {amount_msat}")
+            amount_msat = 0
+
+        amount_sats = abs(amount_msat) / 1000
+
+        # Categorize payment
+        if status.lower() == "pending":
+            if amount_msat > 0:
+                pending_payments.append({
+                    "amount": int(amount_sats),
+                    "memo": memo
+                })
+        else:
             if payment_hash in processed_payments:
                 logger.debug(f"Payment hash {payment_hash} already processed. Skipping.")
                 continue  # Skip already processed payments
 
-            # Extract necessary fields
-            amount_msat = payment.get("amount", 0)
-            memo = payment.get("memo", "No memo provided")  # LOL ....
-            status = payment.get("status", "completed")  # Default to 'completed' if not present
-
-            # Convert amount to integer
-            try:
-                amount_msat = int(amount_msat)
-            except ValueError:
-                logger.error(f"Invalid amount value in payment: {amount_msat}")
-                amount_msat = 0
-
-            amount_sats = abs(amount_msat) / 1000
-
-            # Categorize payment
             if amount_msat > 0:
                 incoming_payments.append({
                     "amount": int(amount_sats),
@@ -260,167 +265,391 @@ async def send_latest_payments():
 
             # Mark this payment as processed
             processed_payments.add(payment_hash)
-            await add_processed_payment(payment_hash)
+            add_processed_payment(payment_hash)
             new_processed_hashes.append(payment_hash)
 
-        if not (incoming_payments or outgoing_payments):
-            logger.info("No new incoming or outgoing payments to notify.")
-            return
+    if not (incoming_payments or outgoing_payments or pending_payments):
+        logger.info("No new payments to notify.")
+        return
 
-        # Prepare the Telegram message with enhanced markdown formatting
-        message_lines = [
-            f"⚡ *{INSTANCE_NAME}* - *Latest Transactions* ⚡\n"
-        ]
+    # Prepare the Telegram message with enhanced markdown formatting
+    message_lines = [
+        f"⚡ *{INSTANCE_NAME}* - *Latest Transactions* ⚡\n"
+    ]
 
-        if incoming_payments:
-            message_lines.append("🟢 *Incoming Payments:*")
-            for idx, payment in enumerate(incoming_payments, 1):
-                message_lines.append(
-                    f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
-                )
-            message_lines.append("")  # Add an empty line for spacing
+    if incoming_payments:
+        message_lines.append("🟢 *Incoming Payments:*")
+        for idx, payment in enumerate(incoming_payments, 1):
+            message_lines.append(
+                f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
+            )
+        message_lines.append("")  
+        
+    if outgoing_payments:
+        message_lines.append("🔴 *Outgoing Payments:*")
+        for idx, payment in enumerate(outgoing_payments, 1):
+            message_lines.append(
+                f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
+            )
+        message_lines.append("")  
 
-        if outgoing_payments:
-            message_lines.append("🔴 *Outgoing Payments:*")
-            for idx, payment in enumerate(outgoing_payments, 1):
-                message_lines.append(
-                    f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
-                )
-            message_lines.append("")  # Add an empty line for spacing
+    if pending_payments:
+        message_lines.append("⏳ *Payments in Progress:*")
+        for payment in pending_payments:
+            message_lines.append(
+                f"   {payment['amount']} sats\n"
+                f"   📝 *Memo:* {payment['memo']}\n"
+                f"   📅 *Status:* In progress\n"
+            )
+        message_lines.append("")  
+        
+    # Append the timestamp
+    timestamp_text = f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
+    message_lines.append(timestamp_text)
 
-        # Append the additional user-friendly message
-        additional_text = (
-            f"🔗 [View Details]({LNBITS_URL})\n"
-            f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
-        )
-        message_lines.append(additional_text)
+    full_message = "\n".join(message_lines)
 
-        full_message = "\n".join(message_lines)
+    # Define the inline keyboard
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=LNBITS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-        # Send the message to Telegram
-        try:
-            await bot.send_message(chat_id=CHAT_ID, text=full_message, parse_mode='Markdown')
-            logger.info("Latest payments notification sent to Telegram successfully.")
-            latest_payments.extend(new_processed_hashes)
-        except Exception as telegram_error:
-            logger.error(f"Failed to send payments message to Telegram: {telegram_error}")
-            logger.debug(traceback.format_exc())
+    # Send the message to Telegram with the inline keyboard
+    try:
+        bot.send_message(chat_id=CHAT_ID, text=full_message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        logger.info("Latest payments notification sent to Telegram successfully.")
+        latest_payments.extend(new_processed_hashes)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send payments message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
 
-async def send_wallet_balance():
-    """
-    Send the current wallet balance via Telegram in a professional and clear format.
-    """
-    logger.info("Sending daily wallet balance notification...")
-    async with aiohttp.ClientSession() as session:
-        wallet_info = await fetch_api(session, "wallet")
-        if wallet_info is None:
-            return
-
-        current_balance_msat = wallet_info.get("balance", 0)
-        current_balance_sats = current_balance_msat / 1000  # Convert msats to sats
-
-        # Fetch payments to calculate counts and totals
-        payments = await fetch_api(session, "payments")
-        incoming_count = outgoing_count = 0
-        incoming_total = outgoing_total = 0
-        if payments and isinstance(payments, list):
-            for payment in payments:
-                amount_msat = payment.get("amount", 0)
-                status = payment.get("status", "completed")
-                if status.lower() == "pending":
-                    continue  # Exclude pending for daily balance
-                if amount_msat > 0:
-                    incoming_count += 1
-                    incoming_total += amount_msat / 1000
-                elif amount_msat < 0:
-                    outgoing_count += 1
-                    outgoing_total += abs(amount_msat) / 1000
-
-        # Prepare the Telegram message with enhanced markdown formatting
-        message = (
-            f"📊 *{INSTANCE_NAME}* - *Daily Wallet Balance* 📊\n\n"
-            f"🔹 *Current Balance:* `{int(current_balance_sats)} sats`\n"
-            f"🔹 *Total Incoming:* `{int(incoming_total)} sats` across `{incoming_count}` transactions\n"
-            f"🔹 *Total Outgoing:* `{int(outgoing_total)} sats` across `{outgoing_count}` transactions\n\n"
-            f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC\n\n"
-            f"🔗 [View Details]({LNBITS_URL})"
-        )
-
-        # Send the message to Telegram
-        try:
-            await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
-            logger.info("Daily wallet balance notification sent successfully.")
-            # Update the latest_balance
-            latest_balance["balance_sats"] = current_balance_sats
-            latest_balance["last_change"] = "Daily balance report."
-            latest_balance["memo"] = "N/A"
-            # Save the current balance
-            await save_current_balance(current_balance_sats)
-        except Exception as telegram_error:
-            logger.error(f"Failed to send daily wallet balance message to Telegram: {telegram_error}")
-            logger.debug(traceback.format_exc())
-
-async def check_balance_change():
+def check_balance_change():
     """
     Periodically check the wallet balance and notify if it has changed beyond the threshold.
     """
     logger.info("Checking for balance changes...")
-    async with aiohttp.ClientSession() as session:
-        wallet_info = await fetch_api(session, "wallet")
-        if wallet_info is None:
-            return
+    wallet_info = fetch_api("wallet")
+    if wallet_info is None:
+        return
 
-        current_balance_msat = wallet_info.get("balance", 0)
-        current_balance_sats = current_balance_msat / 1000  # Convert msats to sats
+    current_balance_msat = wallet_info.get("balance", 0)
+    current_balance_sats = current_balance_msat / 1000  # Convert msats to sats
 
-        last_balance = await load_last_balance()
+    last_balance = load_last_balance()
 
-        if last_balance is None:
-            # First run, initialize the balance file
-            await save_current_balance(current_balance_sats)
-            latest_balance["balance_sats"] = current_balance_sats
-            latest_balance["last_change"] = "Initial balance set."
-            latest_balance["memo"] = "N/A"
-            logger.info(f"Initial balance set to {current_balance_sats:.0f} sats.")
-            return
+    if last_balance is None:
+        # First run, initialize the balance file
+        save_current_balance(current_balance_sats)
+        latest_balance["balance_sats"] = current_balance_sats
+        latest_balance["last_change"] = "Initial balance set."
+        latest_balance["memo"] = "N/A"
+        logger.info(f"Initial balance set to {current_balance_sats:.0f} sats.")
+        return
 
-        change_amount = current_balance_sats - last_balance
-        if abs(change_amount) < BALANCE_CHANGE_THRESHOLD:
-            logger.info(f"Balance change ({abs(change_amount):.0f} sats) below threshold ({BALANCE_CHANGE_THRESHOLD} sats). No notification sent.")
-            return
+    change_amount = current_balance_sats - last_balance
+    if abs(change_amount) < BALANCE_CHANGE_THRESHOLD:
+        logger.info(f"Balance change ({abs(change_amount):.0f} sats) below threshold ({BALANCE_CHANGE_THRESHOLD} sats). No notification sent.")
+        return
 
-        direction = "increased" if change_amount > 0 else "decreased"
-        abs_change = abs(change_amount)
+    direction = "increased" if change_amount > 0 else "decreased"
+    abs_change = abs(change_amount)
 
-        # Prepare the Telegram message with enhanced markdown formatting
-        message = (
-            f"⚡ *{INSTANCE_NAME}* - *Balance Update* ⚡\n\n"
-            f"🔹 *Previous Balance:* `{int(last_balance):,} sats`\n"
-            f"🔹 *Change:* `{'+' if change_amount > 0 else '-'}{int(abs_change):,} sats`\n"
-            f"🔹 *New Balance:* `{int(current_balance_sats):,} sats`\n\n"
-            f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC\n\n"
-            f"🔗 [View Details]({LNBITS_URL})"
-        )
+    # Prepare the Telegram message with enhanced markdown formatting
+    message = (
+        f"⚡ *{INSTANCE_NAME}* - *Balance Update* ⚡\n\n"
+        f"🔹 *Previous Balance:* `{int(last_balance):,} sats`\n"
+        f"🔹 *Change:* `{'+' if change_amount > 0 else '-'}{int(abs_change):,} sats`\n"
+        f"🔹 *New Balance:* `{int(current_balance_sats):,} sats`\n\n"
+        f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
+    )
 
-        # Send the message to Telegram
+    # Define the inline keyboard
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=LNBITS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Send the message to Telegram with the inline keyboard
+    try:
+        bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        logger.info(f"Balance changed from {last_balance:.0f} to {current_balance_sats:.0f} sats. Notification sent.")
+        # Update the balance file and latest_balance
+        save_current_balance(current_balance_sats)
+        latest_balance["balance_sats"] = current_balance_sats
+        latest_balance["last_change"] = f"Balance {direction} by {int(abs_change):,} sats."
+        latest_balance["memo"] = "N/A"
+    except Exception as telegram_error:
+        logger.error(f"Failed to send balance change message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+def send_wallet_balance():
+    """
+    Send the current wallet balance via Telegram in a professional and clear format.
+    """
+    logger.info("Sending daily wallet balance notification...")
+    wallet_info = fetch_api("wallet")
+    if wallet_info is None:
+        return
+
+    current_balance_msat = wallet_info.get("balance", 0)
+    current_balance_sats = current_balance_msat / 1000  # Convert msats to sats
+
+    # Fetch payments to calculate counts and totals
+    payments = fetch_api("payments")
+    incoming_count = outgoing_count = 0
+    incoming_total = outgoing_total = 0
+    if payments and isinstance(payments, list):
+        for payment in payments:
+            amount_msat = payment.get("amount", 0)
+            status = payment.get("status", "completed")
+            if status.lower() == "pending":
+                continue  # Exclude pending for daily balance
+            if amount_msat > 0:
+                incoming_count += 1
+                incoming_total += amount_msat / 1000
+            elif amount_msat < 0:
+                outgoing_count += 1
+                outgoing_total += abs(amount_msat) / 1000
+
+    # Prepare the Telegram message with enhanced markdown formatting
+    message = (
+        f"📊 *{INSTANCE_NAME}* - *Daily Wallet Balance* 📊\n\n"
+        f"🔹 *Current Balance:* `{int(current_balance_sats)} sats`\n"
+        f"🔹 *Total Incoming:* `{int(incoming_total)} sats` across `{incoming_count}` transactions\n"
+        f"🔹 *Total Outgoing:* `{int(outgoing_total)} sats` across `{outgoing_count}` transactions\n\n"
+        f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
+    )
+
+    # Define the inline keyboard
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=LNBITS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Send the message to Telegram with the inline keyboard
+    try:
+        bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        logger.info("Daily wallet balance notification with inline keyboard sent successfully.")
+        # Update the latest_balance
+        latest_balance["balance_sats"] = current_balance_sats
+        latest_balance["last_change"] = "Daily balance report."
+        latest_balance["memo"] = "N/A"
+        # Save the current balance
+        save_current_balance(current_balance_sats)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send daily wallet balance message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+def handle_transactions_command(chat_id):
+    logger.info(f"Handling /transactions command for chat_id: {chat_id}")
+    payments = fetch_api("payments")
+    if payments is None:
+        bot.send_message(chat_id=chat_id, text="Error fetching transactions.")
+        return
+
+    if not isinstance(payments, list):
+        bot.send_message(chat_id=chat_id, text="Unexpected data format for transactions.")
+        return
+
+    # Sort transactions by creation time descending
+    sorted_payments = sorted(payments, key=lambda x: x.get("created_at", ""), reverse=True)
+    latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]  # Get the latest n transactions
+
+    if not latest:
+        bot.send_message(chat_id=chat_id, text="No transactions found.")
+        return
+
+    # Initialize lists for different transaction types
+    incoming_payments = []
+    outgoing_payments = []
+    pending_payments = []
+
+    for payment in latest:
+        amount_msat = payment.get("amount", 0)
+        memo = payment.get("memo", "No memo")
+        status = payment.get("status", "completed")
+
         try:
-            await bot.send_message(chat_id=CHAT_ID, text=message, parse_mode='Markdown')
-            logger.info(f"Balance changed from {last_balance:.0f} to {current_balance_sats:.0f} sats. Notification sent.")
-            # Update the balance file and latest_balance
-            await save_current_balance(current_balance_sats)
-            latest_balance["balance_sats"] = current_balance_sats
-            latest_balance["last_change"] = f"Balance {direction} by {int(abs_change):,} sats."
-            latest_balance["memo"] = "N/A"
-        except Exception as telegram_error:
-            logger.error(f"Failed to send balance change message to Telegram: {telegram_error}")
-            logger.debug(traceback.format_exc())
+            amount_sats = int(abs(amount_msat) / 1000)
+        except ValueError:
+            amount_sats = 0
+
+        if status.lower() == "pending":
+            if amount_msat > 0:
+                pending_payments.append({
+                    "amount": amount_sats,
+                    "memo": memo
+                })
+        else:
+            if amount_msat > 0:
+                incoming_payments.append({
+                    "amount": amount_sats,
+                    "memo": memo
+                })
+            elif amount_msat < 0:
+                outgoing_payments.append({
+                    "amount": amount_sats,
+                    "memo": memo
+                })
+
+    message_lines = [
+        f"⚡ *{INSTANCE_NAME}* - *Latest Transactions* ⚡\n"
+    ]
+
+    if incoming_payments:
+        message_lines.append("🟢 *Incoming Payments:*")
+        for idx, payment in enumerate(incoming_payments, 1):
+            message_lines.append(
+                f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
+            )
+        message_lines.append("")
+
+    if outgoing_payments:
+        message_lines.append("🔴 *Outgoing Payments:*")
+        for idx, payment in enumerate(outgoing_payments, 1):
+            message_lines.append(
+                f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
+            )
+        message_lines.append("")
+
+    if pending_payments:
+        message_lines.append("⏳ *Payments in Progress:*")
+        for payment in pending_payments:
+            message_lines.append(
+                f"   {payment['amount']} sats\n"
+                f"   📝 *Memo:* {payment['memo']}\n"
+                f"   📅 *Status:* In progress\n"
+            )
+        message_lines.append("")
+
+    # Append the timestamp
+    timestamp_text = f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
+    message_lines.append(timestamp_text)
+
+    full_message = "\n".join(message_lines)
+
+    # Define the inline keyboard
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=LNBITS_URL)]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    try:
+        bot.send_message(chat_id=chat_id, text=full_message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send /transactions message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+def handle_info_command(chat_id):
+    logger.info(f"Handling /info command for chat_id: {chat_id}")
+    # Prepare Interval Information
+    interval_info = (
+        f"🔔 *Balance Change Threshold:* `{BALANCE_CHANGE_THRESHOLD} sats`\n"
+        f"⏲️ *Balance Change Monitoring Interval:* Every `{WALLET_INFO_UPDATE_INTERVAL} seconds`\n"
+        f"📊 *Daily Wallet Balance Notification Interval:* Every `{WALLET_BALANCE_NOTIFICATION_INTERVAL} seconds`\n"
+        f"🔄 *Latest Payments Fetch Interval:* Every `{PAYMENTS_FETCH_INTERVAL} seconds`"
+    )
+
+    info_message = (
+        f"ℹ️ *{INSTANCE_NAME}* - *Information*\n\n"
+        f"{interval_info}\n\n"
+        f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
+    )
+
+    # Define the inline keyboard
+    keyboard = [
+        [InlineKeyboardButton("🔗 LNbits URL", url=LNBITS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    try:
+        bot.send_message(chat_id=chat_id, text=info_message, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True, reply_markup=reply_markup)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send /info message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+def handle_balance_command(chat_id):
+    logger.info(f"Handling /balance command for chat_id: {chat_id}")
+    wallet_info = fetch_api("wallet")
+    if wallet_info is None:
+        bot.send_message(chat_id=chat_id, text="Error fetching wallet balance.")
+        return
+
+    current_balance_msat = wallet_info.get("balance", 0)
+    current_balance_sats = current_balance_msat / 1000  # Convert msats to sats
+
+    message = (
+        f"📊 *{INSTANCE_NAME}* - *Wallet Balance*\n\n"
+        f"🔹 *Current Balance:* `{int(current_balance_sats)} sats`\n\n"
+        f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
+    )
+
+    # Define the inline keyboard
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=LNBITS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    try:
+        bot.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send /balance message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+# --------------------- Command Handlers ---------------------
+
+def process_update(update):
+    try:
+        if 'message' in update:
+            message = update['message']
+            chat_id = message['chat']['id']
+            text = message.get('text', '')
+
+            if text.startswith('/balance'):
+                handle_balance_command(chat_id)
+            elif text.startswith('/transactions'):
+                handle_transactions_command(chat_id)
+            elif text.startswith('/info'):
+                handle_info_command(chat_id)
+            else:
+                bot.send_message(chat_id=chat_id, text="Unknown command. Available commands: /balance, /transactions, /info")
+        elif 'callback_query' in update:
+            process_callback_query(update['callback_query'])
+        else:
+            logger.info("Update does not contain a message or callback_query. Ignoring.")
+    except Exception as e:
+        logger.error(f"Error processing update: {e}")
+        logger.debug(traceback.format_exc())
+
+def process_callback_query(callback_query):
+    try:
+        query_id = callback_query['id']
+        data = callback_query.get('data', '')
+        chat_id = callback_query['from']['id']
+
+        if data == 'view_transactions':
+            handle_transactions_command(chat_id)
+            bot.answer_callback_query(callback_query_id=query_id, text="Fetching latest transactions...")
+        else:
+            bot.answer_callback_query(callback_query_id=query_id, text="Unknown action.")
+    except Exception as e:
+        logger.error(f"Error processing callback query: {e}")
+        logger.debug(traceback.format_exc())
 
 # --------------------- Scheduler Setup ---------------------
 
-def start_scheduler(scheduler):
+def start_scheduler():
     """
-    Start the scheduler for periodic tasks using AsyncIOScheduler.
+    Start the scheduler for periodic tasks using BackgroundScheduler.
     """
+    scheduler = BackgroundScheduler(timezone='UTC')
+
     if WALLET_INFO_UPDATE_INTERVAL > 0:
         scheduler.add_job(
             check_balance_change,
@@ -473,19 +702,31 @@ def status():
         "latest_payments": latest_payments
     })
 
-# --------------------- Run Flask in Separate Thread ---------------------
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    update = request.get_json()
+    if not update:
+        logger.warning("Received empty update.")
+        return "No update found", 400
+
+    logger.debug(f"Received update: {update}")
+
+    # Process the message in a separate thread to avoid blocking
+    threading.Thread(target=process_update, args=(update,)).start()
+
+    return "OK", 200
+
+# --------------------- Application Entry Point ---------------------
 
 def run_flask():
     """
-    Run the Flask app in a separate thread.
+    Run the Flask app.
     """
     try:
         app.run(host=APP_HOST, port=APP_PORT)
     except Exception as e:
         logger.error(f"Flask server error: {e}")
         logger.debug(traceback.format_exc())
-
-# --------------------- Application Entry Point ---------------------
 
 if __name__ == "__main__":
     logger.info("🚀 Starting LNbits Balance Monitor.")
@@ -495,23 +736,19 @@ if __name__ == "__main__":
     logger.info(f"📊 Fetching Latest {LATEST_TRANSACTIONS_COUNT} Transactions for Notifications")
     logger.info(f"⏲️ Scheduler Intervals - Balance Change Monitoring: {WALLET_INFO_UPDATE_INTERVAL} seconds, Daily Wallet Balance Notification: {WALLET_BALANCE_NOTIFICATION_INTERVAL} seconds, Latest Payments Fetch: {PAYMENTS_FETCH_INTERVAL} seconds")
 
-    # Create a new event loop and set it as the current loop
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
+    # Start the scheduler in a separate thread
+    scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
+    scheduler_thread.start()
 
-    # Initialize and start the scheduler within the event loop
-    scheduler = AsyncIOScheduler(timezone=utc)
-    start_scheduler(scheduler)
-
-    # Start Flask in a separate thread
-    flask_thread = Thread(target=run_flask, daemon=True)
+    # Start Flask app in a separate thread
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
     logger.info(f"Flask server running on {APP_HOST}:{APP_PORT}")
 
-    # Run the event loop forever
+    # Keep the main thread alive
     try:
-        loop.run_forever()
+        while True:
+            time.sleep(1)
     except (KeyboardInterrupt, SystemExit):
         logger.info("🛑 Shutting down LNbits Balance Monitor.")
-        scheduler.shutdown()
-        sys.exit()
+        exit()
