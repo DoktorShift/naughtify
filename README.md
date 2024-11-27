@@ -54,8 +54,8 @@ You can modify the `.env` file to adjust default behaviors:
 ### Step-by-Step Setup
 
 #### Prerequisites
-1. **Python**: Ensure you have Python 3.7+ (recommended 3.9+).
-2. **LNbits Instance**: Accessible and configured with a Readonly API key.
+1. **Python**: Ensure you have Python 3.9+
+2. **LNbits Instance**: Accessible and configured. Access to your Readonly API key.
 3. **Telegram Bot**: Create a Telegram bot and obtain the bot token and your chat ID (also known as User ID)
 4. **Virtual Environment (optional)**: To manage dependencies.
 
