@@ -2,6 +2,6 @@ aiohttp==3.8.4
 aiofiles==23.1.0
 apscheduler==3.9.1
 pytz==2023.3
-python-telegram-bot==20.3
+python-telegram-bot==13.15
 flask==2.3.2
 python-dotenv==1.0.0
