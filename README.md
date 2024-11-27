@@ -19,7 +19,7 @@ The **LNbits Balance Monitor aka. Naughtify** is a Python-based Flask App that m
   Fine-tune notification frequencies and thresholds via the `.env` file.
 
 - **Flask API:**  
-  Offers a lightweight API to check wallet status. Information
+  Offers a lightweight API to check wallet balance, latest transactions and info about set intervalls.
 
 ---
 
