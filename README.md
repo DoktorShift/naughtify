@@ -41,8 +41,10 @@ You can modify the `.env` file to adjust default behaviors:
 
 
 ### Screenshot:
+![Screenshot from 2024-11-27 13-36-49](https://github.com/user-attachments/assets/dc52e9e5-17a8-4016-ad1f-3e4c4f5b18c0)
+![Screenshot from 2024-11-27 13-37-05](https://github.com/user-attachments/assets/abd4269a-c137-40e9-bfda-5b322befa8df)
 
-![Screenshot from 2024-11-26 16-24-02](https://github.com/user-attachments/assets/cbb8959a-45d5-4272-a582-bd96227868d1)
+
 
 
 
