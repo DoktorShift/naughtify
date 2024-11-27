@@ -19,7 +19,7 @@ The **LNbits Balance Monitor aka. Naughtify** is a Python-based skript that moni
   Fine-tune notification frequencies and thresholds via the `.env` file.
 
 - **Flask API:**  
-  Offers a lightweight API to check wallet status via the `/status` endpoint.
+  Offers a lightweight API to check wallet status. Information
 
 ---
 
@@ -143,15 +143,72 @@ PROCESSED_PAYMENTS_FILE=processed_payments.txt
 # File to store the current balance
 CURRENT_BALANCE_FILE=current-balance.txt
   ```
+#### Step 5: Create Telegram Webhook Link - Inline Command Feature
 
-#### Step 5: Run the Application
+To connect your Telegram bot with your Python app using a webhook, follow these simple steps:
+
+1. **Prepare Your Webhook URL:**
+
+   - Combine your public app URL with the `/webhook` endpoint.
+   - **Example:**
+
+     ```
+     https://your-public-domain.com/webhook
+     ```
+
+2. **Set the Webhook with an Inline Command:**
+
+   - Replace `<YOUR_BOT_TOKEN>` with your Telegram bot token.
+   - Replace `<YOUR_WEBHOOK_URL>` with your webhook URL from step 1.
+
+   - **Option 1: Use a Web Browser**
+
+     - Enter the following URL in your browser's address bar:
+
+       ```
+       https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_WEBHOOK_URL>
+       ```
+
+     - **Example:**
+
+       ```
+       https://api.telegram.org/bot123456:ABCDEF/setWebhook?url=https://your-public-domain.com/webhook
+       ```
+
+   - **Option 2: Use cURL in Terminal**
+
+     - Run the following command:
+
+       ```bash
+       curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_WEBHOOK_URL>"
+       ```
+
+3. **Verify the Webhook Setup:**
+
+   - You should receive a response confirming that the webhook was set successfully:
+
+     ```json
+     {
+       "ok": true,
+       "result": true,
+       "description": "Webhook was set"
+     }
+     ```
+
+4. **Test Your Bot:**
+
+   - Your Python app should now receive updates via the webhook and respond accordingly.
+
+**That's it!** Your Telegram bot is now connected to your Python app using a webhook.
+
+#### Step 6: Run the Application
 1. Start the app manually
    ```bash
    python naughtify.py
    ```
 2. Logs will display in the console and are saved to `app.log`.
 
-#### Step 6: Run the Application 24/7 with PM2
+#### Step 7: Run the Application 24/7 with PM2
  **a) : Install PM2 in the Virtual Environment**
 Activate your virtual environment and install PM2:
 ```bash
