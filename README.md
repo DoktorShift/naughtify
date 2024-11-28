@@ -223,6 +223,19 @@ To enable inline commands (like `/balance`, `/transactions`, `/info`), connect y
 ```bash
 python naughtify.py
 ```
+Output:
+```plaintext
+
+[2024-11-28 15:14:32,759] [INFO] 🚀 Starting LNbits Balance Monitor.
+[2024-11-28 15:14:32,760] [INFO] 🔔 Notification Threshold: 1 sats
+[2024-11-28 15:14:32,760] [INFO] 📊 Fetching Latest 10 Transactions for Notifications
+[2024-11-28 15:14:32,760] [INFO] ⏲️ Scheduler Intervals - Balance Change Monitoring: 60 seconds, Daily Wallet Balance Notification: 60 seconds, Latest Payments Fetch: 60 seconds
+[2024-11-28 15:14:32,772] [INFO] Flask server running on 127.0.0.1:5009
+ * Serving Flask app 'naughtify'
+ * Debug mode: off
+ * Running on http://127.0.0.1:5009
+
+```
 
 ---
 
