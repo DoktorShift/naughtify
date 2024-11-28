@@ -71,65 +71,37 @@ pip install -r requirements.txt
 
 ### Step 4: Configure the Environment
 
-1. Create a `.env` file in the project directory.
-2. Use the following template:
+1. Copy the `.env` and open it.
+
+```bash
+https://raw.githubusercontent.com/DoktorShift/naughtify/refs/heads/main/example.env
+mv example.env .env
+sudo nano .env
+```
+
+2. Fill in at least the first three fields of the template, e.g.:
 
 ```plaintext
 # --------------------- Telegram Configuration ---------------------
 # Token for your Telegram bot (obtained from BotFather)
-TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN_HERE
+TELEGRAM_BOT_TOKEN=7504989068:AAGGoeiJ8wuFXKrACBDaloqrqrSw-vbxR8Q
 
 # Telegram Chat ID where notifications will be sent
 # Use tools like @userinfobot to find your Chat ID
-CHAT_ID=YOUR_TELEGRAM_CHAT_ID_HERE
+CHAT_ID=851254646
 
 # --------------------- LNbits Configuration ---------------------
 # Read-only API key for retrieving wallet balances and authenticating webhooks
-LNBITS_READONLY_API_KEY=YOUR_LNBITS_READONLY_API_KEY_HERE
+LNBITS_READONLY_API_KEY=33a687483c3a34bbb87857def0Y6b0be0
 
 # Base URL of your LNbits instance (ensure it includes the protocol, e.g., https://)
-LNBITS_URL=https://your-lnbits-instance-url.com
+LNBITS_URL=https://lnbits.mydomain.com
 
 # Custom name for your LNbits instance (used in Telegram notifications)
 # Enclosed in quotes because it contains spaces
-INSTANCE_NAME="Your_Instance_Name"
+INSTANCE_NAME="My Wallet"
 
-# --------------------- Notification Settings ---------------------
-# Threshold for balance changes in Satoshis to trigger a notification.
-BALANCE_CHANGE_THRESHOLD=10
-
-# Number of latest transactions to fetch for notifications. Default is 21
-# Duplicates will be ignored.
-LATEST_TRANSACTIONS_COUNT=21
-
-# --------------------- Scheduler Intervals ---------------------
-# Interval in seconds for checking balance changes
-# Set to 0 to disable the notification
-WALLET_INFO_UPDATE_INTERVAL=60
-
-# Interval in seconds for sending daily wallet balance notifications
-# Default: 86400 seconds (24 hours)
-# Set to 0 to disable the daily notification
-WALLET_BALANCE_NOTIFICATION_INTERVAL=86400
-
-# Interval in seconds for fetching the latest payments
-# Default: 86400 seconds (24 hours)
-# Set to 0 to disable fetching payments
-PAYMENTS_FETCH_INTERVAL=86400
-
-# --------------------- Flask Server Configuration ---------------------
-# Host address for the Flask server
-APP_HOST=127.0.0.1
-
-# Port number for the Flask server
-APP_PORT=5009
-
-# --------------------- File Paths ---------------------
-# File to track processed payments
-PROCESSED_PAYMENTS_FILE=processed_payments.txt
-
-# File to store the current balance
-CURRENT_BALANCE_FILE=current-balance.txt
+..
 ```
 
 ---
