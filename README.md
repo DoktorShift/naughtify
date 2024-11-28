@@ -211,6 +211,44 @@ Output:
 
 ---
 
+### Step 8: Naughtify Autostart Service
+
+1. Create new system service:
+
+```bash
+sudo nano /etc/systemd/system/naughtify.service
+```
+
+2. Fill the file with the following and customize `youruser`:
+
+```plaintext
+[Unit]
+Description=Naughtify
+After=network.target
+
+[Service]
+User=youruser
+WorkingDirectory=/home/youruser/naughtify
+EnvironmentFile=/home/youruser/naughtify/.env
+ExecStart=/home/youruser/naughtify/venv/bin/python /home/youruser/naughtify/naughtify.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+3. Activate, start and monitor:
+
+```bash
+sudo systemctl enable naughtify
+sudo systemctl start naughtify
+sudo systemctl status naughtify
+```
+
+From now on, naughtify will start automatically with every restart.
+
+---
+
 ## Contributing
 
 I welcome feedback and pull requests! Feel free to submit issues or enhance the app with new features.  
