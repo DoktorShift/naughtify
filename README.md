@@ -1,92 +1,76 @@
-Its by far not perfect - it just fullfiles the need to get notified about lnbits wallet movements. Feel free to write issues or provide PR's. This code is free to use under the MIT License.
 
-### Introduction
 
-The **LNbits Balance Monitor aka. Naughtify** is a Python-based Flask App that monitors a single LNbits wallet and provides notifications via Telegram. It checks wallet balances, tracks changes, and fetches transaction details to keep you updated on your LNbits activity. Newly introduced you are also able to use inline commands like /balance /transactions /info to gather these information when you need it.
+# LNbits Balance Monitor (aka. Naughtify)
 
-### **Features Summary**
+The **LNbits Balance Monitor** is a Python Flask application hack to provide nearly real-time wallet monitoring and Telegram notifications for LNbits users. Whether you're tracking payments or monitoring balance changes, Naughtify keeps you informed.
 
-- **Balance Monitoring:**  
-  Continuously checks wallet balance every 60 seconds (configurable) and sends notifications if a change exceeds the defined threshold.
+---
 
-- **Daily Wallet Balance Report:**  
-  Provides a detailed summary of your wallet balance, including total incoming and outgoing amounts, sent once every 24 hours (configurable).
+## Features
 
-- **Transactions Summary:**  
-  Fetches and notifies about the latest 21 transactions (configurable) every 24 hours. Prevents duplicate notifications for already processed transactions.
+- **Real-Time Notifications:**  
+  Stay updated with balance changes exceeding a configurable threshold.
 
-- **Customizable Intervals:**  
-  Fine-tune notification frequencies and thresholds via the `.env` file.
+- **Daily Balance Report:**  
+  Receive a daily summary of your wallet's balance and transaction statistics.
+
+- **Transaction Notifications:**  
+  Fetch and notify the latest transactions while avoiding duplicates.
+
+- **Custom Inline Commands:**  
+  Use `/balance`, `/transactions`, and `/info` in Telegram for instant updates.
+
+- **Configurable Intervals:**  
+  Set flexible notification intervals and thresholds via an `.env` file.
 
 - **Flask API:**  
-  Offers a lightweight API to check wallet balance, latest transactions and info about set intervalls.
+  A lightweight API provides wallet balance, transactions, and app status.
 
 ---
 
-### **Customization Options**
+## Screenshots
 
-You can modify the `.env` file to adjust default behaviors:
-
-- **Balance Change Threshold:**  
-  Set `BALANCE_CHANGE_THRESHOLD` to define the minimum Satoshi change required to trigger a notification. Example: 10 sats.
-
-- **Transaction Count:**  
-  Adjust `LATEST_TRANSACTIONS_COUNT` to set how many transactions are fetched for notifications. Already displayed transactions won't be notified again.
-
-- **Scheduler Intervals:**  
-  - `WALLET_INFO_UPDATE_INTERVAL`: Frequency of wallet balance checks. Default: 60 seconds.  
-  - `WALLET_BALANCE_NOTIFICATION_INTERVAL`: Frequency of daily wallet balance reports. Default: 24 hours (86400 seconds).  
-  - `PAYMENTS_FETCH_INTERVAL`: Frequency of transaction summary notifications. Default: 24 hours (86400 seconds).
----
-
-
-### Screenshot:
-![Screenshot from 2024-11-27 13-36-49](https://github.com/user-attachments/assets/dc52e9e5-17a8-4016-ad1f-3e4c4f5b18c0)
-![Screenshot from 2024-11-27 13-37-05](https://github.com/user-attachments/assets/abd4269a-c137-40e9-bfda-5b322befa8df)
-
-
-
-
-
+![Balance Notification](https://github.com/user-attachments/assets/dc52e9e5-17a8-4016-ad1f-3e4c4f5b18c0)  
+![Transaction Summary](https://github.com/user-attachments/assets/abd4269a-c137-40e9-bfda-5b322befa8df)
 
 ---
 
-### Step-by-Step Setup
+## Prerequisites
 
-#### Prerequisites
-1. **Python**: Ensure you have Python 3.9+
-2. **LNbits Instance**: Accessible and configured. Access to your Readonly API key.
-3. **Telegram Bot**: Create a Telegram bot and obtain the bot token and your chat ID (also known as User ID)
-4. **Virtual Environment (optional)**: To manage dependencies.
+1. **Python 3.9+**
+2. **LNbits Instance:** Access your LNbits API key (read-only).
+3. **Telegram Bot:** Create a Telegram bot via [BotFather](https://t.me/BotFather) and obtain your bot token.
+4. **Chat ID:** Use the [@userinfobot](https://t.me/userinfobot) on Telegram to find your chat ID.
+5. (Optional) **Virtual Environment:** Recommended for dependency isolation.
 
 ---
 
-#### Step 1: Clone the Repository
+## Installation
+
+### Step 1: Clone the Repository
+
 ```bash
 git clone https://github.com/DoktorShift/naughtify.git
 cd naughtify
 ```
 
----
+### Step 2: Create a Virtual Environment
 
-#### Step 2: Create a Virtual Environment
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 ```
 
----
+### Step 3: Install Dependencies
 
-#### Step 3: Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
----
+### Step 4: Configure the Environment
 
-#### Step 4: Configure Environment Variables
 1. Create a `.env` file in the project directory.
-2. Copy the following example configuration and replace placeholders with your information:
+2. Use the following template:
 
 ```plaintext
 # --------------------- Telegram Configuration ---------------------
@@ -144,116 +128,123 @@ PROCESSED_PAYMENTS_FILE=processed_payments.txt
 
 # File to store the current balance
 CURRENT_BALANCE_FILE=current-balance.txt
-  ```
-#### Step 5: Create Telegram Webhook Link - Inline Command Feature
+```
 
-To connect your Telegram bot with your Python app using a webhook, follow these simple steps:
+### Step 5: Telegram Bot Webhook Setup
 
-1. **Prepare Your Webhook URL:**
+To enable inline commands (like `/balance`, `/transactions`, `/info`), connect your Telegram bot to the app:
 
-   - Combine your public app URL with the `/webhook` endpoint.
-   - **Example:**
-
-     ```
-     https://your-public-domain.com/webhook
-     ```
-
-2. **Set the Webhook with an Inline Command:**
-
-   - Replace `<YOUR_BOT_TOKEN>` with your Telegram bot token.
-   - Replace `<YOUR_WEBHOOK_URL>` with your webhook URL from step 1.
-
-   - **Option 1: Use a Web Browser**
-
-     - Enter the following URL in your browser's address bar:
-
-       ```
-       https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_WEBHOOK_URL>
-       ```
-
-     - **Example:**
-
-       ```
-       https://api.telegram.org/bot123456:ABCDEF/setWebhook?url=https://your-public-domain.com/webhook
-       ```
-
-   - **Option 2: Use cURL in Terminal**
-
-     - Run the following command:
-
-       ```bash
-       curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_WEBHOOK_URL>"
-       ```
-
-3. **Verify the Webhook Setup:**
-
-   - You should receive a response confirming that the webhook was set successfully:
-
-     ```json
-     {
-       "ok": true,
-       "result": true,
-       "description": "Webhook was set"
-     }
-     ```
-
-4. **Test Your Bot:**
-
-   - Your Python app should now receive updates via the webhook and respond accordingly.
-
-**That's it!** Your Telegram bot is now connected to your Python app using a webhook.
-
-#### Step 6: Run the Application
-1. Start the app manually
-   ```bash
-   python naughtify.py
+1. **Prepare Your Webhook URL:**  
+   Combine your app's public URL with the apps `/webhook` endpoint.  
+   Example:  
    ```
-2. Logs will display in the console and are saved to `app.log`.
+   https://your-public-domain.com/webhook
+   ```
 
-#### Step 7: Run the Application 24/7 with PM2
- **a) : Install PM2 in the Virtual Environment**
-Activate your virtual environment and install PM2:
-```bash
-source venv/bin/activate
-npm install -g pm2
-```
+2. **Set the Webhook:**  
+   Replace placeholders below with your **Telegram Bot Token** and **Webhook URL**:
 
- **b): Start the Script with PM2**
-Navigate to the script's directory and start it with PM2:
-```bash
-pm2 start python3 --name naughtify -- naughtify.py
-```
+   - **Using a Web Browser:**  
+     ```
+     https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_WEBHOOK_URL>
+     ```
+     Example:  
+     ```
+     https://api.telegram.org/bot123456:ABCDEF/setWebhook?url=https://your-public-domain.com/webhook
+     ```
 
- **c): Save PM2 Processes**
-To ensure the script is saved as process:
-```bash
-pm2 save
-```
-**c.1): Save PM2 Processes**
-To ensure the script runs automatically after a reboot:
-```bash
-pm2 startup
-```
- **d): Useful PM2 Commands**
-- **View logs:**  
-  ```bash
-  pm2 logs
-  ```
+   - **Using cURL (Command Line):**  
+     ```bash
+     curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=<YOUR_WEBHOOK_URL>"
+     ```
 
-- **List processes:**  
-  ```bash
-  pm2 list
-  ```
+3. **Verify the Webhook:**  
+   Telegram should confirm:  
+   ```json
+   {
+     "ok": true,
+     "result": true,
+     "description": "Webhook was set"
+   }
+   ```
 
-- **Stop the process:**  
-  ```bash
-  pm2 stop naughtify.py
-  ```
-
-- **Restart the process:**  
-  ```bash
-  pm2 restart naughtify.py
-  ```
-
+4. **Test Your Bot:**  
+   Open Telegram and test commands after the next Step:
+   - `/balance`  
+   - `/transactions`  
+   - `/info`
 
 ---
+
+### Step 6: Start the Application
+
+```bash
+python naughtify.py
+```
+
+To run in the background:
+--> You can also use just basic systemd.service instead
+
+1. **Install PM2:**  
+   ```bash
+   npm install -g pm2
+   ```
+
+2. **Start the script:**  
+   ```bash
+   pm2 start python3 --name naughtify -- naughtify.py
+   pm2 save
+   pm2 startup
+   ```
+
+---
+
+## Usage
+
+### Inline Commands in Telegram
+
+- `/balance`: View the current wallet balance.
+- `/transactions`: Fetch the latest transactions.
+- `/info`: Check app configuration and intervals.
+
+### API Endpoints
+
+- **`GET /status`**: Check app status and latest updates.
+- **`POST /webhook`**: Receive updates from Telegram.
+
+---
+
+## Scheduler
+
+- **Balance Monitoring**: Triggered every 60 seconds (default).  
+- **Daily Reports**: Sent every 24 hours (default).  
+- **Transaction Fetching**: Updates every 24 hours (default).  
+
+Intervals can be adjusted in the `.env` file.
+
+---
+---
+---
+
+## Contributing
+
+We welcome feedback and pull requests! Feel free to submit issues or enhance the app with new features.  
+Licensed under the MIT License.
+
+### A Note on This Solution
+
+This bot is a simple hack designed to keep you informed about your LNbits wallet activity. While it fulfills its purpose, a more robust solution could be built as an official LNbits extension.  
+
+If you're inspired to take this further, feel free to develop a proper LNbits extension! You can find detailed information on creating an extension here:  
+[**LNbits Extensions Wiki**](https://github.com/lnbits/lnbits/wiki/LNbits-Extensions)  
+
+
+
+## Acknowledgments
+
+A big thank you to [**AxelHamburch**](https://github.com/AxelHamburch) for expressing the need for this bot and inspiring its creation.  
+
+A heartfelt thank you to the entire [**LNbits Team**](https://github.com/lnbits) for your incredible work on the outstanding LNbits project. Your contributions make solutions like this possible!  
+
+--- 
+
