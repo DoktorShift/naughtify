@@ -84,15 +84,15 @@ sudo nano .env
 ```plaintext
 # --------------------- Telegram Configuration ---------------------
 # Token for your Telegram bot (obtained from BotFather)
-TELEGRAM_BOT_TOKEN=7504989068:AAGGoeiJ8wuFXKrACBDaloqrqrSw-vbxR8Q
+TELEGRAM_BOT_TOKEN=7500000068:AAGGoeiJ8wuFXxxxxxxxxrqrSw-vbxR8Q
 
 # Telegram Chat ID where notifications will be sent
 # Use tools like @userinfobot to find your Chat ID
-CHAT_ID=851254646
+CHAT_ID=851000046
 
 # --------------------- LNbits Configuration ---------------------
 # Read-only API key for retrieving wallet balances and authenticating webhooks
-LNBITS_READONLY_API_KEY=33a687483c3a34bbb87857def0Y6b0be0
+LNBITS_READONLY_API_KEY=33a687483bb87xxxxxxxxx7def0Y6b0be0
 
 # Base URL of your LNbits instance (ensure it includes the protocol, e.g., https://)
 LNBITS_URL=https://lnbits.mydomain.com
