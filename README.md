@@ -244,8 +244,4 @@ If you're inspired to take this further, feel free to develop a proper LNbits ex
 
 A big thank you to [**AxelHamburch**](https://github.com/AxelHamburch) for expressing the need for this bot and inspiring its creation.  
 
-A heartfelt thank you to the entire [**LNbits Team**](https://github.com/lnbits) for your incredible work on the outstanding LNbits project. Your contributions make solutions like this possible!  
-
----
-
-This version clearly integrates Caddy into the workflow and links to the official installation guide while providing a ready-to-use, anonymized Caddyfile configuration.
+A heartfelt thank you to the entire [**LNbits Team**](https://github.com/lnbits) for your incredible work on the outstanding [**LNbits**](https://lnbits.com) project. Your contributions make solutions like this possible!  
