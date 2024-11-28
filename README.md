@@ -1,5 +1,3 @@
-
-
 # LNbits Balance Monitor (aka. Naughtify)
 
 The **LNbits Balance Monitor** is a Python Flask application hack to provide nearly real-time wallet monitoring and Telegram notifications for LNbits users. Whether you're tracking payments or monitoring balance changes, Naughtify keeps you informed.
@@ -41,7 +39,11 @@ The **LNbits Balance Monitor** is a Python Flask application hack to provide nea
 2. **LNbits Instance:** Access your LNbits API key (read-only).
 3. **Telegram Bot:** Create a Telegram bot via [BotFather](https://t.me/BotFather) and obtain your bot token.
 4. **Chat ID:** Use the [@userinfobot](https://t.me/userinfobot) on Telegram to find your chat ID.
-5. (Optional) **Virtual Environment:** Recommended for dependency isolation.
+5. **Caddy Web Server:** Required to serve the app and enable inline commands. See [Setting Up Caddy Web Server](#setting-up-caddy-web-server).
+6. (Optional) **Virtual Environment:** Recommended for dependency isolation.
+
+**Note:**  
+The following installation runs the Python app locally on `127.0.0.1`. If you want to access it externally or integrate with Caddy, make sure to configure your setup and open ports.
 
 ---
 
@@ -130,15 +132,61 @@ PROCESSED_PAYMENTS_FILE=processed_payments.txt
 CURRENT_BALANCE_FILE=current-balance.txt
 ```
 
-### Step 5: Telegram Bot Webhook Setup
+---
+
+### Step 6: Setting Up Caddy Web Server
+
+To expose the Flask app and enable inline commands, you'll need to set up Caddy as a reverse proxy.
+
+#### Step a: Install Caddy
+
+Follow the [official Caddy installation guide](https://caddyserver.com/docs/install) to install Caddy on your server.
+
+#### Step b: Configure the Caddyfile
+
+Create or edit your Caddyfile `nano /etc/caddy/Caddyfile` with the following configuration:
+
+```plaintext
+# Example configuration for Naughtify
+naughtify.example.com {
+        reverse_proxy /webhook* 127.0.0.1:5009
+
+        encode gzip
+
+        # Security headers
+        header {
+                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+                X-Content-Type-Options "nosniff"
+                X-Frame-Options "DENY"
+                Referrer-Policy "no-referrer-when-downgrade"
+                Content-Security-Policy "default-src 'self'"
+        }
+}
+```
+
+- Replace **`naughtify.example.com`** with your actual domain name.  
+- Make sure your Flask app is running locally on `127.0.0.1:5009`.
+
+#### Step c: Reload Caddy
+
+Restart or reload Caddy to apply the changes:
+```bash
+sudo systemctl reload caddy
+```
+
+Note: Dont forget to set the A-Record on that Domain. You have to do that on your domain providers site.
+
+---
+
+### Step 6: Telegram Bot Webhook Setup
 
 To enable inline commands (like `/balance`, `/transactions`, `/info`), connect your Telegram bot to the app:
 
 1. **Prepare Your Webhook URL:**  
-   Combine your app's public URL with the apps `/webhook` endpoint.  
+   Combine your domain with the `/webhook` endpoint.  
    Example:  
    ```
-   https://your-public-domain.com/webhook
+   https://naughtify.example.com/webhook
    ```
 
 2. **Set the Webhook:**  
@@ -150,7 +198,7 @@ To enable inline commands (like `/balance`, `/transactions`, `/info`), connect y
      ```
      Example:  
      ```
-     https://api.telegram.org/bot123456:ABCDEF/setWebhook?url=https://your-public-domain.com/webhook
+     https://api.telegram.org/bot123456:ABCDEF/setWebhook?url=https://naughtify.example.com/webhook
      ```
 
    - **Using cURL (Command Line):**  
@@ -168,67 +216,19 @@ To enable inline commands (like `/balance`, `/transactions`, `/info`), connect y
    }
    ```
 
-4. **Test Your Bot:**  
-   Open Telegram and test commands after the next Step:
-   - `/balance`  
-   - `/transactions`  
-   - `/info`
-
 ---
 
-### Step 6: Start the Application
+### Step 7: Start the Application
 
 ```bash
 python naughtify.py
 ```
 
-To run in the background:
---> You can also use just basic systemd.service instead
-
-1. **Install PM2:**  
-   ```bash
-   npm install -g pm2
-   ```
-
-2. **Start the script:**  
-   ```bash
-   pm2 start python3 --name naughtify -- naughtify.py
-   pm2 save
-   pm2 startup
-   ```
-
----
-
-## Usage
-
-### Inline Commands in Telegram
-
-- `/balance`: View the current wallet balance.
-- `/transactions`: Fetch the latest transactions.
-- `/info`: Check app configuration and intervals.
-
-### API Endpoints
-
-- **`GET /status`**: Check app status and latest updates.
-- **`POST /webhook`**: Receive updates from Telegram.
-
----
-
-## Scheduler
-
-- **Balance Monitoring**: Triggered every 60 seconds (default).  
-- **Daily Reports**: Sent every 24 hours (default).  
-- **Transaction Fetching**: Updates every 24 hours (default).  
-
-Intervals can be adjusted in the `.env` file.
-
----
----
 ---
 
 ## Contributing
 
-We welcome feedback and pull requests! Feel free to submit issues or enhance the app with new features.  
+I welcome feedback and pull requests! Feel free to submit issues or enhance the app with new features.  
 Licensed under the MIT License.
 
 ### A Note on This Solution
@@ -236,9 +236,9 @@ Licensed under the MIT License.
 This bot is a simple hack designed to keep you informed about your LNbits wallet activity. While it fulfills its purpose, a more robust solution could be built as an official LNbits extension.  
 
 If you're inspired to take this further, feel free to develop a proper LNbits extension! You can find detailed information on creating an extension here:  
-[**LNbits Extensions Wiki**](https://github.com/lnbits/lnbits/wiki/LNbits-Extensions)  
+[**LNbits Extensions Wiki**](https://github.com/lnbits/lnbits/wiki/LNbits-Extensions)
 
-
+---
 
 ## Acknowledgments
 
@@ -246,5 +246,6 @@ A big thank you to [**AxelHamburch**](https://github.com/AxelHamburch) for expre
 
 A heartfelt thank you to the entire [**LNbits Team**](https://github.com/lnbits) for your incredible work on the outstanding LNbits project. Your contributions make solutions like this possible!  
 
---- 
+---
 
+This version clearly integrates Caddy into the workflow and links to the official installation guide while providing a ready-to-use, anonymized Caddyfile configuration.
