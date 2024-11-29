@@ -71,65 +71,22 @@ pip install -r requirements.txt
 
 ### Step 4: Configure the Environment
 
-1. Create a `.env` file in the project directory.
-2. Use the following template:
+1. Copy the `.env` and open it.
 
-```plaintext
-# --------------------- Telegram Configuration ---------------------
-# Token for your Telegram bot (obtained from BotFather)
-TELEGRAM_BOT_TOKEN=YOUR_TELEGRAM_BOT_TOKEN_HERE
+```bash
+https://raw.githubusercontent.com/DoktorShift/naughtify/refs/heads/main/example.env
+mv example.env .env
+sudo nano .env
+```
 
-# Telegram Chat ID where notifications will be sent
-# Use tools like @userinfobot to find your Chat ID
-CHAT_ID=YOUR_TELEGRAM_CHAT_ID_HERE
+2. Fill in at least the first four fields of the template:
 
-# --------------------- LNbits Configuration ---------------------
-# Read-only API key for retrieving wallet balances and authenticating webhooks
-LNBITS_READONLY_API_KEY=YOUR_LNBITS_READONLY_API_KEY_HERE
+Telegram Bot Token
+Chat ID (User ID)
+LNBIts Readonly key
+LNBits Server URL
 
-# Base URL of your LNbits instance (ensure it includes the protocol, e.g., https://)
-LNBITS_URL=https://your-lnbits-instance-url.com
-
-# Custom name for your LNbits instance (used in Telegram notifications)
-# Enclosed in quotes because it contains spaces
-INSTANCE_NAME="Your_Instance_Name"
-
-# --------------------- Notification Settings ---------------------
-# Threshold for balance changes in Satoshis to trigger a notification.
-BALANCE_CHANGE_THRESHOLD=10
-
-# Number of latest transactions to fetch for notifications. Default is 21
-# Duplicates will be ignored.
-LATEST_TRANSACTIONS_COUNT=21
-
-# --------------------- Scheduler Intervals ---------------------
-# Interval in seconds for checking balance changes
-# Set to 0 to disable the notification
-WALLET_INFO_UPDATE_INTERVAL=60
-
-# Interval in seconds for sending daily wallet balance notifications
-# Default: 86400 seconds (24 hours)
-# Set to 0 to disable the daily notification
-WALLET_BALANCE_NOTIFICATION_INTERVAL=86400
-
-# Interval in seconds for fetching the latest payments
-# Default: 86400 seconds (24 hours)
-# Set to 0 to disable fetching payments
-PAYMENTS_FETCH_INTERVAL=86400
-
-# --------------------- Flask Server Configuration ---------------------
-# Host address for the Flask server
-APP_HOST=127.0.0.1
-
-# Port number for the Flask server
-APP_PORT=5009
-
-# --------------------- File Paths ---------------------
-# File to track processed payments
-PROCESSED_PAYMENTS_FILE=processed_payments.txt
-
-# File to store the current balance
-CURRENT_BALANCE_FILE=current-balance.txt
+These are heavily needed
 ```
 
 ---
@@ -236,6 +193,44 @@ Output:
  * Running on http://127.0.0.1:5009
 
 ```
+
+---
+
+### Step 8: Naughtify Autostart Service
+
+1. Create new system service:
+
+```bash
+sudo nano /etc/systemd/system/naughtify.service
+```
+
+2. Fill the file with the following and customize `youruser`:
+
+```plaintext
+[Unit]
+Description=Naughtify
+After=network.target
+
+[Service]
+User=youruser
+WorkingDirectory=/home/youruser/naughtify
+EnvironmentFile=/home/youruser/naughtify/.env
+ExecStart=/home/youruser/naughtify/venv/bin/python /home/youruser/naughtify/naughtify.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+```
+
+3. Activate, start and monitor:
+
+```bash
+sudo systemctl enable naughtify
+sudo systemctl start naughtify
+sudo systemctl status naughtify
+```
+
+From now on, naughtify will start automatically with every restart.
 
 ---
 
