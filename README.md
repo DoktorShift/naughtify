@@ -81,15 +81,12 @@ sudo nano .env
 
 2. Fill in at least the first four fields of the template:
 
-Telegram Bot Token
-Chat ID (User ID)
-LNBIts Readonly key
-LNBits Server URL
+- Telegram Bot Token
+- Chat ID (User ID)
+- LNBIts Readonly key
+- LNBits Server URL
 
 These are heavily needed
-```
-
----
 
 ### Step 6: Setting Up Caddy Web Server
 
