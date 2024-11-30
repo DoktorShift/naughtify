@@ -607,13 +607,63 @@ def handle_balance_command(chat_id):
         logger.debug(traceback.format_exc())
 
 # --------------------- Command Handlers ---------------------
+def handle_help_command(chat_id):
+    logger.info(f"Handling /help command for chat_id: {chat_id}")
+    
+    help_message = (
+        "🤖 *Naughtify Bot Command Guide* 🤖\n\n"
+        "🔍 *What Does This Bot Do?*\n\n"
+        "The bot offers:\n\n"
+        "    • Real-time updates of your wallet balance.\n"
+        "    • A categorized view of recent transactions.\n"
+        "    • Notifications about significant wallet changes.\n"
+        "    • Direct access to LNbits, Overwatch, and a Live-Donation Page.\n\n"
+        "🛠️ *Available Commands*\n"
+        "📊 */balance*\n\n"
+        "    Displays your current wallet balance in sats.\n"
+        "    Perfect for quickly checking your available funds.\n\n"
+        "⚡️ */transactions*\n\n"
+        "    Lists your recent wallet transactions in three categories:\n"
+        "        Incoming: Payments you’ve received.\n"
+        "        Outgoing: Payments you’ve sent.\n"
+        "        Pending: Transactions still being processed.\n\n"
+        "ℹ️ */info*\n\n"
+        "    Provides detailed information about the bot’s configuration, including:\n"
+        "        Update intervals for balances and transactions.\n"
+        "        Thresholds for notifications.\n"
+        "        General details about your LNbits instance.\n\n"
+        "❓ */help*\n\n"
+        "    Displays this guide to help you use the bot effectively.\n\n"
+        "🔗 *Useful Links*\n\n"
+        "    • Overwatch Dashboard: A read-only dashboard for monitoring wallet activity and stats.\n"
+        "    • LNbits Manage Backend: Direct access to manage wallets, transactions, and settings.\n"
+        "    • Live-Donation Page: Shows the latest donations, total donation balance, and memos. This page is tied to a static payment code and provides a transparent overview of donation activity.\n\n"
+        "💡 *Helpful Tips*\n\n"
+        "    • All timestamps are in UTC for consistency.\n"
+        "    • Adjust notification thresholds to receive only relevant updates.\n"
+        "    • Use the LNbits interface to maximize the potential of your wallet.\n"
+        "    • The Live-Donation Page is perfect for tracking donations in real-time and sharing a public view of donation activity.\n"
+    )
+    
+    try:
+        bot.send_message(
+            chat_id=chat_id,
+            text=help_message,
+            parse_mode=ParseMode.MARKDOWN,
+            disable_web_page_preview=True
+        )
+        logger.info(f"/help message sent successfully to chat_id: {chat_id}")
+    except Exception as telegram_error:
+        logger.error(f"Failed to send /help message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
 
 def process_update(update):
     try:
         if 'message' in update:
             message = update['message']
             chat_id = message['chat']['id']
-            text = message.get('text', '')
+            text = message.get('text', '').strip()
 
             if text.startswith('/balance'):
                 handle_balance_command(chat_id)
@@ -621,8 +671,13 @@ def process_update(update):
                 handle_transactions_command(chat_id)
             elif text.startswith('/info'):
                 handle_info_command(chat_id)
+            elif text.startswith('/help'):
+                handle_help_command(chat_id) 
             else:
-                bot.send_message(chat_id=chat_id, text="Unknown command. Available commands: /balance, /transactions, /info")
+                bot.send_message(
+                    chat_id=chat_id, 
+                    text="Unknown command. Available commands: /balance, /transactions, /info, /help"
+                )
         elif 'callback_query' in update:
             process_callback_query(update['callback_query'])
         else:
