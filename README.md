@@ -1,28 +1,62 @@
-# LNbits Balance Monitor (aka. Naughtify)
+# 🤖 **Naughtify** 🤖
 
-The **LNbits Balance Monitor** is a Python Flask application hack to provide nearly real-time wallet monitoring and Telegram notifications for LNbits users. Whether you're tracking payments or monitoring balance changes, Naughtify keeps you informed.
+LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monitoring your LNBits wallet. It connects to your LNbits instance and provides nearly real-time updates directly through Telegram. Additionally, the bot includes a dedicated view only transaction Overwatch as well as a Live-Donation Page specifically designed for static payment links.
 
 ---
 
-## Features
+## 🔍 **What Does This Bot Do?**
 
-- **Real-Time Notifications:**  
-  Stay updated with balance changes exceeding a configurable threshold.
+The bot offers:
+- Provide pdates of your wallet balance.
+- A categorized view of recent transactions.
+- Notifications about significant wallet changes.
+- Direct access to LNbits, Overwatch, and a Live-Donation Page.
 
-- **Daily Balance Report:**  
-  Receive a daily summary of your wallet's balance and transaction statistics.
+---
 
-- **Transaction Notifications:**  
-  Fetch and notify the latest transactions while avoiding duplicates.
+## 🛠️ **Available Commands**
 
-- **Custom Inline Commands:**  
-  Use `/balance`, `/transactions`, and `/info` in Telegram for instant updates.
+### 📊 **/balance**
+- Displays your current wallet balance in sats.
+- Perfect for quickly checking your available funds.
 
-- **Configurable Intervals:**  
-  Set flexible notification intervals and thresholds via an `.env` file.
+---
 
-- **Flask API:**  
-  A lightweight API provides wallet balance, transactions, and app status.
+### ⚡️ **/transactions**
+- Lists your recent wallet transactions in three categories:
+  - **Incoming:** Payments you’ve received.
+  - **Outgoing:** Payments you’ve sent.
+  - **Pending:** Transactions still being processed.
+
+---
+
+### ℹ️ **/info**
+- Provides detailed information about the bot’s configuration, including:
+  - Update intervals for balances and transactions.
+  - Thresholds for notifications.
+  - General details about your LNbits instance.
+
+---
+
+### ❓ **/help**
+- Displays this guide to help you use the bot effectively.
+
+---
+
+## 🔗 **Useful Links**
+
+- **Live-Donation Page**: Shows the latest donations, total donation balance, and memos. This page is tied to a static payment code and provides a transparent overview of donation activity.
+- **Overwatch Dashboard**: A read-only dashboard for monitoring wallet activity and status.
+- **LNbits Manage Dashboard**: Direct access to manage wallets, transactions, and settings.
+
+---
+
+## 💡 **Helpful Tips**
+
+- All timestamps are in **UTC** for consistency.
+- Adjust notification thresholds to receive only relevant updates.
+- Use the LNbits interface to maximize the potential of your wallet.
+- The **Live-Donation Page** is perfect for tracking donations in real-time and sharing a public view of donation activity.
 
 ---
 
@@ -228,6 +262,14 @@ sudo systemctl status naughtify
 ```
 
 From now on, naughtify will start automatically with every restart.
+
+### Step 9: Deploy Overwatch
+
+Follow the instruction [here](https://github.com/DoktorShift/Overwatch)
+
+Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT.md)
+
+Option 2: Easier Deployment with Netlify [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT_Netlify.md)
 
 ---
 
