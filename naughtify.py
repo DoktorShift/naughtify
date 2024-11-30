@@ -25,6 +25,9 @@ LNBITS_READONLY_API_KEY = os.getenv("LNBITS_READONLY_API_KEY")
 LNBITS_URL = os.getenv("LNBITS_URL")
 INSTANCE_NAME = os.getenv("INSTANCE_NAME", "LNbits Instance")
 
+# Overwatch Configuration
+OVERWATCH_URL = os.getenv("OVERWATCH_URL")
+
 # Notification Settings
 BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "1000"))  # Default: 1000 sats
 LATEST_TRANSACTIONS_COUNT = int(os.getenv("LATEST_TRANSACTIONS_COUNT", "21"))    # Default: 21 transactions
@@ -47,7 +50,8 @@ required_vars = {
     "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
     "CHAT_ID": CHAT_ID,
     "LNBITS_READONLY_API_KEY": LNBITS_READONLY_API_KEY,
-    "LNBITS_URL": LNBITS_URL
+    "LNBITS_URL": LNBITS_URL,
+    "OVERWATCH_URL": OVERWATCH_URL
 }
 
 missing_vars = [var for var, value in required_vars.items() if not value]
@@ -225,7 +229,7 @@ def send_latest_payments():
         # Extract necessary fields
         amount_msat = payment.get("amount", 0)
         memo = payment.get("memo", "No memo provided")
-        status = payment.get("status", "completed")  # Default to 'completed' if not present
+        status = payment.get("status", "completed")  # Default to 'completed' if not present. Not solid.
 
         # Convert amount to integer
         try:
@@ -310,7 +314,7 @@ def send_latest_payments():
 
     # Define the inline keyboard
     keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=LNBITS_URL)],
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
         [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -355,7 +359,7 @@ def check_balance_change():
     direction = "increased" if change_amount > 0 else "decreased"
     abs_change = abs(change_amount)
 
-    # Prepare the Telegram message with enhanced markdown formatting
+    # Prepare the Telegram message wit markdown formatting
     message = (
         f"⚡ *{INSTANCE_NAME}* - *Balance Update* ⚡\n\n"
         f"🔹 *Previous Balance:* `{int(last_balance):,} sats`\n"
@@ -364,14 +368,14 @@ def check_balance_change():
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Define the inline keyboard
+    # Define inline keyboard
     keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=LNBITS_URL)],
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
         [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
-    # Send the message to Telegram with the inline keyboard
+    # Send message to Telegram with the inline keyboard
     try:
         bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
         logger.info(f"Balance changed from {last_balance:.0f} to {current_balance_sats:.0f} sats. Notification sent.")
@@ -405,7 +409,7 @@ def send_wallet_balance():
             amount_msat = payment.get("amount", 0)
             status = payment.get("status", "completed")
             if status.lower() == "pending":
-                continue  # Exclude pending for daily balance
+                continue  # Logic to  exclude pending for daily balance
             if amount_msat > 0:
                 incoming_count += 1
                 incoming_total += amount_msat / 1000
@@ -413,7 +417,7 @@ def send_wallet_balance():
                 outgoing_count += 1
                 outgoing_total += abs(amount_msat) / 1000
 
-    # Prepare the Telegram message with enhanced markdown formatting
+    # Prepare the Telegram message wiht markdown formatting
     message = (
         f"📊 *{INSTANCE_NAME}* - *Daily Wallet Balance* 📊\n\n"
         f"🔹 *Current Balance:* `{int(current_balance_sats)} sats`\n"
@@ -422,9 +426,9 @@ def send_wallet_balance():
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Define the inline keyboard
+    # Define inline keyboard
     keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=LNBITS_URL)],
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
         [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -533,7 +537,7 @@ def handle_transactions_command(chat_id):
 
     # Define the inline keyboard
     keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=LNBITS_URL)]
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -561,7 +565,8 @@ def handle_info_command(chat_id):
 
     # Define the inline keyboard
     keyboard = [
-        [InlineKeyboardButton("🔗 LNbits URL", url=LNBITS_URL)],
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
+        [InlineKeyboardButton("🔧 Manage LNBits Backend", url=LNBITS_URL)],
         [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -590,7 +595,7 @@ def handle_balance_command(chat_id):
 
     # Define the inline keyboard
     keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=LNBITS_URL)],
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
         [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
     ]
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -692,7 +697,7 @@ def start_scheduler():
 
 @app.route('/')
 def home():
-    return "🔍 LNbits Balance Monitor is running."
+    return "🔍 LNbits Monitor is running."
 
 @app.route('/status', methods=['GET'])
 def status():
