@@ -277,18 +277,100 @@ def get_lnurlp_info(lnurlp_id):
     for pay_link in pay_links:
         if pay_link.get("id") == lnurlp_id:
             logger.debug(f"Found matching pay link: {pay_link}")
-            logger.debug(f"lnurlp_info structure: {pay_link}")  # Added log
             return pay_link
 
     logger.error(f"No pay link found with ID {lnurlp_id}")
     return None
 
+def fetch_donation_details():
+    """
+    Fetches LNURLp information and integrates Lightning Address and LNURL into donation details.
+
+    Returns:
+        dict: A dictionary containing total donations, donations list, lightning_address, and lnurl.
+    """
+    lnurlp_info = get_lnurlp_info(LNURLP_ID)
+    if lnurlp_info is None:
+        logger.error("Unable to fetch LNURLp information for donation details.")
+        return {
+            "total_donations": total_donations,
+            "donations": donations,
+            "lightning_address": "Unavailable",
+            "lnurl": "Unavailable"
+        }
+    
+    # Extract Lightning Address and LNURL from LNURLp info
+    lightning_address = lnurlp_info.get('lightning_address', 'Unavailable')  # Adjust key as per your data structure
+    lnurl = lnurlp_info.get('lnurl', 'Unavailable')  # Adjust key as per your data structure
+    
+    logger.debug(f"Fetched Lightning Address: {lightning_address}")
+    logger.debug(f"Fetched LNURL: {lnurl}")
+    
+    return {
+        "total_donations": total_donations,
+        "donations": donations,
+        "lightning_address": lightning_address,
+        "lnurl": lnurl
+    }
+
+def update_donations_with_details(data):
+    """
+    Updates the donations data with additional details like Lightning Address and LNURL.
+
+    Parameters:
+        data (dict): The original donations data.
+
+    Returns:
+        dict: Updated donations data with additional details.
+    """
+    donation_details = fetch_donation_details()
+    data.update({
+        "lightning_address": donation_details.get("lightning_address"),
+        "lnurl": donation_details.get("lnurl")
+    })
+    return data
+
+def updateDonations(data):
+    """
+    Update the donations and related UI elements with new data.
+
+    This function is enhanced to include Lightning Address and LNURL in the data sent to the frontend.
+
+    Parameters:
+        data (dict): The data containing total_donations and donations list.
+    """
+    # Integrate additional donation details
+    updated_data = update_donations_with_details(data)
+    
+    totalDonations = updated_data["total_donations"]
+    # Update total donations in the frontend
+    # Since this is a backend function, the frontend will fetch updated data via API
+    # Hence, no direct DOM manipulation here
+    
+    # Update latest donation
+    if updated_data["donations"]:
+        latestDonation = updated_data["donations"][-1]
+        # Again, frontend handles DOM updates
+        logger.info(f'Latest donation: {latestDonation["amount"]} Sats - "{latestDonation["memo"]}"')
+    else:
+        logger.info('Latest donation: None yet.')
+    
+    # Update transactions data
+    # Frontend fetches via API
+    
+    # Update Lightning Address and LNURL
+    logger.debug(f"Lightning Address: {updated_data.get('lightning_address')}")
+    logger.debug(f"LNURL: {updated_data.get('lnurl')}")
+    
+    # Save updated donations data
+    save_donations()
+
 def send_latest_payments():
     """
     Fetch the latest payments and send a notification via Telegram.
-    Zusätzlich werden Zahlungen überprüft, ob sie als Spende gelten.
+    Additionally, payments are checked to determine if they qualify as donations.
     """
-    global total_donations, donations, last_update  # Deklaration der globalen Variablen
+    global total_donations, donations, last_update  # Declare global variables
     logger.info("Fetching latest payments...")
     payments = fetch_api("payments")
     if payments is None:
@@ -344,18 +426,18 @@ def send_latest_payments():
                     "memo": memo
                 })
 
-        # Überprüfung auf Spende via LNURLp ID
+        # Check for donation via LNURLp ID
         extra_data = payment.get("extra", {})
         lnurlp_id = extra_data.get("link")
         if lnurlp_id == LNURLP_ID:
-            # Es handelt sich um eine Spende
+            # It's a donation
             donation_memo = extra_data.get("comment", "No memo")
-            # Sicherstellen, dass 'extra' ein numerischer Wert ist und in msats vorliegt
+            # Ensure 'extra' is a numeric value and in msats
             try:
                 donation_amount_msat = int(extra_data.get("extra", 0))
-                donation_amount_sats = donation_amount_msat / 1000  # Umrechnung von msats zu sats
+                donation_amount_sats = donation_amount_msat / 1000  # Convert msats to sats
             except (ValueError, TypeError):
-                donation_amount_sats = amount_sats  # Fallback, falls 'extra' nicht numerisch ist
+                donation_amount_sats = amount_sats  # Fallback if 'extra' is not numeric
             donation = {
                 "date": datetime.utcnow().isoformat(),
                 "memo": donation_memo,
@@ -365,7 +447,7 @@ def send_latest_payments():
             total_donations += donation_amount_sats
             last_update = datetime.utcnow()
             logger.info(f"New donation detected: {donation_amount_sats} sats - {donation_memo}")
-            save_donations()  # Speichere die aktualisierten Spenden
+            save_donations()  # Save updated donations
 
         # Mark payment as processed
         processed_payments.add(payment_hash)
@@ -412,7 +494,7 @@ def send_latest_payments():
 
     full_message = "\n".join(message_lines)
 
-    # Define the inline keyboard with both "View Donations" and "View Transactions" buttons
+    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
     keyboard = [
         [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
         [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
@@ -470,7 +552,7 @@ def check_balance_change():
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Define the inline keyboard with both "View Donations" and "View Transactions" buttons
+    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
     keyboard = [
         [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
         [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
@@ -529,7 +611,7 @@ def send_wallet_balance():
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Define the inline keyboard with both "View Donations" and "View Transactions" buttons
+    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
     keyboard = [
         [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
         [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
@@ -642,7 +724,7 @@ def handle_transactions_command(chat_id):
 
     full_message = "\n".join(message_lines)
 
-    # Define the inline keyboard with both "View Donations" and "View Transactions" buttons
+    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
     keyboard = [
         [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
         [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
@@ -675,7 +757,7 @@ def handle_info_command(chat_id):
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Define the inline keyboard with both "View Donations" and "View Transactions" buttons
+    # Define the inline keyboard with "View Details", "View Donations", "Manage LNBits Backend", and "View Transactions" buttons
     keyboard = [
         [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
         [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
@@ -709,7 +791,7 @@ def handle_balance_command(chat_id):
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Define the inline keyboard with both "View Donations" and "View Transactions" buttons
+    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
     keyboard = [
         [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
         [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
@@ -721,51 +803,6 @@ def handle_balance_command(chat_id):
         bot.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
     except Exception as telegram_error:
         logger.error(f"Failed to send /balance message to Telegram: {telegram_error}")
-        logger.debug(traceback.format_exc())
-
-def handle_help_command(chat_id):
-    """
-    Handle the /help command sent by the user.
-    """
-    logger.info(f"Handling /help command for chat_id: {chat_id}")
-
-    help_message = (
-        "🤖 *Naughtify Bot Command Guide* 🤖\n\n"
-        "🛠 *Commands:*\n\n"
-        "    /balance: Check your wallet balance in sats.\n"
-        "    /transactions: View recent incoming, outgoing, and pending transactions.\n"
-        "    /info: See bot settings and LNbits details.\n"
-        "    /help: Display this guide.\n\n"
-        "🔗 *Useful Links:*\n\n"
-        f"    Overwatch Dashboard: {OVERWATCH_URL}\n"
-        f"    LNbits Dashboard: {LNBITS_URL}\n"
-        f"    Live-Donation Page: {DONATIONS_URL}\n\n"
-        "💡 *Helpful Tips:*\n\n"
-        "    • Adjust notification thresholds to receive only relevant updates.\n"
-        "    • Use the LNbits interface to maximize the potential of your wallet.\n"
-        "    • The Live-Donation Page is perfect for tracking donations in real-time and sharing a public view of donation activity.\n"
-    )
-
-    # Define the inline keyboard with both "View Donations" and "View Transactions" buttons
-    keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
-        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
-        [InlineKeyboardButton("🔧 Manage LNBits Backend", url=LNBITS_URL)],
-        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    try:
-        bot.send_message(
-            chat_id=chat_id,
-            text=help_message,
-            parse_mode=ParseMode.MARKDOWN,
-            disable_web_page_preview=True,
-            reply_markup=reply_markup
-        )
-        logger.info(f"/help message sent successfully to chat_id: {chat_id}")
-    except Exception as telegram_error:
-        logger.error(f"Failed to send /help message to Telegram: {telegram_error}")
         logger.debug(traceback.format_exc())
 
 def process_update(update):
@@ -870,11 +907,17 @@ def home():
 
 @app.route('/status', methods=['GET'])
 def status():
+    """
+    Returns the status of the application, including latest balance, payments, total donations, donations, Lightning Address, and LNURL.
+    """
+    donation_details = fetch_donation_details()
     return jsonify({
         "latest_balance": latest_balance,
         "latest_payments": latest_payments,
-        "total_donations": total_donations,
-        "donations": donations
+        "total_donations": donation_details["total_donations"],
+        "donations": donation_details["donations"],
+        "lightning_address": donation_details["lightning_address"],
+        "lnurl": donation_details["lnurl"]
     })
 
 @app.route('/webhook', methods=['POST'])
@@ -893,7 +936,7 @@ def webhook():
 
 @app.route('/donations')
 def donations_page():
-    # Get the LNURLP info
+    # Get the LNURLp info
     lnurlp_id = LNURLP_ID
     lnurlp_info = get_lnurlp_info(lnurlp_id)
     if lnurlp_info is None:
@@ -901,7 +944,7 @@ def donations_page():
 
     # Extract the necessary information
     wallet_name = lnurlp_info.get('description', 'Unknown Wallet')
-    lightning_address = lnurlp_info.get('lnurlp', 'Unknown Lightning Address')
+    lightning_address = lnurlp_info.get('lightning_address', 'Unknown Lightning Address')  # Adjust key as per your data structure
     lnurl = lnurlp_info.get('lnurl', '')
 
     # Generate QR code from LNURL
@@ -919,7 +962,7 @@ def donations_page():
     # Calculate total donations for this LNURLp
     total_donations_current = sum(donation['amount'] for donation in donations)
 
-    # Pass the donations list to the template for displaying individual transactions
+    # Pass the donations list and additional details to the template for displaying individual transactions
     return render_template(
         'donations.html',
         wallet_name=wallet_name,
@@ -935,14 +978,17 @@ def donations_page():
 @app.route('/api/donations', methods=['GET'])
 def get_donations_data():
     """
-    Serve the donations data as JSON for the front-end.
+    Serve the donations data as JSON for the front-end, including Lightning Address and LNURL.
     """
     try:
+        donation_details = fetch_donation_details()
         data = {
-            "total_donations": total_donations,
-            "donations": donations
+            "total_donations": donation_details["total_donations"],
+            "donations": donation_details["donations"],
+            "lightning_address": donation_details["lightning_address"],
+            "lnurl": donation_details["lnurl"]
         }
-        logger.debug(f"Serving donations data: {data}")
+        logger.debug(f"Serving donations data with details: {data}")
         return jsonify(data), 200
     except Exception as e:
         logger.error(f"Error fetching donations data: {e}")
