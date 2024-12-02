@@ -84,7 +84,7 @@ logger = logging.getLogger("lnbits_logger")
 logger.setLevel(logging.DEBUG)
 
 # File handler for detailed logs
-file_handler = RotatingFileHandler("app.log", maxBytes=5 * 1024 * 1024, backupCount=5)
+file_handler = RotatingFileHandler("app.log", maxBytes=5 * 1024 * 1024, backupCount=3)
 file_handler.setLevel(logging.DEBUG)
 
 # Console handler for general information
