@@ -6,10 +6,15 @@ from dotenv import load_dotenv
 import requests
 import traceback
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, render_template
+from flask_socketio import SocketIO, emit
 from datetime import datetime, timedelta
 import threading
 import time
+import qrcode
+import io
+import base64
+import json
 
 # --------------------- Configuration and Setup ---------------------
 
@@ -27,6 +32,9 @@ INSTANCE_NAME = os.getenv("INSTANCE_NAME", "LNbits Instance")
 
 # Overwatch Configuration
 OVERWATCH_URL = os.getenv("OVERWATCH_URL")
+
+# Donation Parameters
+LNURLP_ID = os.getenv("LNURLP_ID")
 
 # Notification Settings
 BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "1000"))  # Default: 1000 sats
@@ -51,7 +59,8 @@ required_vars = {
     "CHAT_ID": CHAT_ID,
     "LNBITS_READONLY_API_KEY": LNBITS_READONLY_API_KEY,
     "LNBITS_URL": LNBITS_URL,
-    "OVERWATCH_URL": OVERWATCH_URL
+    "OVERWATCH_URL": OVERWATCH_URL,
+    "LNURLP_ID": LNURLP_ID
 }
 
 missing_vars = [var for var, value in required_vars.items() if not value]
@@ -152,8 +161,9 @@ def save_current_balance(balance):
 # Initialize the set of processed payments
 processed_payments = load_processed_payments()
 
-# Initialize Flask app
+# Initialize Flask app and SocketIO
 app = Flask(__name__)
+socketio = SocketIO(app)
 
 # Global variables to store the latest data
 latest_balance = {
@@ -163,6 +173,10 @@ latest_balance = {
 }
 
 latest_payments = []
+
+# New Data Structures for Donations
+donations = []
+total_donations = 0
 
 # --------------------- Functions ---------------------
 
@@ -186,96 +200,111 @@ def fetch_api(endpoint):
         logger.debug(traceback.format_exc())
         return None
 
+def fetch_pay_links():
+    """
+    Fetch pay links from the LNbits LNURLp extension API.
+    """
+    url = f"{LNBITS_URL}/lnurlp/api/v1/links"
+    headers = {"X-Api-Key": LNBITS_READONLY_API_KEY}
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            logger.debug(f"Fetched pay links: {data}")
+            return data
+        else:
+            logger.error(f"Failed to fetch pay links. Status Code: {response.status_code}")
+            return None
+    except Exception as e:
+        logger.error(f"Error fetching pay links: {e}")
+        logger.debug(traceback.format_exc())
+        return None
+
+def get_lnurlp_info(lnurlp_id):
+    """
+    Get LNURLp information for a given lnurlp_id.
+    """
+    pay_links = fetch_pay_links()
+    if pay_links is None:
+        logger.error("Could not retrieve pay links.")
+        return None
+
+    for pay_link in pay_links:
+        if pay_link.get("id") == lnurlp_id:
+            logger.debug(f"Found matching pay link: {pay_link}")
+            return pay_link
+
+    logger.error(f"No pay link found with ID {lnurlp_id}")
+    return None
+
 def send_latest_payments():
     """
-    Fetch the latest payments and notify Telegram with incoming, outgoing, and pending transactions.
+    Fetch the latest payments and send a notification via Telegram.
     """
-    logger.info("Fetching latest payments for notification...")
+    logger.info("Fetching latest payments...")
     payments = fetch_api("payments")
     if payments is None:
         return
 
     if not isinstance(payments, list):
-        logger.error("Unexpected payments data format.")
+        logger.error("Unexpected data format for payments.")
         return
 
     # Sort payments by creation time descending
     sorted_payments = sorted(payments, key=lambda x: x.get("created_at", ""), reverse=True)
-    latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]  # Get the latest transactions
+    latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]  # Get the latest n payments
 
     if not latest:
-        logger.info("No payments found to notify.")
+        logger.info("No payments found.")
         return
 
-    # Initialize lists for incoming, outgoing, and pending payments
+    # Initialize lists for different payment types
     incoming_payments = []
     outgoing_payments = []
     pending_payments = []
-
     new_processed_hashes = []
 
     for payment in latest:
         payment_hash = payment.get("payment_hash")
-        if not payment_hash:
-            # Try to extract 'payment_hash' from 'extra.query' if not present
-            extra = payment.get("extra", {})
-            if isinstance(extra, dict):
-                payment_hash = extra.get("query", None)
+        if payment_hash in processed_payments:
+            continue  # Skip already processed payments
 
-        if not payment_hash:
-            logger.warning("Payment without payment_hash found. Skipping.")
-            continue
-
-        # Extract necessary fields
         amount_msat = payment.get("amount", 0)
-        memo = payment.get("memo", "No memo provided")
-        status = payment.get("status", "completed")  # Default to 'completed' if not present. Not solid.
+        memo = payment.get("memo", "No memo")
+        status = payment.get("status", "completed")
 
-        # Convert amount to integer
         try:
-            amount_msat = int(amount_msat)
+            amount_sats = int(abs(amount_msat) / 1000)
         except ValueError:
-            logger.error(f"Invalid amount value in payment: {amount_msat}")
-            amount_msat = 0
+            amount_sats = 0
 
-        amount_sats = abs(amount_msat) / 1000
-
-        # Categorize payment
         if status.lower() == "pending":
             if amount_msat > 0:
                 pending_payments.append({
-                    "amount": int(amount_sats),
+                    "amount": amount_sats,
                     "memo": memo
                 })
         else:
-            if payment_hash in processed_payments:
-                logger.debug(f"Payment hash {payment_hash} already processed. Skipping.")
-                continue  # Skip already processed payments
-
             if amount_msat > 0:
                 incoming_payments.append({
-                    "amount": int(amount_sats),
+                    "amount": amount_sats,
                     "memo": memo
                 })
             elif amount_msat < 0:
                 outgoing_payments.append({
-                    "amount": int(amount_sats),
+                    "amount": amount_sats,
                     "memo": memo
                 })
-            else:
-                logger.warning("Payment with zero amount found. Skipping.")
-                continue
 
-            # Mark this payment as processed
-            processed_payments.add(payment_hash)
-            add_processed_payment(payment_hash)
-            new_processed_hashes.append(payment_hash)
+        # Mark payment as processed
+        processed_payments.add(payment_hash)
+        new_processed_hashes.append(payment_hash)
+        add_processed_payment(payment_hash)
 
-    if not (incoming_payments or outgoing_payments or pending_payments):
+    if not incoming_payments and not outgoing_payments and not pending_payments:
         logger.info("No new payments to notify.")
         return
 
-    # Prepare the Telegram message with enhanced markdown formatting
     message_lines = [
         f"⚡ *{INSTANCE_NAME}* - *Latest Transactions* ⚡\n"
     ]
@@ -286,15 +315,15 @@ def send_latest_payments():
             message_lines.append(
                 f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
             )
-        message_lines.append("")  
-    
+        message_lines.append("")
+
     if outgoing_payments:
         message_lines.append("🔴 *Outgoing Payments:*")
         for idx, payment in enumerate(outgoing_payments, 1):
             message_lines.append(
                 f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
             )
-        message_lines.append("")  
+        message_lines.append("")
 
     if pending_payments:
         message_lines.append("⏳ *Payments in Progress:*")
@@ -304,8 +333,8 @@ def send_latest_payments():
                 f"   📝 *Memo:* {payment['memo']}\n"
                 f"   📅 *Status:* In progress\n"
             )
-        message_lines.append("")  
-        
+        message_lines.append("")
+
     # Append the timestamp
     timestamp_text = f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     message_lines.append(timestamp_text)
@@ -359,7 +388,7 @@ def check_balance_change():
     direction = "increased" if change_amount > 0 else "decreased"
     abs_change = abs(change_amount)
 
-    # Prepare the Telegram message wit markdown formatting
+    # Prepare the Telegram message with markdown formatting
     message = (
         f"⚡ *{INSTANCE_NAME}* - *Balance Update* ⚡\n\n"
         f"🔹 *Previous Balance:* `{int(last_balance):,} sats`\n"
@@ -409,7 +438,7 @@ def send_wallet_balance():
             amount_msat = payment.get("amount", 0)
             status = payment.get("status", "completed")
             if status.lower() == "pending":
-                continue  # Logic to  exclude pending for daily balance
+                continue  # Exclude pending for daily balance
             if amount_msat > 0:
                 incoming_count += 1
                 incoming_total += amount_msat / 1000
@@ -417,7 +446,7 @@ def send_wallet_balance():
                 outgoing_count += 1
                 outgoing_total += abs(amount_msat) / 1000
 
-    # Prepare the Telegram message wiht markdown formatting
+    # Prepare the Telegram message with markdown formatting
     message = (
         f"📊 *{INSTANCE_NAME}* - *Daily Wallet Balance* 📊\n\n"
         f"🔹 *Current Balance:* `{int(current_balance_sats)} sats`\n"
@@ -448,6 +477,9 @@ def send_wallet_balance():
         logger.debug(traceback.format_exc())
 
 def handle_transactions_command(chat_id):
+    """
+    Handle the /transactions command sent by the user.
+    """
     logger.info(f"Handling /transactions command for chat_id: {chat_id}")
     payments = fetch_api("payments")
     if payments is None:
@@ -548,6 +580,9 @@ def handle_transactions_command(chat_id):
         logger.debug(traceback.format_exc())
 
 def handle_info_command(chat_id):
+    """
+    Handle the /info command sent by the user.
+    """
     logger.info(f"Handling /info command for chat_id: {chat_id}")
     # Prepare Interval Information
     interval_info = (
@@ -578,6 +613,9 @@ def handle_info_command(chat_id):
         logger.debug(traceback.format_exc())
 
 def handle_balance_command(chat_id):
+    """
+    Handle the /balance command sent by the user.
+    """
     logger.info(f"Handling /balance command for chat_id: {chat_id}")
     wallet_info = fetch_api("wallet")
     if wallet_info is None:
@@ -606,10 +644,12 @@ def handle_balance_command(chat_id):
         logger.error(f"Failed to send /balance message to Telegram: {telegram_error}")
         logger.debug(traceback.format_exc())
 
-# --------------------- Command Handlers ---------------------
 def handle_help_command(chat_id):
+    """
+    Handle the /help command sent by the user.
+    """
     logger.info(f"Handling /help command for chat_id: {chat_id}")
-    
+
     help_message = (
         "🤖 *Naughtify Bot Command Guide* 🤖\n\n"
         "🛠 Commands:\n\n"
@@ -626,7 +666,7 @@ def handle_help_command(chat_id):
         "    • Use the LNbits interface to maximize the potential of your wallet.\n"
         "    • The Live-Donation Page is perfect for tracking donations in real-time and sharing a public view of donation activity.\n"
     )
-    
+
     try:
         bot.send_message(
             chat_id=chat_id,
@@ -639,8 +679,10 @@ def handle_help_command(chat_id):
         logger.error(f"Failed to send /help message to Telegram: {telegram_error}")
         logger.debug(traceback.format_exc())
 
-
 def process_update(update):
+    """
+    Process incoming updates from the Telegram webhook.
+    """
     try:
         if 'message' in update:
             message = update['message']
@@ -654,10 +696,10 @@ def process_update(update):
             elif text.startswith('/info'):
                 handle_info_command(chat_id)
             elif text.startswith('/help'):
-                handle_help_command(chat_id) 
+                handle_help_command(chat_id)
             else:
                 bot.send_message(
-                    chat_id=chat_id, 
+                    chat_id=chat_id,
                     text="Unknown command. Available commands: /balance, /transactions, /info, /help"
                 )
         elif 'callback_query' in update:
@@ -669,6 +711,9 @@ def process_update(update):
         logger.debug(traceback.format_exc())
 
 def process_callback_query(callback_query):
+    """
+    Process callback queries from inline keyboards in Telegram messages.
+    """
     try:
         query_id = callback_query['id']
         data = callback_query.get('data', '')
@@ -757,17 +802,111 @@ def webhook():
 
     return "OK", 200
 
-# --------------------- Application Entry Point ---------------------
-
-def run_flask():
+# Webhook Endpoint for LNbits LNURLp Notifications
+@app.route('/lnurlp_webhook', methods=['POST'])
+def lnurlp_webhook():
     """
-    Run the Flask app.
+    Handle incoming payment notifications from LNbits LNURLp.
     """
     try:
-        app.run(host=APP_HOST, port=APP_PORT)
+        data = request.get_json()
+        logger.debug(f"Received LNURLp webhook data: {data}")
+
+        # Extract necessary information
+        amount_msat = data.get("amount", 0)
+        memo = data.get("comment", "No memo")
+        payment_hash = data.get("payment_hash")
+        timestamp = datetime.utcnow().isoformat()
+
+        if not payment_hash:
+            logger.error("No payment_hash found in webhook data.")
+            return "Missing payment_hash", 400
+
+        # Check if payment has already been processed
+        if payment_hash in processed_payments:
+            logger.info(f"Payment {payment_hash} already processed.")
+            return "Payment already processed", 200
+
+        # Convert amount to sats
+        amount_sats = int(amount_msat) / 1000
+
+        # Update global donations data
+        global total_donations, donations
+        total_donations += amount_sats
+        donation = {
+            "date": timestamp,
+            "memo": memo,
+            "amount": amount_sats
+        }
+        donations.append(donation)
+
+        # Emit the new donation to all connected clients
+        socketio.emit('new_donation', donation)
+
+        # Mark payment as processed
+        processed_payments.add(payment_hash)
+        add_processed_payment(payment_hash)
+
+        logger.info(f"Processed new donation: {amount_sats} sats - {memo}")
+        return "OK", 200
+
     except Exception as e:
-        logger.error(f"Flask server error: {e}")
+        logger.error(f"Error processing LNURLp webhook: {e}")
         logger.debug(traceback.format_exc())
+        return "Error processing webhook", 500
+
+@app.route('/donations')
+def donations_page():
+    # Get the LNURLP info
+    lnurlp_id = LNURLP_ID
+    lnurlp_info = get_lnurlp_info(lnurlp_id)
+    if lnurlp_info is None:
+        return "Error fetching LNURLP info", 500
+
+    # Extract the necessary information
+    wallet_name = lnurlp_info.get('description', 'Unknown Wallet')
+    lightning_address = lnurlp_info.get('lnurlp', 'Unknown Lightning Address')
+    lnurl = lnurlp_info.get('lnurl', '')
+
+    # Generate QR code from LNURL
+    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
+    qr.add_data(lnurl)
+    qr.make(fit=True)
+    img = qr.make_image(fill_color="black", back_color="white")
+
+    # Convert PIL image to base64 string to embed in HTML
+    img_io = io.BytesIO()
+    img.save(img_io, 'PNG')
+    img_io.seek(0)
+    img_base64 = base64.b64encode(img_io.getvalue()).decode()
+
+    # Render the donations page
+    return render_template(
+        'donations.html',
+        wallet_name=wallet_name,
+        lightning_address=lightning_address,
+        lnurl=lnurl,
+        qr_code_data=img_base64
+    )
+
+# API Endpoint to Serve Donation Data
+@app.route('/api/donations', methods=['GET'])
+def get_donations_data():
+    """
+    Serve the donations data as JSON for the front-end.
+    """
+    try:
+        data = {
+            "total_donations": total_donations,
+            "donations": donations
+        }
+        return jsonify(data), 200
+    except Exception as e:
+        logger.error(f"Error fetching donations data: {e}")
+        logger.debug(traceback.format_exc())
+        return jsonify({"error": "Error fetching donations data"}), 500
+
+# --------------------- Application Entry Point ---------------------
 
 if __name__ == "__main__":
     logger.info("🚀 Starting LNbits Balance Monitor.")
@@ -781,15 +920,6 @@ if __name__ == "__main__":
     scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
     scheduler_thread.start()
 
-    # Start Flask app in a separate thread
-    flask_thread = threading.Thread(target=run_flask, daemon=True)
-    flask_thread.start()
+    # Start Flask app with SocketIO
     logger.info(f"Flask server running on {APP_HOST}:{APP_PORT}")
-
-    # Keep the main thread alive
-    try:
-        while True:
-            time.sleep(1)
-    except (KeyboardInterrupt, SystemExit):
-        logger.info("🛑 Shutting down LNbits Balance Monitor.")
-        exit()
+    socketio.run(app, host=APP_HOST, port=APP_PORT)
