@@ -263,6 +263,14 @@ sudo systemctl status naughtify
 
 From now on, naughtify will start automatically with every restart.
 
+
+
+---
+---
+---
+
+## OPTIONAL Additions
+
 ### Step 9: Deploy Overwatch
 
 Follow the instruction [here](https://github.com/DoktorShift/Overwatch)
@@ -270,6 +278,10 @@ Follow the instruction [here](https://github.com/DoktorShift/Overwatch)
 Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT.md)
 
 Option 2: Easier Deployment with Netlify [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT_Netlify.md)
+
+### Step 10: Serve Donations Page
+
+
 
 ---
 
