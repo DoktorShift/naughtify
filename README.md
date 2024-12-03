@@ -12,15 +12,11 @@ The bot offers:
 - Notifications about significant wallet changes.
 - Direct access to LNbits, Overwatch, and a Live-Donation Page.
 
----
-
 ## 🛠️ **Available Commands**
 
 ### 📊 **/balance**
 - Displays your current wallet balance in sats.
 - Perfect for quickly checking your available funds.
-
----
 
 ### ⚡️ **/transactions**
 - Lists your recent wallet transactions in three categories:
@@ -28,28 +24,20 @@ The bot offers:
   - **Outgoing:** Payments you’ve sent.
   - **Pending:** Transactions still being processed.
 
----
-
 ### ℹ️ **/info**
 - Provides detailed information about the bot’s configuration, including:
   - Update intervals for balances and transactions.
   - Thresholds for notifications.
   - General details about your LNbits instance.
 
----
-
 ### ❓ **/help**
 - Displays this guide to help you use the bot effectively.
-
----
 
 ## 🔗 **Useful Links**
 
 - **Live-Donation Page**: Shows the latest donations, total donation balance, and memos. This page is tied to a static payment code and provides a transparent overview of donation activity.
 - **Overwatch Dashboard**: A read-only dashboard for monitoring wallet activity and status.
 - **LNbits Manage Dashboard**: Direct access to manage wallets, transactions, and settings.
-
----
 
 ## 💡 **Helpful Tips**
 
@@ -62,22 +50,19 @@ The bot offers:
 
 ## Screenshots
 
-![Balance Notification](https://github.com/user-attachments/assets/dc52e9e5-17a8-4016-ad1f-3e4c4f5b18c0)  
-![Transaction Summary](https://github.com/user-attachments/assets/abd4269a-c137-40e9-bfda-5b322befa8df)
+Balance Notification            |  Transaction Summary
+:-------------------------:|:-------------------------:
+![](https://github.com/user-attachments/assets/dc52e9e5-17a8-4016-ad1f-3e4c4f5b18c0)  |  ![](https://github.com/user-attachments/assets/abd4269a-c137-40e9-bfda-5b322befa8df)
 
 ---
 
 ## Prerequisites
 
-1. **Python 3.9+**
-2. **LNbits Instance:** Access your LNbits API key (read-only).
-3. **Telegram Bot:** Create a Telegram bot via [BotFather](https://t.me/BotFather) and obtain your bot token.
-4. **Chat ID:** Use the [@userinfobot](https://t.me/userinfobot) on Telegram to find your chat ID.
-5. **Caddy Web Server:** Required to serve the app and enable inline commands. See [Setting Up Caddy Web Server](#setting-up-caddy-web-server).
-6. (Optional) **Virtual Environment:** Recommended for dependency isolation.
-
-**Note:**  
-The following installation runs the Python app locally on `127.0.0.1`. If you want to access it externally or integrate with Caddy, make sure to configure your setup and open ports.
+1. **VPS:** Virtual private server or other computer that is publicly accessible via a web domain.
+2. **Second Web Domain or Subdomain:** Required to serve the app and enable inline commands.
+3. **LNbits Wallet:** Access your LNbits API key (read-only).
+4. **Telegram Bot:** Create a Telegram bot via [BotFather](https://t.me/BotFather) and obtain your bot token.
+5. **Chat ID:** Use the [@userinfobot](https://t.me/userinfobot) on Telegram to find your User ID = chat ID.
 
 ---
 
@@ -90,25 +75,25 @@ git clone https://github.com/DoktorShift/naughtify.git
 cd naughtify
 ```
 
-### Step 2: Create a Virtual Environment
+### Step 2: Installing Dependencies in a Virtual Environment
+
+__Prerequisites:__ Check which Python 3 version you have `python3 -version` and whether you have installed “pip” `which pip`. If you do not have Python 3 or a lower version 3.9, then do an update `sudo apt-get update` and install Python e.g. with `sudo apt install python3.10 python3.10-venv`. If no path is displayed in the “pip” query, you can install “pip” with `sudo apt install python3-pip`.
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-```
-
-### Step 3: Install Dependencies
-
-```bash
 pip install -r requirements.txt
+deactivate
 ```
 
-### Step 4: Configure the Environment
+### Step 3: Configure the Environment
+
+Settings are applied and parameters are transferred here.
 
 1. Copy the `.env` and open it.
 
 ```bash
-https://raw.githubusercontent.com/DoktorShift/naughtify/refs/heads/main/example.env
+wget https://raw.githubusercontent.com/DoktorShift/naughtify/refs/heads/main/example.env
 mv example.env .env
 sudo nano .env
 ```
@@ -124,35 +109,50 @@ These are heavily needed
 
 ### Step 6: Setting Up Caddy Web Server
 
-To expose the Flask app and enable inline commands, you'll need to set up Caddy as a reverse proxy.
+To expose the Flask app and enable inline commands, the Telegram bot must be able to reach the server. To do this, we use a subdomain, such as naughtify.yourdomain.com. Caddy then only needs to be set up as a reverse proxy on the server.
 
 #### Step a: Install Caddy
 
-Follow the [official Caddy installation guide](https://caddyserver.com/docs/install) to install Caddy on your server.
+__Important:__ Make sure that you point the DNS addresses (A and AAAA, if applicable) of your subdomain/domain to the IP address of your Virtual Private Server so that the requests are forwarded to the VPS via the domain. If you do not yet have a domain, you can obtain a free subdomain from duckdns.org.  
+
+```bash
+sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+sudo apt update
+sudo apt install caddy
+```
+
+-> Test the web server in your internet browser with: http://yourIPaddress. Note: Does not work with every browser.
 
 #### Step b: Configure the Caddyfile
 
-Create or edit your Caddyfile `nano /etc/caddy/Caddyfile` with the following configuration:
+Create and edit your Caddyfile `sudo nano /etc/caddy/Caddyfile` with the following configuration:
 
 ```plaintext
-# Example configuration for Naughtify
-naughtify.example.com {
-        reverse_proxy /webhook* 127.0.0.1:5009
+# Configuration for naughtify.yourdomain.com
+naughtify.yourdomain.com {
+    # Reverse proxy for webhook endpoints
+    reverse_proxy /webhook* 127.0.0.1:5009
 
-        encode gzip
+    # Reverse proxy for all other routes
+    reverse_proxy * 127.0.0.1:5009
 
-        # Security headers
-        header {
-                Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
-                X-Content-Type-Options "nosniff"
-                X-Frame-Options "DENY"
-                Referrer-Policy "no-referrer-when-downgrade"
-                Content-Security-Policy "default-src 'self'"
-        }
+    # Enable GZIP compression
+    encode gzip
+
+    # Security headers
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "no-referrer-when-downgrade"
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+    }
 }
 ```
 
-- Replace **`naughtify.example.com`** with your actual domain name.  
+- Replace **`naughtify.yourdomain.com`** with your actual domain name. 
 - Make sure your Flask app is running locally on `127.0.0.1:5009`.
 
 #### Step c: Reload Caddy
@@ -162,7 +162,16 @@ Restart or reload Caddy to apply the changes:
 sudo systemctl reload caddy
 ```
 
-Note: Dont forget to set the A-Record on that Domain. You have to do that on your domain providers site.
+If you now call up the web domain in the browser, you should see a white page. This is fine. If not, you can find a few commands for debugging here. 
+
+```bash
+sudo systemctl status caddy
+sudo journalctl -u caddy -f --since "2 hour ago"
+```
+
+You can check whether the forwarding works, for example, with this: https://dnschecker.org/ <br>
+The SSL certificate e.g. with this: https://www.sslshopper.com/ssl-checker.html
+
 
 ---
 
