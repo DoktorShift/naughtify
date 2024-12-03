@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Live Donations Dashboard</title>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- External CSS File -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="dashboard">
+        <!-- Header -->
+        <div class="header">
+            <h1>Live Donations Dashboard</h1>
+            <p>Share donations in real-time.</p>
+        </div>
+
+        <!-- Info Section -->
+        <div class="info-section">
+            <!-- QR Code Card -->
+            <div class="card">
+                <span class="material-icons">qr_code</span>
+                <h2>QR Code</h2>
+                <p>Scan to donate via Lightning Network.</p>
+                <!-- QR Code with Click Handler to Copy LNURL -->
+                <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}" onclick="copyLnurl(this)" title="Click to copy the LNURL">
+            </div>
+
+            <!-- Lightning Address Card -->
+            <div class="card">
+                <span class="material-icons">bolt</span>
+                <h2>Lightning Address</h2>
+                <p>Donate to our Lightning Address:</p>
+                <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address">
+                    <p>{{ lightning_address }}</p>
+                    <p>Click to copy</p>
+                </div>
+            </div>
+
+            <!-- Donations Box -->
+            <div class="donations-box">
+                <h2>Total Donations</h2>
+                <div class="donation-amount" id="totalDonations">0 Sats</div>
+                <div class="donation-history" id="donationHistory">Latest donation: None yet.</div>
+            </div>
+        </div>
+
+        <!-- Transactions Table -->
+        <div class="transactions">
+            <h2>Incoming Transactions</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">Date</th>
+                        <th style="width: 60%;">Memo</th>
+                        <th style="width: 20%;">Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="transactions">
+                    <tr>
+                        <td colspan="3" class="no-data">No donations yet.</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="pagination" id="pagination"></div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <p>Connect with us</p>
+        <div class="social-icons">
+            <a href="#"><i class="material-icons">home</i></a>
+            <a href="#"><i class="material-icons">email</i></a>
+            <a href="#"><i class="material-icons">telegram</i></a>
+            <a href="#"><i class="material-icons">github</i></a>
+        </div>
+    </div>
+
+    <!-- External JS File -->
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
