@@ -111,9 +111,9 @@ These are heavily needed
 
 To expose the Flask app and enable inline commands, the Telegram bot must be able to reach the server. To do this, we use a subdomain, such as naughtify.yourdomain.com. Caddy then only needs to be set up as a reverse proxy on the server.
 
-#### Step a: Install Caddy
-
 __Important:__ Make sure that you point the DNS addresses (A and AAAA, if applicable) of your subdomain/domain to the IP address of your Virtual Private Server so that the requests are forwarded to the VPS via the domain. If you do not yet have a domain, you can obtain a free subdomain from duckdns.org.  
+
+#### Step a: Install Caddy
 
 ```bash
 sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
