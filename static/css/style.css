@@ -16,6 +16,10 @@
     --copy-field-hover-background: #d0e4f1;
     --footer-background: #1f4b6d;
     --footer-text-color: #fff;
+    /* Toast Colors */
+    --toast-success-bg: #4caf50; /* Green */
+    --toast-success-text: #fff;
+    --toast-transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
 /* General Styles */
@@ -273,4 +277,42 @@ table tr:hover td {
     background-color: var(--donation-amount-color);
     color: var(--footer-text-color);
     transform: scale(1.1);
+}
+
+/* Toast Notification Styles */
+#toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    min-width: 250px;
+    max-width: 350px;
+    margin-top: 10px;
+    padding: 15px 20px;
+    border-radius: 5px;
+    color: var(--toast-success-text);
+    background-color: var(--toast-success-bg);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    transform: translateX(100%);
+    animation: fadeIn 0.5s forwards, fadeOut 0.5s forwards 2.5s;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeOut {
+    to {
+        opacity: 0;
+        transform: translateX(100%);
+    }
 }
