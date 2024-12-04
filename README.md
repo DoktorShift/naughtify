@@ -7,7 +7,7 @@ LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monit
 ## 🔍 **What Does This Bot Do?**
 
 The bot offers:
-- Provide pdates of your wallet balance.
+- Provide updates of your wallet balance.
 - A categorized view of recent transactions.
 - Notifications about significant wallet changes.
 - Direct access to LNbits, Overwatch, and a Live-Donation Page.
