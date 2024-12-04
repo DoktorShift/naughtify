@@ -4,27 +4,57 @@ const rowsPerPage = 10; // Number of rows to display per page
 let currentPage = 1;
 let lastUpdate = null; // Timestamp of the last update
 
+// Function to show a toast notification
+function showToast(message, isError = false) {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) {
+        console.error('Toast container not found!');
+        return;
+    }
+
+    const toast = document.createElement('div');
+    toast.classList.add('toast');
+    if (isError) {
+        toast.classList.add('error');
+    }
+    toast.textContent = message;
+
+    toastContainer.appendChild(toast);
+
+    // Remove the toast after 3 seconds
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
 // Function to copy Lightning Address to clipboard
 function copyText(element) {
     const text = element.querySelector('p').textContent.trim();
+    console.log('Attempting to copy Lightning Address:', text); // Debugging
     navigator.clipboard.writeText(text).then(() => {
-        alert('Lightning address copied to clipboard!');
+        console.log('Lightning Address copied successfully');
+        showToast('Lightning address copied to clipboard!');
     }).catch(err => {
-        alert('Failed to copy!');
+        console.error('Error copying Lightning Address:', err);
+        showToast('Failed to copy Lightning address.', true);
     });
 }
 
 // Function to copy LNURL to clipboard
 function copyLnurl(element) {
     const lnurl = element.getAttribute('data-lnurl');
+    console.log('Attempting to copy LNURL:', lnurl); // Debugging
     if (lnurl) {
         navigator.clipboard.writeText(lnurl).then(() => {
-            alert('LNURL copied to clipboard!');
+            console.log('LNURL copied successfully');
+            showToast('LNURL copied to clipboard!');
         }).catch(err => {
-            alert('Failed to copy LNURL!');
+            console.error('Error copying LNURL:', err);
+            showToast('Failed to copy LNURL.', true);
         });
     } else {
-        alert('LNURL not found!');
+        console.error('LNURL not found in the clicked element.');
+        showToast('LNURL not found!', true);
     }
 }
 
@@ -44,6 +74,7 @@ function formatDate(dateString) {
 
 // Function to update the UI with new data
 function updateDonations(data) {
+    console.log('Updating donations with data:', data); // Debugging
     totalDonations = data.total_donations;
     document.getElementById('totalDonations').textContent = `${totalDonations} Sats`;
 
@@ -140,6 +171,7 @@ async function fetchInitialDonations() {
 
     } catch (error) {
         console.error('Error fetching initial donations:', error);
+        showToast('Error fetching initial donations.', true);
     }
 }
 
@@ -168,6 +200,7 @@ async function checkForUpdates() {
 
     } catch (error) {
         console.error('Error checking for updates:', error);
+        showToast('Error checking for updates.', true);
     } finally {
         // Schedule the next update check
         setTimeout(checkForUpdates, 5000); // Every 5 seconds
