@@ -21,7 +21,6 @@
             <div class="info-container">
                 <!-- QR Code Card -->
                 <div class="card qr-card">
-                    <h2>QR Code</h2>
                     <p>Scan to donate via Lightning Network.</p>
                     <!-- QR Code with Click Handler to Copy LNURL -->
                     <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}" onclick="copyLnurl(this)" title="Click to copy the LNURL">
