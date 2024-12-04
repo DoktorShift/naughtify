@@ -19,7 +19,6 @@
         <div class="info-section">
             <!-- QR Code Card -->
             <div class="card">
-                <span class="material-icons">qr_code</span>
                 <h2>QR Code</h2>
                 <p>Scan to donate via Lightning Network.</p>
                 <!-- QR Code with Click Handler to Copy LNURL -->
@@ -28,11 +27,10 @@
 
             <!-- Lightning Address Card -->
             <div class="card">
-                <span class="material-icons">bolt</span>
                 <h2>Lightning Address</h2>
                 <p>Donate to our Lightning Address:</p>
                 <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address">
-                    <p>{{ lightning_address }}</p>
+                    <p>{{ username }}</p>
                     <p>Click to copy</p>
                 </div>
             </div>
