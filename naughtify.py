@@ -287,7 +287,7 @@ def fetch_donation_details():
     Fetches LNURLp information and integrates Lightning Address and LNURL into donation details.
 
     Returns:
-        dict: A dictionary containing total donations, donations list, lightning_address, and lnurl.
+        dict: A dictionary containing total donations, donations list, username (Lightning Address), and lnurl.
     """
     lnurlp_info = get_lnurlp_info(LNURLP_ID)
     if lnurlp_info is None:
@@ -295,21 +295,22 @@ def fetch_donation_details():
         return {
             "total_donations": total_donations,
             "donations": donations,
-            "lightning_address": "Unavailable",
+            "username": "Unavailable",
             "lnurl": "Unavailable"
         }
     
-    # Extract Lightning Address and LNURL from LNURLp info
-    lightning_address = lnurlp_info.get('lightning_address', 'Unavailable')  # Adjust key as per your data structure
-    lnurl = lnurlp_info.get('lnurl', 'Unavailable')  # Adjust key as per your data structure
+    # *** Angepasst: Lightning Address aus dem Feld "username" abrufen ***
+    username = lnurlp_info.get('username', 'Unavailable')  # Verwendung des "username"-Feldes für die Lightning-Adresse
     
-    logger.debug(f"Fetched Lightning Address: {lightning_address}")
+    lnurl = lnurlp_info.get('lnurl', 'Unavailable')  # Anpassung falls notwendig, ansonsten bleibt es unverändert
+    
+    logger.debug(f"Fetched Lightning Address (username): {username}")
     logger.debug(f"Fetched LNURL: {lnurl}")
     
     return {
         "total_donations": total_donations,
         "donations": donations,
-        "lightning_address": lightning_address,
+        "username": username,  # Weitergabe als 'username'
         "lnurl": lnurl
     }
 
@@ -325,7 +326,7 @@ def update_donations_with_details(data):
     """
     donation_details = fetch_donation_details()
     data.update({
-        "lightning_address": donation_details.get("lightning_address"),
+        "username": donation_details.get("username"),
         "lnurl": donation_details.get("lnurl")
     })
     return data
@@ -351,7 +352,7 @@ def updateDonations(data):
     if updated_data["donations"]:
         latestDonation = updated_data["donations"][-1]
         # Again, frontend handles DOM updates
-        logger.info(f'Latest donation: {latestDonation["amount"]} Sats - "{latestDonation["memo"]}"')
+        logger.info(f'Latest donation: {latestDonation["amount"]} sats - "{latestDonation["memo"]}"')
     else:
         logger.info('Latest donation: None yet.')
     
@@ -359,7 +360,7 @@ def updateDonations(data):
     # Frontend fetches via API
     
     # Update Lightning Address and LNURL
-    logger.debug(f"Lightning Address: {updated_data.get('lightning_address')}")
+    logger.debug(f"Lightning Address (username): {updated_data.get('username')}")
     logger.debug(f"LNURL: {updated_data.get('lnurl')}")
     
     # Save updated donations data
@@ -916,7 +917,7 @@ def status():
         "latest_payments": latest_payments,
         "total_donations": donation_details["total_donations"],
         "donations": donation_details["donations"],
-        "lightning_address": donation_details["lightning_address"],
+        "username": donation_details["username"],
         "lnurl": donation_details["lnurl"]
     })
 
@@ -944,7 +945,8 @@ def donations_page():
 
     # Extract the necessary information
     wallet_name = lnurlp_info.get('description', 'Unknown Wallet')
-    lightning_address = lnurlp_info.get('lightning_address', 'Unknown Lightning Address')  # Adjust key as per your data structure
+    username = lnurlp_info.get('username', 'Unknown Lightning Address')  # Verwendung des "username"-Feldes für die Lightning-Adresse
+
     lnurl = lnurlp_info.get('lnurl', '')
 
     # Generate QR code from LNURL
@@ -966,7 +968,7 @@ def donations_page():
     return render_template(
         'donations.html',
         wallet_name=wallet_name,
-        lightning_address=lightning_address,
+        username=username,  # Weitergabe der Lightning-Adresse als 'username'
         lnurl=lnurl,
         qr_code_data=img_base64,
         donations_url=DONATIONS_URL,  # Pass the donations URL to the template
@@ -985,7 +987,7 @@ def get_donations_data():
         data = {
             "total_donations": donation_details["total_donations"],
             "donations": donation_details["donations"],
-            "lightning_address": donation_details["lightning_address"],
+            "username": donation_details["username"],  # Lightning Address aus 'username'
             "lnurl": donation_details["lnurl"]
         }
         logger.debug(f"Serving donations data with details: {data}")
