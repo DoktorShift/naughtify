@@ -4,13 +4,31 @@ const rowsPerPage = 10; // Number of rows to display per page
 let currentPage = 1;
 let lastUpdate = null; // Timestamp of the last update
 
+// Function to show a toast notification
+function showToast(message) {
+    const toastContainer = document.getElementById('toast-container');
+    if (!toastContainer) return;
+
+    const toast = document.createElement('div');
+    toast.classList.add('toast');
+    toast.textContent = message;
+
+    toastContainer.appendChild(toast);
+
+    // Remove the toast after 3 seconds
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
 // Function to copy Lightning Address to clipboard
 function copyText(element) {
     const text = element.querySelector('p').textContent.trim();
     navigator.clipboard.writeText(text).then(() => {
-        alert('Lightning address copied to clipboard!');
+        showToast('Lightning address copied to clipboard!');
     }).catch(err => {
-        alert('Failed to copy!');
+        showToast('Failed to copy Lightning address.');
+        console.error('Error copying Lightning address:', err);
     });
 }
 
@@ -19,12 +37,13 @@ function copyLnurl(element) {
     const lnurl = element.getAttribute('data-lnurl');
     if (lnurl) {
         navigator.clipboard.writeText(lnurl).then(() => {
-            alert('LNURL copied to clipboard!');
+            showToast('LNURL copied to clipboard!');
         }).catch(err => {
-            alert('Failed to copy LNURL!');
+            showToast('Failed to copy LNURL.');
+            console.error('Error copying LNURL:', err);
         });
     } else {
-        alert('LNURL not found!');
+        showToast('LNURL not found!');
     }
 }
 
