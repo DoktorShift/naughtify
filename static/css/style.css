@@ -19,6 +19,8 @@
     /* Toast Colors */
     --toast-success-bg: #4caf50; /* Green */
     --toast-success-text: #fff;
+    --toast-error-bg: #f44336; /* Red */
+    --toast-error-text: #fff;
     --toast-transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
