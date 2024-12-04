@@ -11,13 +11,10 @@ function showToast(message, isError = false) {
 
     const toast = document.createElement('div');
     toast.classList.add('toast');
-    toast.textContent = message;
-
-    // If it's an error, change the background color
     if (isError) {
-        toast.style.backgroundColor = 'var(--toast-error-bg)';
-        toast.style.color = 'var(--toast-error-text)';
+        toast.classList.add('error');
     }
+    toast.textContent = message;
 
     toastContainer.appendChild(toast);
 
