@@ -5,13 +5,19 @@ let currentPage = 1;
 let lastUpdate = null; // Timestamp of the last update
 
 // Function to show a toast notification
-function showToast(message) {
+function showToast(message, isError = false) {
     const toastContainer = document.getElementById('toast-container');
     if (!toastContainer) return;
 
     const toast = document.createElement('div');
     toast.classList.add('toast');
     toast.textContent = message;
+
+    // If it's an error, change the background color
+    if (isError) {
+        toast.style.backgroundColor = 'var(--toast-error-bg)';
+        toast.style.color = 'var(--toast-error-text)';
+    }
 
     toastContainer.appendChild(toast);
 
@@ -27,7 +33,7 @@ function copyText(element) {
     navigator.clipboard.writeText(text).then(() => {
         showToast('Lightning address copied to clipboard!');
     }).catch(err => {
-        showToast('Failed to copy Lightning address.');
+        showToast('Failed to copy Lightning address.', true);
         console.error('Error copying Lightning address:', err);
     });
 }
@@ -39,11 +45,11 @@ function copyLnurl(element) {
         navigator.clipboard.writeText(lnurl).then(() => {
             showToast('LNURL copied to clipboard!');
         }).catch(err => {
-            showToast('Failed to copy LNURL.');
+            showToast('Failed to copy LNURL.', true);
             console.error('Error copying LNURL:', err);
         });
     } else {
-        showToast('LNURL not found!');
+        showToast('LNURL not found!', true);
     }
 }
 
@@ -159,6 +165,7 @@ async function fetchInitialDonations() {
 
     } catch (error) {
         console.error('Error fetching initial donations:', error);
+        showToast('Error fetching initial donations.', true);
     }
 }
 
@@ -187,6 +194,7 @@ async function checkForUpdates() {
 
     } catch (error) {
         console.error('Error checking for updates:', error);
+        showToast('Error checking for updates.', true);
     } finally {
         // Schedule the next update check
         setTimeout(checkForUpdates, 5000); // Every 5 seconds
