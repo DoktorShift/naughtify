@@ -7,7 +7,10 @@ let lastUpdate = null; // Timestamp of the last update
 // Function to show a toast notification
 function showToast(message, isError = false) {
     const toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) return;
+    if (!toastContainer) {
+        console.error('Toast container not found!');
+        return;
+    }
 
     const toast = document.createElement('div');
     toast.classList.add('toast');
@@ -27,25 +30,30 @@ function showToast(message, isError = false) {
 // Function to copy Lightning Address to clipboard
 function copyText(element) {
     const text = element.querySelector('p').textContent.trim();
+    console.log('Attempting to copy Lightning Address:', text); // Debugging
     navigator.clipboard.writeText(text).then(() => {
+        console.log('Lightning Address copied successfully');
         showToast('Lightning address copied to clipboard!');
     }).catch(err => {
+        console.error('Error copying Lightning Address:', err);
         showToast('Failed to copy Lightning address.', true);
-        console.error('Error copying Lightning address:', err);
     });
 }
 
 // Function to copy LNURL to clipboard
 function copyLnurl(element) {
     const lnurl = element.getAttribute('data-lnurl');
+    console.log('Attempting to copy LNURL:', lnurl); // Debugging
     if (lnurl) {
         navigator.clipboard.writeText(lnurl).then(() => {
+            console.log('LNURL copied successfully');
             showToast('LNURL copied to clipboard!');
         }).catch(err => {
-            showToast('Failed to copy LNURL.', true);
             console.error('Error copying LNURL:', err);
+            showToast('Failed to copy LNURL.', true);
         });
     } else {
+        console.error('LNURL not found in the clicked element.');
         showToast('LNURL not found!', true);
     }
 }
@@ -66,6 +74,7 @@ function formatDate(dateString) {
 
 // Function to update the UI with new data
 function updateDonations(data) {
+    console.log('Updating donations with data:', data); // Debugging
     totalDonations = data.total_donations;
     document.getElementById('totalDonations').textContent = `${totalDonations} Sats`;
 
