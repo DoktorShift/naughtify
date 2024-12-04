@@ -305,6 +305,11 @@ table tr:hover td {
     animation: fadeIn 0.5s forwards, fadeOut 0.5s forwards 2.5s;
 }
 
+.toast.error {
+    background-color: var(--toast-error-bg);
+    color: var(--toast-error-text);
+}
+
 @keyframes fadeIn {
     to {
         opacity: 1;
