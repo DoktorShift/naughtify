@@ -1,18 +1,20 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Live Donations Dashboard</title>
+    <title>LiveTicker Dashboard</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <!-- External CSS File -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body>
     <div class="dashboard">
         <!-- Header -->
         <div class="header">
-            <h1>Live Donations Dashboard</h1>
-            <h5>Share donations in real-time.</h5>
+            <h1>LiveTicker Dashboard</h1>
+            <h5>Share payments in real-time.</h5>
         </div>
 
         <!-- Info Section -->
@@ -23,7 +25,8 @@
                 <div class="card qr-card">
                     <h5>Scan to donate via Lightning Network.</h5>
                     <!-- QR Code with Click Handler to Copy LNURL -->
-                    <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}" onclick="copyLnurl(this)" title="Click to copy the LNURL">
+                    <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}"
+                        onclick="copyLnurl(this)" title="Click to copy the LNURL">
                 </div>
 
                 <!-- Lightning Address Card -->
@@ -36,9 +39,9 @@
 
             <!-- Donations Box -->
             <div class="donations-box">
-                <h2>Total Donations</h2>
+                <h2>LiveTicker Wallet</h2>
                 <div class="donation-amount" id="totalDonations">0 Sats</div>
-                <div class="donation-history" id="donationHistory">Latest donation: None yet.</div>
+                <div class="donation-history" id="donationHistory">Latest payment: None yet.</div>
             </div>
         </div>
 
@@ -55,7 +58,7 @@
                 </thead>
                 <tbody id="transactions">
                     <tr>
-                        <td colspan="3" class="no-data">No donations yet.</td>
+                        <td colspan="3" class="no-data">No payments yet.</td>
                     </tr>
                 </tbody>
             </table>
@@ -80,4 +83,5 @@
     <!-- External JS File -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
+
 </html>

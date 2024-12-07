@@ -1,6 +1,6 @@
 # 🤖 **Naughtify** 🤖
 
-LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monitoring your LNBits wallet. It connects to your LNbits instance and provides nearly real-time updates directly through Telegram. Additionally, the bot includes a dedicated view only transaction Overwatch as well as a Live-Donation Page specifically designed for static payment links.
+LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monitoring your LNBits wallet. It connects to your LNbits instance and provides nearly real-time updates directly through Telegram. Additionally, the bot includes a dedicated view only transaction Overwatch as well as a LiveTicker Page specifically designed for static payment links.
 
 ---
 
@@ -10,7 +10,7 @@ The bot offers:
 - Provide updates of your wallet balance.
 - A categorized view of recent transactions.
 - Notifications about significant wallet changes.
-- Direct access to LNbits, Overwatch, and a Live-Donation Page.
+- Direct access to LNbits, Overwatch, and a LiveTicker 📺 Page.
 
 ## 🛠️ **Available Commands**
 
@@ -35,7 +35,7 @@ The bot offers:
 
 ## 🔗 **Useful Links**
 
-- **Live-Donation Page**: Shows the latest donations, total donation balance, and memos. This page is tied to a static payment code and provides a transparent overview of donation activity.
+- **LiveTicker Page**: Shows the latest donations, total donation balance, and memos. This page is tied to a static payment code and provides a transparent overview of donation activity.
 - **Overwatch Dashboard**: A read-only dashboard for monitoring wallet activity and status.
 - **LNbits Manage Dashboard**: Direct access to manage wallets, transactions, and settings.
 
@@ -44,7 +44,7 @@ The bot offers:
 - All timestamps are in **UTC** for consistency.
 - Adjust notification thresholds to receive only relevant updates.
 - Use the LNbits interface to maximize the potential of your wallet.
-- The **Live-Donation Page** is perfect for tracking donations in real-time and sharing a public view of donation activity.
+- The **LiveTicker Page** is perfect for tracking donations in real-time and sharing a public view of donation activity.
 
 ---
 
@@ -140,14 +140,20 @@ sudo apt update
 sudo apt install caddy
 ```
 
--> Test the web server in your internet browser with: http://yourIPaddress. Note: Does not work with every browser.
+-> Test the web server in your internet browser with: http://yourIPaddress. You should see a Caddy web page.
 
 #### Step b: Configure the Caddyfile
 
-Create and edit your Caddyfile `sudo nano /etc/caddy/Caddyfile` with the following configuration:
+Create and open your Caddyfile
+
+```bash
+ sudo nano /etc/caddy/Caddyfile
+ ```
+
+Fill the file with the following content and update `yourdomain.com` in one place:
 
 ```plaintext
-# Configuration for naughtify.yourdomain.com
+# Configuration for Naughtify
 naughtify.yourdomain.com {
     # Reverse proxy for webhook endpoints
     reverse_proxy /webhook* 127.0.0.1:5009
@@ -169,9 +175,6 @@ naughtify.yourdomain.com {
 }
 ```
 
-- Replace **`naughtify.yourdomain.com`** with your actual domain name. 
-- Make sure your Flask app is running locally on `127.0.0.1:5009`.
-
 #### Step c: Reload Caddy
 
 Restart or reload Caddy to apply the changes:
@@ -179,7 +182,9 @@ Restart or reload Caddy to apply the changes:
 sudo systemctl reload caddy
 ```
 
-If you now call up the web domain in the browser, you should see a white page. This is fine. If not, you can find a few commands for debugging here. 
+If you now call up the web domain in the browser, you should see a `HTTP ERROR 502` error. This means that it reaches the Caddy server, but the forwarding to Naughtify fails. Which is no wonder, as Naughtify has not yet started. Later you will a white page with `🔍 LNbits Monitor is running.`.
+
+If you still have a problem, the following commands may help with debugging:
 
 ```bash
 sudo systemctl status caddy
@@ -261,7 +266,7 @@ Output:
 sudo nano /etc/systemd/system/naughtify.service
 ```
 
-2. Fill the file with the following and customize `youruser`:
+2. Fill in the file with the following information and customize `youruser` in __five__ places:
 
 ```plaintext
 [Unit]
@@ -287,17 +292,19 @@ sudo systemctl start naughtify
 sudo systemctl status naughtify
 ```
 
-From now on, naughtify will start automatically with every restart.
+From now on, naughtify will start automatically with every restart. 🎉
 
+However, if you have problems, you can call up the logs with the following command:
 
+```bash
+sudo journalctl -u naughtify -f --since "2 hour ago"
+```
 
----
----
 ---
 
 ## OPTIONAL Additions
 
-### Step 8: Deploy Overwatch
+### Option: Deploy Overwatch
 
 Follow the instruction [here](https://github.com/DoktorShift/Overwatch)
 
@@ -305,9 +312,65 @@ Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Ove
 
 Option 2: Easier Deployment with Netlify [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT_Netlify.md)
 
-### Step 9: Serve Donations Page
+### Option: LiveTicker
 
+Naughtify can also provide a simple public website that displays the data and transactions of a wallet. This function is called “LiveTicker”. Examples of this would be a donation page or a crowdfunding page. Anyone can view the page, send funds directly, leave a comment (if desired) and shortly afterwards see that their contribution with the comment has been received. If activated, the entire wallet balance is also displayed, which can be particularly necessary for crowdfunding projects and ensures absolute transparency.
 
+To use the LiveTicker, you need another subdomain via which the website can later be accessed. At the hosting provider, the A (and AAAA) entry for e.g. “liveticker.yourdomomain.com” must point to the server on which Naughtify is installed. The .env file must then be adapted accordingly and the entry added to Caddy.
+
+__Call the .env to edit the data:__
+
+```bash
+sudo nano ~/naughtify/.env
+```
+
+Adjust the following values in the `LiveTicker Configuration` area:
+
+```plaintext
+DONATIONS_URL=YourLiveTickerPageURL <- liveticker.yourdomomain.com
+LNURLP_ID=YourLNURPID <- The ID (6 letters) of the Pay Link instance
+```
+
+__Extend the caddy file:__
+
+```bash
+sudo nano /etc/caddy/Caddyfile
+```
+
+Add the following content to the end of the file and customize `yourdomain.com` in one place: 
+
+```plaintext
+# Configuration for LiveTicker
+liveticker.yourdomain.com {
+    # Matcher for the root request
+    @root path /
+
+    # Rewriting the root request to /liveticker
+    rewrite @root /liveticker
+
+    # Reverse proxy for all requests
+    reverse_proxy 127.0.0.1:5009
+
+    # Activate GZIP compression
+    encode gzip
+
+    # Set security header
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Referrer-Policy "no-referrer-when-downgrade"
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src >    }
+}
+```
+
+Reload Caddy to apply the changes:
+
+```bash
+sudo systemctl reload caddy
+```
+
+If you now call up your domain `liveticker.yourdomain.com`, you should see your LiveTicker website. 📺
 
 ---
 
