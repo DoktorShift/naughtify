@@ -312,7 +312,7 @@ Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Ove
 
 Option 2: Easier Deployment with Netlify [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT_Netlify.md)
 
-### Option: LiveTicker
+### Option: LiveTicker 📺
 
 Naughtify can also provide a simple public website that displays the data and transactions of a wallet. This function is called “LiveTicker”. Examples of this would be a donation page or a crowdfunding page. Anyone can view the page, send funds directly, leave a comment (if desired) and shortly afterwards see that their contribution with the comment has been received. If activated, the entire wallet balance is also displayed, which can be particularly necessary for crowdfunding projects and ensures absolute transparency.
 
@@ -346,7 +346,7 @@ liveticker.yourdomain.com {
     @root path /
 
     # Rewriting the root request to /liveticker
-    rewrite @root /liveticker
+    rewrite @root /donations
 
     # Reverse proxy for all requests
     reverse_proxy 127.0.0.1:5009
