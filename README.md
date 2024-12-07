@@ -77,13 +77,30 @@ cd naughtify
 
 ### Step 2: Installing Dependencies in a Virtual Environment
 
-__Prerequisites:__ Check which Python 3 version you have `python3 -version` and whether you have installed “pip” `which pip`. If you do not have Python 3 or a lower version 3.9, then do an update `sudo apt-get update` and install Python e.g. with `sudo apt install python3.10 python3.10-venv`. If no path is displayed in the “pip” query, you can install “pip” with `sudo apt install python3-pip`.
+The dependencies are installed in a virtual environment so that they are isolated from the system. Even “pip” is not installed on every system from the outset, so here are a few preparations.
+
+```bash
+sudo apt-get update
+sudo apt install python3-venv
+sudo apt install python3-pip
+```
+
+Now we set up a virtual environment, activate it and install the dependencies in it.
 
 ```bash
 python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
+```
+
+__Note:__ You can deactivate the editing mode of the virtual environment. It remains valid for the application. To reactivate the editing mode for the virtual environment, e.g. to update a dependency, you must first select the folder to which the virtual environment applies and then activate the virtual environment. 
+
+```bash
+# deactivate venv editing
 deactivate
+# activate venv editing
+cd ~/naughtify
+source venv/bin/activate
 ```
 
 ### Step 3: Configure the Environment
@@ -107,7 +124,7 @@ sudo nano .env
 
 These are heavily needed
 
-### Step 6: Setting Up Caddy Web Server
+### Step 4: Setting Up Caddy Web Server
 
 To expose the Flask app and enable inline commands, the Telegram bot must be able to reach the server. To do this, we use a subdomain, such as naughtify.yourdomain.com. Caddy then only needs to be set up as a reverse proxy on the server.
 
@@ -175,7 +192,7 @@ The SSL certificate e.g. with this: https://www.sslshopper.com/ssl-checker.html
 
 ---
 
-### Step 6: Telegram Bot Webhook Setup
+### Step 5: Telegram Bot Webhook Setup
 
 To enable inline commands (like `/balance`, `/transactions`, `/info`), connect your Telegram bot to the app:
 
@@ -215,7 +232,7 @@ To enable inline commands (like `/balance`, `/transactions`, `/info`), connect y
 
 ---
 
-### Step 7: Start the Application
+### Step 6: Start the Application
 
 ```bash
 python naughtify.py
@@ -236,7 +253,7 @@ Output:
 
 ---
 
-### Step 8: Naughtify Autostart Service
+### Step 7: Naughtify Autostart Service
 
 1. Create new system service:
 
@@ -280,7 +297,7 @@ From now on, naughtify will start automatically with every restart.
 
 ## OPTIONAL Additions
 
-### Step 9: Deploy Overwatch
+### Step 8: Deploy Overwatch
 
 Follow the instruction [here](https://github.com/DoktorShift/Overwatch)
 
@@ -288,7 +305,7 @@ Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Ove
 
 Option 2: Easier Deployment with Netlify [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT_Netlify.md)
 
-### Step 10: Serve Donations Page
+### Step 9: Serve Donations Page
 
 
 
