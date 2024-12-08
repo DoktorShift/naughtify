@@ -54,6 +54,8 @@ Balance Notification            |  Transaction Summary
 3. **LNbits Wallet:** Access your LNbits API key (read-only).
 4. **Telegram Bot:** Create a Telegram bot via [BotFather](https://t.me/BotFather) and obtain your bot token.
 5. **Chat ID:** Use the [@userinfobot](https://t.me/userinfobot) on Telegram to find your User ID = chat ID.
+
+Hilfe für die letzten drei Voraussetzungen findet iher hier: 
 ---
 ## Installation
 ### Step 1: Clone the Repository
@@ -165,6 +167,7 @@ You can check whether the forwarding works, for example, with this: https://dnsc
 The SSL certificate e.g. with this: https://www.sslshopper.com/ssl-checker.html
 
 ---
+
 ### Step 5: Telegram Bot Webhook Setup
 To enable inline commands (like `/balance`, `/transactions`, `/info`), connect your Telegram bot to the app:
 1. **Prepare Your Webhook URL:**  
