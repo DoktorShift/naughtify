@@ -31,7 +31,8 @@
                 <div class="card lightning-card">
                     <!-- Div to Display and Copy Lightning Address -->
                     <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address">
-                        <p>⚡️{{ username }}</p>
+                        <!-- Constructed ful Lightning Address -->
+                        <p>⚡️{{ username }}@{{ lnbits_domain }}</p>
                     </div>
                 </div>
             </div>
