@@ -8,8 +8,6 @@
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <!-- External CSS File -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <!-- Responsive Meta Tag -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 <body>
     <div class="dashboard">
@@ -17,6 +15,12 @@
         <div class="header">
             <h1>Live Ticker</h1>
             <h5>Share payments in real-time.</h5>
+            <!-- Info Icon with Tooltip -->
+            <div class="info-tooltip">
+                <i class="material-icons info-icon">psychology_alt</i>
+                <span class="tooltip-text">More about</span>
+                <a href="{{ information_url }}" target="_blank" class="info-link" aria-label="More about"></a>
+            </div>
         </div>
 
         <!-- Info Section -->
@@ -25,9 +29,9 @@
             <div class="info-container">
                 <!-- QR Code Card -->
                 <div class="card qr-card">
-                    <h5>Scan to send via the Lightning Network.</h5>
-                    <!-- QR Code with Click-Handler to Copy the LNURL -->
-                    <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}" onclick="copyLnurl(this)" title="Click to copy LNURL">
+                    <h5>Scan to send via Lightning Network.</h5>
+                    <!-- QR Code with Click Handler to Copy LNURL -->
+                    <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}" onclick="copyLnurl(this)" title="Click to copy the LNURL">
                 </div>
 
                 <!-- Lightning Address Card -->
@@ -35,9 +39,6 @@
                     <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address" data-address="{{ lightning_address }}" id="lightning-address-container">
                         <span class="emoji">⚡️</span>
                         <span class="address" id="lightning-address">{{ lightning_address }}</span>
-                        {% if information_url %}
-                        <span class="info-icon" onclick="openInfoModal(event)" title="More Information">ℹ️</span>
-                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -46,7 +47,7 @@
             <div class="donations-box">
                 <h2>Total Amount</h2>
                 <div class="donation-amount" id="totalDonations">0 Sats</div>
-                <div class="donation-history" id="donationHistory">Last Donor: None yet.</div>
+                <div class="donation-history" id="donationHistory">Latest Patron: None yet.</div>
             </div>
         </div>
 
@@ -71,30 +72,12 @@
         </div>
     </div>
 
-    <!-- Information Modal -->
-    {% if information_url %}
-    <div id="infoModal" class="modal">
-        <div class="modal-content">
-            <span class="close-button" onclick="closeInfoModal()">&times;</span>
-            <h2>About This Fundraising</h2>
-            <p>
-                Learn more about our fundraising efforts and how your donations make a difference.
-            </p>
-            <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code for Information" class="modal-qr">
-            <p>
-                <a href="{{ information_url }}" target="_blank">Visit our Information Page</a>
-            </p>
-        </div>
-    </div>
-    {% endif %}
-
     <!-- Footer -->
     <div class="footer">
         <p>Connect with us</p>
         <div class="social-icons">
             <a href="#"><i class="material-icons">home</i></a>
-            <a href="#"><i class="material-icons">email</i></a>
-            <a href="https://github.com/DoktorShift"><i class="material-icons">github</i></a>
+            <a href="https://github.com/DoktorShift"><i class="material-icons">hub</i></a>
         </div>
     </div>
 
