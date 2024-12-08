@@ -68,6 +68,9 @@ DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
 # Donations Configuration
 DONATIONS_URL = os.getenv("DONATIONS_URL")  # Optional; Removed default to make it truly optional
 
+# Information URL Configuration
+INFORMATION_URL = os.getenv("INFORMATION_URL")  # New Environment Variable
+
 # Validate essential environment variables (excluding OVERWATCH_URL and DONATIONS_URL)
 required_vars = {
     "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
@@ -306,8 +309,8 @@ def fetch_donation_details():
     # Extract username and construct lightning_address
     username = lnurlp_info.get('username')  # Adjust the key based on your LNURLp response
     if not username:
-            username = "Unknown"
-            logger.warning("Username not found in LNURLp info.")
+        username = "Unknown"
+        logger.warning("Username not found in LNURLp info.")
 
     # Construct the full Lightning Address
     lightning_address = f"{username}@{LNBITS_DOMAIN}"
@@ -779,7 +782,6 @@ def handle_info_command(chat_id):
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
-    keyboard.append([InlineKeyboardButton("🔧 Manage LNBits Backend", url=LNBITS_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -821,49 +823,6 @@ def handle_balance_command(chat_id):
         bot.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
     except Exception as telegram_error:
         logger.error(f"Failed to send /balance message to Telegram: {telegram_error}")
-        logger.debug(traceback.format_exc())
-
-def handle_help_command(chat_id):
-    """
-    Handle the /help command sent by the user.
-    """
-    logger.info(f"Handling /help command for chat_id: {chat_id}")
-    help_message = (
-        f"ℹ️ *{INSTANCE_NAME}* - *Available Commands*\n\n"
-        f"/balance - Show current wallet balance\n"
-        f"/transactions - Show latest transactions\n"
-        f"/info - Show system information\n"
-        f"/help - Show this help message\n\n"
-    )
-    
-    # Prepare Useful Links section
-    useful_links = []
-    if OVERWATCH_URL or DONATIONS_URL:
-        useful_links.append("📎 *Useful Links:*")
-        if OVERWATCH_URL:
-            useful_links.append(f"🔗 [View Details]({OVERWATCH_URL})")
-        if DONATIONS_URL:
-            useful_links.append(f"💰 [View Donations]({DONATIONS_URL})")
-        useful_links.append("")  # Add an empty line
-    
-    # Append Useful Links if any
-    if useful_links:
-        help_message += "\n".join(useful_links)
-    
-    # Define the inline keyboard with available buttons
-    keyboard = []
-    if OVERWATCH_URL:
-        keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
-    if DONATIONS_URL:
-        keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
-    # Always include "View Transactions" button
-    keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    try:
-        bot.send_message(chat_id=chat_id, text=help_message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
-    except Exception as telegram_error:
-        logger.error(f"Failed to send /help message to Telegram: {telegram_error}")
         logger.debug(traceback.format_exc())
 
 def process_update(update):
@@ -1031,6 +990,7 @@ def donations_page():
         lnurl=lnurl,
         qr_code_data=img_base64,
         donations_url=DONATIONS_URL,  # Pass the donations URL to the template
+        information_url=INFORMATION_URL,  # Pass the information URL to the template
         total_donations=total_donations_current,  # Pass total donations
         donations=donations  # Pass donations list
     )
