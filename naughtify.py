@@ -1,3 +1,5 @@
+# naughtify.py
+
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -38,10 +40,6 @@ INSTANCE_NAME = os.getenv("INSTANCE_NAME", "LNbits Instance")
 # Extract Domain from LNBITS_URL
 parsed_lnbits_url = urlparse(LNBITS_URL)
 LNBITS_DOMAIN = parsed_lnbits_url.netloc
-
-# Check if domain was successfully extracted
-if not LNBITS_DOMAIN:
-    raise EnvironmentError("LNBITS_URL is invalid or the domain could not be extracted.")
 
 # Overwatch Configuration
 OVERWATCH_URL = os.getenv("OVERWATCH_URL")
@@ -308,7 +306,7 @@ def fetch_donation_details():
             "lnurl": "Unavailable"
         }
     
-    # Extract username from LNURLp info
+    # Extract username and construct lightning_address
     username = lnurlp_info.get('username')  # Adjust the key based on your LNURLp response
     if not username:
         # Attempt to extract username from 'description' or another relevant field
@@ -321,13 +319,13 @@ def fetch_donation_details():
 
     # Construct the full Lightning Address
     lightning_address = f"{username}@{LNBITS_DOMAIN}"
-
+    
     # Extract LNURL
     lnurl = lnurlp_info.get('lnurl', 'Unavailable')  # Adjust key as per your data structure
-
+    
     logger.debug(f"Constructed Lightning Address: {lightning_address}")
     logger.debug(f"Fetched LNURL: {lnurl}")
-
+    
     return {
         "total_donations": total_donations,
         "donations": donations,
@@ -352,33 +350,6 @@ def update_donations_with_details(data):
     })
     return data
 
-def send_telegram_notification(message, title="LNbits Notification"):
-    """
-    Send a notification via Telegram.
-
-    Parameters:
-        message (str): The message content.
-        title (str): The title of the notification.
-    """
-    try:
-        # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
-        keyboard = [
-            [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
-            [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
-            [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
-        ]
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-        # Combine title and message
-        full_message = f"**{title}**\n\n{message}"
-
-        # Send the message to Telegram with the inline keyboard
-        bot.send_message(chat_id=CHAT_ID, text=full_message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
-        logger.info(f"Notification '{title}' sent to Telegram successfully.")
-    except Exception as telegram_error:
-        logger.error(f"Failed to send notification to Telegram: {telegram_error}")
-        logger.debug(traceback.format_exc())
-
 def updateDonations(data):
     """
     Update the donations and related UI elements with new data.
@@ -399,10 +370,8 @@ def updateDonations(data):
     # Update latest donation
     if updated_data["donations"]:
         latestDonation = updated_data["donations"][-1]
-        # Send a notification for the latest donation
-        notification_message = f'New donation: {latestDonation["amount"]} sats - "{latestDonation["memo"]}"'
-        send_telegram_notification(notification_message, title="New Donation Received")
-        logger.info(f'Latest donation: {latestDonation["amount"]} Sats - "{latestDonation["memo"]}"')
+        # Again, frontend handles DOM updates
+        logger.info(f'Latest donation: {latestDonation["amount"]} sats - "{latestDonation["memo"]}"')
     else:
         logger.info('Latest donation: None yet.')
     
@@ -545,8 +514,22 @@ def send_latest_payments():
 
     full_message = "\n".join(message_lines)
 
-    # Send the message via Telegram
-    send_telegram_notification(full_message, title=f"Latest Transactions for {INSTANCE_NAME}")
+    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
+        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    # Send the message to Telegram with the inline keyboard
+    try:
+        bot.send_message(chat_id=CHAT_ID, text=full_message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        logger.info("Latest payments notification sent to Telegram successfully.")
+        latest_payments.extend(new_processed_hashes)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send payments message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
 
 def check_balance_change():
     """
@@ -582,22 +565,33 @@ def check_balance_change():
 
     # Prepare the Telegram message with markdown formatting
     message = (
-        f"📊 *{INSTANCE_NAME}* - *Balance Update* 📊\n\n"
+        f"⚡ *{INSTANCE_NAME}* - *Balance Update* ⚡\n\n"
         f"🔹 *Previous Balance:* `{int(last_balance):,} sats`\n"
         f"🔹 *Change:* `{'+' if change_amount > 0 else '-'}{int(abs_change):,} sats`\n"
         f"🔹 *New Balance:* `{int(current_balance_sats):,} sats`\n\n"
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Send message to Telegram with the inline keyboard
-    send_telegram_notification(message, title=f"Balance Change for {INSTANCE_NAME}")
+    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
+        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-    logger.info(f"Balance changed from {last_balance:.0f} to {current_balance_sats:.0f} sats. Notification sent.")
-    # Update the balance file and latest_balance
-    save_current_balance(current_balance_sats)
-    latest_balance["balance_sats"] = current_balance_sats
-    latest_balance["last_change"] = f"Balance {direction} by {int(abs_change):,} sats."
-    latest_balance["memo"] = "N/A"
+    # Send message to Telegram with the inline keyboard
+    try:
+        bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        logger.info(f"Balance changed from {last_balance:.0f} to {current_balance_sats:.0f} sats. Notification sent.")
+        # Update the balance file and latest_balance
+        save_current_balance(current_balance_sats)
+        latest_balance["balance_sats"] = current_balance_sats
+        latest_balance["last_change"] = f"Balance {direction} by {int(abs_change):,} sats."
+        latest_balance["memo"] = "N/A"
+    except Exception as telegram_error:
+        logger.error(f"Failed to send balance change message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
 
 def send_wallet_balance():
     """
@@ -637,29 +631,40 @@ def send_wallet_balance():
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
+    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
+        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
     # Send the message to Telegram with the inline keyboard
-    send_telegram_notification(message, title=f"Daily Wallet Balance for {INSTANCE_NAME}")
+    try:
+        bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        logger.info("Daily wallet balance notification with inline keyboard sent successfully.")
+        # Update the latest_balance
+        latest_balance["balance_sats"] = current_balance_sats
+        latest_balance["last_change"] = "Daily balance report."
+        latest_balance["memo"] = "N/A"
+        # Save the current balance
+        save_current_balance(current_balance_sats)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send daily wallet balance message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
 
-    logger.info("Daily wallet balance notification via Telegram sent successfully.")
-    # Update the latest_balance
-    latest_balance["balance_sats"] = current_balance_sats
-    latest_balance["last_change"] = "Daily balance report."
-    latest_balance["memo"] = "N/A"
-    # Save the current balance
-    save_current_balance(current_balance_sats)
-
-def handle_transactions_command():
+def handle_transactions_command(chat_id):
     """
-    Handle the /transactions command.
+    Handle the /transactions command sent by the user.
     """
-    logger.info("Handling /transactions command.")
+    logger.info(f"Handling /transactions command for chat_id: {chat_id}")
     payments = fetch_api("payments")
     if payments is None:
-        send_telegram_notification("Error fetching transactions.", title="Transactions Error")
+        bot.send_message(chat_id=chat_id, text="Error fetching transactions.")
         return
 
     if not isinstance(payments, list):
-        send_telegram_notification("Unexpected data format for transactions.", title="Transactions Error")
+        bot.send_message(chat_id=chat_id, text="Unexpected data format for transactions.")
         return
 
     # Sort transactions by creation time descending
@@ -667,7 +672,7 @@ def handle_transactions_command():
     latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]  # Get the latest n transactions
 
     if not latest:
-        send_telegram_notification("No transactions found.", title="Transactions")
+        bot.send_message(chat_id=chat_id, text="No transactions found.")
         return
 
     # Initialize lists for different transaction types
@@ -739,14 +744,25 @@ def handle_transactions_command():
 
     full_message = "\n".join(message_lines)
 
-    # Send the message via Telegram
-    send_telegram_notification(full_message, title=f"Latest Transactions for {INSTANCE_NAME}")
+    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
+        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-def handle_info_command():
+    try:
+        bot.send_message(chat_id=chat_id, text=full_message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send /transactions message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+def handle_info_command(chat_id):
     """
-    Handle the /info command.
+    Handle the /info command sent by the user.
     """
-    logger.info("Handling /info command.")
+    logger.info(f"Handling /info command for chat_id: {chat_id}")
     # Prepare Interval Information
     interval_info = (
         f"🔔 *Balance Change Threshold:* `{BALANCE_CHANGE_THRESHOLD} sats`\n"
@@ -761,17 +777,29 @@ def handle_info_command():
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Send the message via Telegram
-    send_telegram_notification(info_message, title=f"Information for {INSTANCE_NAME}")
+    # Define the inline keyboard with "View Details", "View Donations", "Manage LNBits Backend", and "View Transactions" buttons
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
+        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
+        [InlineKeyboardButton("🔧 Manage LNBits Backend", url=LNBITS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-def handle_balance_command():
+    try:
+        bot.send_message(chat_id=chat_id, text=info_message, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True, reply_markup=reply_markup)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send /info message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+def handle_balance_command(chat_id):
     """
-    Handle the /balance command.
+    Handle the /balance command sent by the user.
     """
-    logger.info("Handling /balance command.")
+    logger.info(f"Handling /balance command for chat_id: {chat_id}")
     wallet_info = fetch_api("wallet")
     if wallet_info is None:
-        send_telegram_notification("Error fetching wallet balance.", title="Balance Error")
+        bot.send_message(chat_id=chat_id, text="Error fetching wallet balance.")
         return
 
     current_balance_msat = wallet_info.get("balance", 0)
@@ -783,14 +811,25 @@ def handle_balance_command():
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Send the message via Telegram
-    send_telegram_notification(message, title=f"Wallet Balance for {INSTANCE_NAME}")
+    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
+        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
 
-def handle_help_command():
+    try:
+        bot.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send /balance message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+def handle_help_command(chat_id):
     """
-    Handle the /help command.
+    Handle the /help command sent by the user.
     """
-    logger.info("Handling /help command.")
+    logger.info(f"Handling /help command for chat_id: {chat_id}")
     help_message = (
         f"ℹ️ *{INSTANCE_NAME}* - *Available Commands*\n\n"
         f"/balance - Show current wallet balance\n"
@@ -799,8 +838,19 @@ def handle_help_command():
         f"/help - Show this help message"
     )
 
-    # Send the message via Telegram
-    send_telegram_notification(help_message, title=f"Help for {INSTANCE_NAME}")
+    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
+        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    try:
+        bot.send_message(chat_id=chat_id, text=help_message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send /help message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
 
 def process_update(update):
     """
@@ -809,20 +859,21 @@ def process_update(update):
     try:
         if 'message' in update:
             message = update['message']
+            chat_id = message['chat']['id']
             text = message.get('text', '').strip()
 
             if text.startswith('/balance'):
-                handle_balance_command()
+                handle_balance_command(chat_id)
             elif text.startswith('/transactions'):
-                handle_transactions_command()
+                handle_transactions_command(chat_id)
             elif text.startswith('/info'):
-                handle_info_command()
+                handle_info_command(chat_id)
             elif text.startswith('/help'):
-                handle_help_command()
+                handle_help_command(chat_id)
             else:
-                send_telegram_notification(
-                    "Unknown command. Available commands: /balance, /transactions, /info, /help",
-                    title="Unknown Command"
+                bot.send_message(
+                    chat_id=chat_id,
+                    text="Unknown command. Available commands: /balance, /transactions, /info, /help"
                 )
         elif 'callback_query' in update:
             process_callback_query(update['callback_query'])
@@ -839,9 +890,10 @@ def process_callback_query(callback_query):
     try:
         query_id = callback_query['id']
         data = callback_query.get('data', '')
+        chat_id = callback_query['from']['id']
 
         if data == 'view_transactions':
-            handle_transactions_command()
+            handle_transactions_command(chat_id)
             bot.answer_callback_query(callback_query_id=query_id, text="Fetching latest transactions...")
         else:
             bot.answer_callback_query(callback_query_id=query_id, text="Unknown action.")
@@ -935,29 +987,12 @@ def donations_page():
     lnurlp_id = LNURLP_ID
     lnurlp_info = get_lnurlp_info(lnurlp_id)
     if lnurlp_info is None:
-        return "Error fetching LNURLp info", 500
+        return "Error fetching LNURLP info", 500
 
     # Extract the necessary information
     wallet_name = lnurlp_info.get('description', 'Unknown Wallet')
-    # Extract username and construct lightning_address
-    username = lnurlp_info.get('username')  # Adjust the key based on your LNURLp response
-    if not username:
-        # Attempt to extract username from 'description' or another relevant field
-        description = lnurlp_info.get('description', '')
-        if description and '@' in description:
-            username = description.split('@')[0]
-        else:
-            username = "Unknown"
-            logger.warning("Username not found in LNURLp info.")
-
-    # Construct the full Lightning Address
-    lightning_address = f"{username}@{LNBITS_DOMAIN}"
-
-    # Extract LNURL
+    lightning_address = lnurlp_info.get('lightning_address', 'Unknown Lightning Address')  # Adjust key as per your data structure
     lnurl = lnurlp_info.get('lnurl', '')
-
-    logger.debug(f"Constructed Lightning Address: {lightning_address}")
-    logger.debug(f"Fetched LNURL: {lnurl}")
 
     # Generate QR code from LNURL
     qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
