@@ -13,6 +13,7 @@ import qrcode
 import io
 import base64
 import json
+from urllib.parse import urlparse
 
 # --------------------- Configuration and Setup ---------------------
 
@@ -34,8 +35,17 @@ LNBITS_READONLY_API_KEY = os.getenv("LNBITS_READONLY_API_KEY")
 LNBITS_URL = os.getenv("LNBITS_URL")
 INSTANCE_NAME = os.getenv("INSTANCE_NAME", "LNbits Instance")
 
+# Extract Domain from LNBITS_URL
+parsed_lnbits_url = urlparse(LNBITS_URL)
+LNBITS_DOMAIN = parsed_lnbits_url.netloc
+
+# Check if domain was succesfully extracted
+if not LNBITS_DOMAIN:
+    raise EnvironmentError("LNBITS_URL ist ungültig oder die Domain konnte nicht extrahiert werden.")
+
 # Overwatch Configuration
 OVERWATCH_URL = os.getenv("OVERWATCH_URL")
+OVERWATCH_DOMAIN = urlparse(OVERWATCH_URL).netloc if OVERWATCH_URL else ""
 
 # Donation Parameters
 LNURLP_ID = os.getenv("LNURLP_ID")
@@ -298,14 +308,14 @@ def fetch_donation_details():
             "lightning_address": "Unavailable",
             "lnurl": "Unavailable"
         }
-    
+
     # Extract Lightning Address and LNURL from LNURLp info
     lightning_address = lnurlp_info.get('lightning_address', 'Unavailable')  # Adjust key as per your data structure
     lnurl = lnurlp_info.get('lnurl', 'Unavailable')  # Adjust key as per your data structure
-    
+
     logger.debug(f"Fetched Lightning Address: {lightning_address}")
     logger.debug(f"Fetched LNURL: {lnurl}")
-    
+
     return {
         "total_donations": total_donations,
         "donations": donations,
@@ -341,12 +351,12 @@ def updateDonations(data):
     """
     # Integrate additional donation details
     updated_data = update_donations_with_details(data)
-    
+
     totalDonations = updated_data["total_donations"]
     # Update total donations in the frontend
     # Since this is a backend function, the frontend will fetch updated data via API
     # Hence, no direct DOM manipulation here
-    
+
     # Update latest donation
     if updated_data["donations"]:
         latestDonation = updated_data["donations"][-1]
@@ -354,14 +364,14 @@ def updateDonations(data):
         logger.info(f'Latest donation: {latestDonation["amount"]} Sats - "{latestDonation["memo"]}"')
     else:
         logger.info('Latest donation: None yet.')
-    
+
     # Update transactions data
     # Frontend fetches via API
-    
+
     # Update Lightning Address and LNURL
     logger.debug(f"Lightning Address: {updated_data.get('lightning_address')}")
     logger.debug(f"LNURL: {updated_data.get('lnurl')}")
-    
+
     # Save updated donations data
     save_donations()
 
@@ -466,7 +476,7 @@ def send_latest_payments():
         message_lines.append("🟢 *Incoming Payments:*")
         for idx, payment in enumerate(incoming_payments, 1):
             message_lines.append(
-                f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
+                f"{idx}. *Amount:* {payment['amount']} sats\n   *Memo:* {payment['memo']}"
             )
         message_lines.append("")
 
@@ -474,7 +484,7 @@ def send_latest_payments():
         message_lines.append("🔴 *Outgoing Payments:*")
         for idx, payment in enumerate(outgoing_payments, 1):
             message_lines.append(
-                f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
+                f"{idx}. *Amount:* {payment['amount']} sats\n   *Memo:* {payment['memo']}"
             )
         message_lines.append("")
 
@@ -546,9 +556,9 @@ def check_balance_change():
     # Prepare the Telegram message with markdown formatting
     message = (
         f"⚡ *{INSTANCE_NAME}* - *Balance Update* ⚡\n\n"
-        f"🔹 *Previous Balance:* `{int(last_balance):,} sats`\n"
-        f"🔹 *Change:* `{'+' if change_amount > 0 else '-'}{int(abs_change):,} sats`\n"
-        f"🔹 *New Balance:* `{int(current_balance_sats):,} sats`\n\n"
+        f"🔹 *Previous Balance:* {int(last_balance):,} sats\n"
+        f"🔹 *Change:* {'+' if change_amount > 0 else '-'}{int(abs_change):,} sats\n"
+        f"🔹 *New Balance:* {int(current_balance_sats):,} sats\n\n"
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
@@ -605,9 +615,9 @@ def send_wallet_balance():
     # Prepare the Telegram message with markdown formatting
     message = (
         f"📊 *{INSTANCE_NAME}* - *Daily Wallet Balance* 📊\n\n"
-        f"🔹 *Current Balance:* `{int(current_balance_sats)} sats`\n"
-        f"🔹 *Total Incoming:* `{int(incoming_total)} sats` across `{incoming_count}` transactions\n"
-        f"🔹 *Total Outgoing:* `{int(outgoing_total)} sats` across `{outgoing_count}` transactions\n\n"
+        f"🔹 *Current Balance:* {int(current_balance_sats)} sats\n"
+        f"🔹 *Total Incoming:* {int(incoming_total)} sats across {incoming_count} transactions\n"
+        f"🔹 *Total Outgoing:* {int(outgoing_total)} sats across {outgoing_count} transactions\n\n"
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
@@ -696,7 +706,7 @@ def handle_transactions_command(chat_id):
         message_lines.append("🟢 *Incoming Payments:*")
         for idx, payment in enumerate(incoming_payments, 1):
             message_lines.append(
-                f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
+                f"{idx}. *Amount:* {payment['amount']} sats\n   *Memo:* {payment['memo']}"
             )
         message_lines.append("")
 
@@ -704,7 +714,7 @@ def handle_transactions_command(chat_id):
         message_lines.append("🔴 *Outgoing Payments:*")
         for idx, payment in enumerate(outgoing_payments, 1):
             message_lines.append(
-                f"{idx}. *Amount:* `{payment['amount']} sats`\n   *Memo:* {payment['memo']}"
+                f"{idx}. *Amount:* {payment['amount']} sats\n   *Memo:* {payment['memo']}"
             )
         message_lines.append("")
 
@@ -745,10 +755,10 @@ def handle_info_command(chat_id):
     logger.info(f"Handling /info command for chat_id: {chat_id}")
     # Prepare Interval Information
     interval_info = (
-        f"🔔 *Balance Change Threshold:* `{BALANCE_CHANGE_THRESHOLD} sats`\n"
-        f"⏲️ *Balance Change Monitoring Interval:* Every `{WALLET_INFO_UPDATE_INTERVAL} seconds`\n"
-        f"📊 *Daily Wallet Balance Notification Interval:* Every `{WALLET_BALANCE_NOTIFICATION_INTERVAL} seconds`\n"
-        f"🔄 *Latest Payments Fetch Interval:* Every `{PAYMENTS_FETCH_INTERVAL} seconds`"
+        f"🔔 *Balance Change Threshold:* {BALANCE_CHANGE_THRESHOLD} sats\n"
+        f"⏲️ *Balance Change Monitoring Interval:* Every {WALLET_INFO_UPDATE_INTERVAL} seconds\n"
+        f"📊 *Daily Wallet Balance Notification Interval:* Every {WALLET_BALANCE_NOTIFICATION_INTERVAL} seconds\n"
+        f"🔄 *Latest Payments Fetch Interval:* Every {PAYMENTS_FETCH_INTERVAL} seconds"
     )
 
     info_message = (
@@ -787,7 +797,7 @@ def handle_balance_command(chat_id):
 
     message = (
         f"📊 *{INSTANCE_NAME}* - *Wallet Balance*\n\n"
-        f"🔹 *Current Balance:* `{int(current_balance_sats)} sats`\n\n"
+        f"🔹 *Current Balance:* {int(current_balance_sats)} sats\n\n"
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
@@ -947,6 +957,12 @@ def donations_page():
     lightning_address = lnurlp_info.get('lightning_address', 'Unknown Lightning Address')  # Adjust key as per your data structure
     lnurl = lnurlp_info.get('lnurl', '')
 
+    # Extrahiere den Benutzernamen aus der Lightning Address
+    if '@' in lightning_address:
+        username = lightning_address.split('@')[0]
+    else:
+        username = "Unknown"
+
     # Generate QR code from LNURL
     qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
     qr.add_data(lnurl)
@@ -971,7 +987,9 @@ def donations_page():
         qr_code_data=img_base64,
         donations_url=DONATIONS_URL,  # Pass the donations URL to the template
         total_donations=total_donations_current,  # Pass total donations
-        donations=donations  # Pass donations list
+        donations=donations,  # Pass donations list
+        username=username,  # Pass the extracted username
+        lnbits_domain=LNBITS_DOMAIN  # Pass die extrahierte Domain
     )
 
 # API Endpoint to Serve Donation Data
@@ -986,7 +1004,8 @@ def get_donations_data():
             "total_donations": donation_details["total_donations"],
             "donations": donation_details["donations"],
             "lightning_address": donation_details["lightning_address"],
-            "lnurl": donation_details["lnurl"]
+            "lnurl": donation_details["lnurl"],
+            "lnbits_domain": LNBITS_DOMAIN  # Füge die Domain hinzu
         }
         logger.debug(f"Serving donations data with details: {data}")
         return jsonify(data), 200
@@ -1018,6 +1037,8 @@ if __name__ == "__main__":
     logger.info(f"🔔 Notification Threshold: {BALANCE_CHANGE_THRESHOLD} sats")
     logger.info(f"📊 Fetching Latest {LATEST_TRANSACTIONS_COUNT} Transactions for Notifications")
     logger.info(f"⏲️ Scheduler Intervals - Balance Change Monitoring: {WALLET_INFO_UPDATE_INTERVAL} seconds, Daily Wallet Balance Notification: {WALLET_BALANCE_NOTIFICATION_INTERVAL} seconds, Latest Payments Fetch: {PAYMENTS_FETCH_INTERVAL} seconds")
+    logger.info(f"LNBITS Domain: {LNBITS_DOMAIN}")
+    logger.info(f"OVERWATCH Domain: {OVERWATCH_DOMAIN}")
 
     # Start the scheduler in a separate thread
     scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
