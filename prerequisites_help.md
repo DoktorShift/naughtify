@@ -40,7 +40,7 @@ invoice read key          |  set up instance   |  LNURLp ID
 
 ### 4. Telegram Bot - Botfather and bot token
 
-To create a bot, open the [BotFather](https://t.me/BotFather) and click on `Start`. Write the command `/newbot` and then choose a name. Then give the bot a Telegram bot username by simply adding `_bot` after your bot name. The magic is done. The BotFather will then show you the link to your bot and token. Save both well.
+To create a bot, open the [@BotFather](https://t.me/BotFather) and click on `Start`. Write the command `/newbot` and then choose a name. Then give the bot a Telegram bot username by simply adding `_bot` after your bot name. The magic is done. The BotFather will then show you the link to your bot and token. Save both well.
 
 ### 5. UserInfoBot - Your User / Chat ID
 
@@ -51,5 +51,5 @@ To determine your own user ID (chat ID), open the [@userinfobot](https://t.me/us
 <img src="./assets/TelegramBot.png" width="300">  |  <img src="./assets/UserInfoBot.png" width="300"> 
 
 ---
-### [Back to Naughtify](./README.md)
+### [Back to Naughtify Mainpage](./README.md)
 
