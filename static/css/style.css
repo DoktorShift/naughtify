@@ -18,18 +18,12 @@
     --copy-field-hover-background: #d0e4f1; /* Light Blue */
     --footer-background: #1f4b6d; /* Dark Blue */
     --footer-text-color: #fff; /* White */
-    --info-card-background: #f0f8ff; /* Alice Blue */
-    --info-link-color: #1f4b6d; /* Dark Blue for Links */
     /* Toast Colors */
     --toast-success-bg: #4caf50; /* Green */
     --toast-success-text: #fff; /* White */
     --toast-error-bg: #f44336; /* Red */
     --toast-error-text: #fff; /* White */
     --toast-transition: opacity 0.5s ease, transform 0.5s ease;
-    --modal-background: rgba(0, 0, 0, 0.5); /* Semi-transparent Black */
-    --modal-content-background: #fff; /* White */
-    --modal-border-radius: 1rem;
-    --modal-padding: 1.5rem;
 }
 
 /* General Styles */
@@ -75,6 +69,69 @@ a {
     color: var(--text-color-light);
 }
 
+/* Info Tooltip Styles */
+.info-tooltip {
+    position: relative;
+    display: inline-block;
+    margin-left: 10px; /* Adjust as needed */
+    cursor: pointer;
+}
+
+.info-icon {
+    font-size: 24px;
+    color: var(--primary-color);
+    transition: color 0.3s;
+}
+
+.info-icon:hover {
+    color: var(--secondary-color);
+}
+
+.tooltip-text {
+    visibility: hidden;
+    width: 120px;
+    background-color: var(--text-color);
+    color: #fff;
+    text-align: center;
+    border-radius: 6px;
+    padding: 5px 0;
+    position: absolute;
+    z-index: 1;
+    bottom: 125%; /* Position above the icon */
+    left: 50%;
+    margin-left: -60px;
+    opacity: 0;
+    transition: opacity 0.3s;
+    font-size: 0.9rem;
+}
+
+.tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%; /* At the bottom of the tooltip */
+    left: 50%;
+    margin-left: -5px;
+    border-width: 5px;
+    border-style: solid;
+    border-color: var(--text-color) transparent transparent transparent;
+}
+
+.info-tooltip:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Make the entire info-tooltip clickable by overlaying the link */
+.info-link {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    text-indent: -9999px; /* Hide the text */
+    z-index: 2;
+}
+
 /* Info Section */
 .info-section {
     display: flex;
@@ -100,7 +157,6 @@ a {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
     padding: 1.25rem;
     text-align: center;
-    position: relative; /* For positioning the info icon */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -147,10 +203,6 @@ a {
     word-break: break-all;
     cursor: pointer;
     transition: background 0.3s ease, transform 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
 }
 
 .lightning-card .copy-field:hover {
@@ -162,18 +214,6 @@ a {
     margin-bottom: 0.3125rem;
     font-weight: bold;
     font-size: 1.1rem;
-}
-
-.lightning-card .info-icon {
-    margin-left: 0.5rem;
-    font-size: 1.2rem;
-    cursor: pointer;
-    color: var(--secondary-color);
-    transition: color 0.3s ease;
-}
-
-.lightning-card .info-icon:hover {
-    color: var(--primary-color);
 }
 
 /* Donations Box */
@@ -203,49 +243,6 @@ a {
     margin-top: 1.25rem;
     font-size: 0.9rem;
     color: var(--text-color-light);
-}
-
-/* Information Modal */
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1000; /* Sit on top */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: var(--modal-background); /* Black w/ opacity */
-}
-
-.modal-content {
-    background-color: var(--modal-content-background);
-    margin: 10% auto; /* 10% from the top and centered */
-    padding: var(--modal-padding);
-    border: 1px solid #888;
-    width: 80%; /* Could be more or less, depending on screen size */
-    border-radius: var(--modal-border-radius);
-    position: relative;
-}
-
-.close-button {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close-button:hover,
-.close-button:focus {
-    color: black;
-    text-decoration: none;
-}
-
-.modal-qr {
-    max-width: 200px;
-    margin: 1rem auto;
-    display: block;
 }
 
 /* Transactions Table */
@@ -400,47 +397,4 @@ table tr:hover td {
         opacity: 0;
         transform: translateX(100%);
     }
-}
-
-/* Modal Styles */
-.modal {
-    display: none; /* Hidden by default */
-    position: fixed; /* Stay in place */
-    z-index: 1000; /* Sit on top */
-    left: 0;
-    top: 0;
-    width: 100%; /* Full width */
-    height: 100%; /* Full height */
-    overflow: auto; /* Enable scroll if needed */
-    background-color: var(--modal-background); /* Black w/ opacity */
-}
-
-.modal-content {
-    background-color: var(--modal-content-background);
-    margin: 10% auto; /* 10% from the top and centered */
-    padding: var(--modal-padding);
-    border: 1px solid #888;
-    width: 80%; /* Could be more or less, depending on screen size */
-    border-radius: var(--modal-border-radius);
-    position: relative;
-}
-
-.close-button {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close-button:hover,
-.close-button:focus {
-    color: black;
-    text-decoration: none;
-}
-
-.modal-qr {
-    max-width: 200px;
-    margin: 1rem auto;
-    display: block;
 }
