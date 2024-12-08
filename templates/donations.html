@@ -1,3 +1,5 @@
+<!-- donations.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,8 +30,9 @@
 
                 <!-- Lightning Address Card -->
                 <div class="card lightning-card">
-                    <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address">
-                        <p>⚡️{{ username }}</p>
+                    <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address" data-address="{{ lightning_address }}" id="lightning-address-container">
+                        <span class="emoji">⚡️</span>
+                        <span class="address" id="lightning-address">{{ lightning_address }}</span>
                     </div>
                 </div>
             </div>
