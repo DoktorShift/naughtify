@@ -68,6 +68,9 @@ DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
 # Donations Configuration
 DONATIONS_URL = os.getenv("DONATIONS_URL")  # Optional; Removed default to make it truly optional
 
+# Information URL Configuration
+INFORMATION_URL = os.getenv("INFORMATION_URL")  # New Environment Variable
+
 # Validate essential environment variables (excluding OVERWATCH_URL and DONATIONS_URL)
 required_vars = {
     "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
@@ -306,8 +309,8 @@ def fetch_donation_details():
     # Extract username and construct lightning_address
     username = lnurlp_info.get('username')  # Adjust the key based on your LNURLp response
     if not username:
-            username = "Unknown"
-            logger.warning("Username not found in LNURLp info.")
+        username = "Unknown"
+        logger.warning("Username not found in LNURLp info.")
 
     # Construct the full Lightning Address
     lightning_address = f"{username}@{LNBITS_DOMAIN}"
@@ -512,6 +515,8 @@ def send_latest_payments():
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    if INFORMATION_URL:
+        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -571,6 +576,8 @@ def check_balance_change():
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    if INFORMATION_URL:
+        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -631,6 +638,8 @@ def send_wallet_balance():
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    if INFORMATION_URL:
+        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -745,6 +754,8 @@ def handle_transactions_command(chat_id):
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    if INFORMATION_URL:
+        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -779,6 +790,8 @@ def handle_info_command(chat_id):
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    if INFORMATION_URL:
+        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
     keyboard.append([InlineKeyboardButton("🔧 Manage LNBits Backend", url=LNBITS_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -814,6 +827,8 @@ def handle_balance_command(chat_id):
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    if INFORMATION_URL:
+        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -838,12 +853,14 @@ def handle_help_command(chat_id):
     
     # Prepare Useful Links section
     useful_links = []
-    if OVERWATCH_URL or DONATIONS_URL:
+    if OVERWATCH_URL or DONATIONS_URL or INFORMATION_URL:
         useful_links.append("📎 *Useful Links:*")
         if OVERWATCH_URL:
             useful_links.append(f"🔗 [View Details]({OVERWATCH_URL})")
         if DONATIONS_URL:
             useful_links.append(f"💰 [View Donations]({DONATIONS_URL})")
+        if INFORMATION_URL:
+            useful_links.append(f"ℹ️ [More Information]({INFORMATION_URL})")
         useful_links.append("")  # Add an empty line
     
     # Append Useful Links if any
@@ -856,6 +873,8 @@ def handle_help_command(chat_id):
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    if INFORMATION_URL:
+        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
     # Always include "View Transactions" button
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
@@ -1031,6 +1050,7 @@ def donations_page():
         lnurl=lnurl,
         qr_code_data=img_base64,
         donations_url=DONATIONS_URL,  # Pass the donations URL to the template
+        information_url=INFORMATION_URL,  # Pass the information URL to the template
         total_donations=total_donations_current,  # Pass total donations
         donations=donations  # Pass donations list
     )
