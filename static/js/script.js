@@ -1,3 +1,5 @@
+// script.js
+
 let totalDonations = 0; // Total donations
 let transactionsData = []; // Store transaction history
 const rowsPerPage = 10; // Number of rows to display per page
@@ -110,7 +112,7 @@ function renderTable() {
             const row = document.createElement('tr');
 
             // Check if donation is greater than highlight threshold
-            if (transaction.amount > 10000) { // Example Threshold: 10,000 Sats
+            if (transaction.amount > 2100) { // Example Threshold: 2,100 Sats
                 row.classList.add('highlight');
             }
 
