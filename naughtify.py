@@ -42,7 +42,7 @@ parsed_lnbits_url = urlparse(LNBITS_URL)
 LNBITS_DOMAIN = parsed_lnbits_url.netloc
 
 # Overwatch Configuration
-OVERWATCH_URL = os.getenv("OVERWATCH_URL")
+OVERWATCH_URL = os.getenv("OVERWATCH_URL")  # Optional
 
 # Donation Parameters
 LNURLP_ID = os.getenv("LNURLP_ID")
@@ -66,17 +66,14 @@ CURRENT_BALANCE_FILE = os.getenv("CURRENT_BALANCE_FILE", "current-balance.txt")
 DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
 
 # Donations Configuration
-DONATIONS_URL = os.getenv("DONATIONS_URL", "https://donations.lnbot.de")
+DONATIONS_URL = os.getenv("DONATIONS_URL")  # Optional; Removed default to make it truly optional
 
-# Validate essential environment variables
+# Validate essential environment variables (excluding OVERWATCH_URL and DONATIONS_URL)
 required_vars = {
     "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
     "CHAT_ID": CHAT_ID,
     "LNBITS_READONLY_API_KEY": LNBITS_READONLY_API_KEY,
-    "LNBITS_URL": LNBITS_URL,
-    "OVERWATCH_URL": OVERWATCH_URL,
-    "LNURLP_ID": LNURLP_ID,
-    "DONATIONS_URL": DONATIONS_URL
+    "LNBITS_URL": LNBITS_URL
 }
 
 missing_vars = [var for var, value in required_vars.items() if not value]
@@ -509,12 +506,13 @@ def send_latest_payments():
 
     full_message = "\n".join(message_lines)
 
-    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
-    keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
-        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
-        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
-    ]
+    # Define the inline keyboard with available buttons
+    keyboard = []
+    if OVERWATCH_URL:
+        keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
+    if DONATIONS_URL:
+        keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Send the message to Telegram with the inline keyboard
@@ -567,12 +565,13 @@ def check_balance_change():
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
-    keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
-        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
-        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
-    ]
+    # Define the inline keyboard with available buttons
+    keyboard = []
+    if OVERWATCH_URL:
+        keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
+    if DONATIONS_URL:
+        keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Send message to Telegram with the inline keyboard
@@ -626,12 +625,13 @@ def send_wallet_balance():
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
-    keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
-        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
-        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
-    ]
+    # Define the inline keyboard with available buttons
+    keyboard = []
+    if OVERWATCH_URL:
+        keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
+    if DONATIONS_URL:
+        keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     # Send the message to Telegram with the inline keyboard
@@ -739,12 +739,13 @@ def handle_transactions_command(chat_id):
 
     full_message = "\n".join(message_lines)
 
-    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
-    keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
-        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
-        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
-    ]
+    # Define the inline keyboard with available buttons
+    keyboard = []
+    if OVERWATCH_URL:
+        keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
+    if DONATIONS_URL:
+        keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     try:
@@ -772,13 +773,14 @@ def handle_info_command(chat_id):
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Define the inline keyboard with "View Details", "View Donations", "Manage LNBits Backend", and "View Transactions" buttons
-    keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
-        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
-        [InlineKeyboardButton("🔧 Manage LNBits Backend", url=LNBITS_URL)],
-        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
-    ]
+    # Define the inline keyboard with available buttons
+    keyboard = []
+    if OVERWATCH_URL:
+        keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
+    if DONATIONS_URL:
+        keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    keyboard.append([InlineKeyboardButton("🔧 Manage LNBits Backend", url=LNBITS_URL)])
+    keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     try:
@@ -806,12 +808,13 @@ def handle_balance_command(chat_id):
         f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
     )
 
-    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
-    keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
-        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
-        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
-    ]
+    # Define the inline keyboard with available buttons
+    keyboard = []
+    if OVERWATCH_URL:
+        keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
+    if DONATIONS_URL:
+        keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     try:
@@ -830,15 +833,31 @@ def handle_help_command(chat_id):
         f"/balance - Show current wallet balance\n"
         f"/transactions - Show latest transactions\n"
         f"/info - Show system information\n"
-        f"/help - Show this help message"
+        f"/help - Show this help message\n\n"
     )
-
-    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
-    keyboard = [
-        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
-        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
-        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
-    ]
+    
+    # Prepare Useful Links section
+    useful_links = []
+    if OVERWATCH_URL or DONATIONS_URL:
+        useful_links.append("📎 *Useful Links:*")
+        if OVERWATCH_URL:
+            useful_links.append(f"🔗 [View Details]({OVERWATCH_URL})")
+        if DONATIONS_URL:
+            useful_links.append(f"💰 [View Donations]({DONATIONS_URL})")
+        useful_links.append("")  # Add an empty line
+    
+    # Append Useful Links if any
+    if useful_links:
+        help_message += "\n".join(useful_links)
+    
+    # Define the inline keyboard with available buttons
+    keyboard = []
+    if OVERWATCH_URL:
+        keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
+    if DONATIONS_URL:
+        keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    # Always include "View Transactions" button
+    keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
     try:
