@@ -1,3 +1,5 @@
+// script.js
+
 let totalDonations = 0; // Total donations
 let transactionsData = []; // Store transaction history
 const rowsPerPage = 10; // Number of rows to display per page
@@ -29,9 +31,10 @@ function showToast(message, isError = false) {
 
 // Function to copy Lightning Address to clipboard
 function copyText(element) {
-    const text = element.querySelector('p').textContent.trim();
-    console.log('Attempting to copy Lightning Address:', text); // Debugging
-    navigator.clipboard.writeText(text).then(() => {
+    // Extract the address from the data-address attribute
+    const address = element.getAttribute('data-address').trim();
+    console.log('Attempting to copy Lightning Address:', address); // Debugging
+    navigator.clipboard.writeText(address).then(() => {
         console.log('Lightning Address copied successfully');
         showToast('Lightning address copied to clipboard!');
     }).catch(err => {
@@ -89,9 +92,30 @@ function updateDonations(data) {
     // Update transactions data
     transactionsData = data.donations;
 
+    // Update Lightning Address and LNURL
+    updateLightningAddress(data.lightning_address, data.lnurl);
+
     // Render the table and pagination
     renderTable();
     renderPagination();
+}
+
+// Function to update the Lightning Address and LNURL in the DOM
+function updateLightningAddress(lightningAddress, lnurl) {
+    const copyField = document.getElementById('lightning-address-container');
+    const addressSpan = document.getElementById('lightning-address');
+
+    if (copyField && addressSpan) {
+        if (lightningAddress && lightningAddress !== 'Unavailable') {
+            copyField.setAttribute('data-address', lightningAddress);
+            addressSpan.textContent = lightningAddress;
+        } else {
+            copyField.setAttribute('data-address', 'Unknown Lightning Address');
+            addressSpan.textContent = 'Unknown Lightning Address';
+        }
+    } else {
+        console.error('Lightning Address elements not found in the DOM.');
+    }
 }
 
 // Function to render the transaction table
@@ -110,7 +134,7 @@ function renderTable() {
             const row = document.createElement('tr');
 
             // Check if donation is greater than highlight threshold
-            if (transaction.amount > 10000) { // Example Threshold: 10,000 Sats
+            if (transaction.amount > 2100) { // Example Threshold: 2,100 Sats
                 row.classList.add('highlight');
             }
 
@@ -136,7 +160,7 @@ function renderPagination() {
         pageLink.textContent = i;
         pageLink.href = '#';
         if (i === currentPage) {
-            pageLink.style.backgroundColor = 'var(--secondary-color)';
+            pageLink.classList.add('active');
         }
         pageLink.addEventListener('click', (e) => {
             e.preventDefault();
