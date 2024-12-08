@@ -31,9 +31,10 @@ function showToast(message, isError = false) {
 
 // Function to copy Lightning Address to clipboard
 function copyText(element) {
-    const text = element.querySelector('p').textContent.trim();
-    console.log('Attempting to copy Lightning Address:', text); // Debugging
-    navigator.clipboard.writeText(text).then(() => {
+    // Extract the address from the data-address attribute
+    const address = element.getAttribute('data-address').trim();
+    console.log('Attempting to copy Lightning Address:', address); // Debugging
+    navigator.clipboard.writeText(address).then(() => {
         console.log('Lightning Address copied successfully');
         showToast('Lightning address copied to clipboard!');
     }).catch(err => {
