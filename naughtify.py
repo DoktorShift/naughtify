@@ -1,3 +1,5 @@
+# naughtify.py
+
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -13,6 +15,7 @@ import qrcode
 import io
 import base64
 import json
+from urllib.parse import urlparse
 
 # --------------------- Configuration and Setup ---------------------
 
@@ -33,6 +36,10 @@ except (TypeError, ValueError):
 LNBITS_READONLY_API_KEY = os.getenv("LNBITS_READONLY_API_KEY")
 LNBITS_URL = os.getenv("LNBITS_URL")
 INSTANCE_NAME = os.getenv("INSTANCE_NAME", "LNbits Instance")
+
+# Extract Domain from LNBITS_URL
+parsed_lnbits_url = urlparse(LNBITS_URL)
+LNBITS_DOMAIN = parsed_lnbits_url.netloc
 
 # Overwatch Configuration
 OVERWATCH_URL = os.getenv("OVERWATCH_URL")
@@ -213,7 +220,7 @@ latest_balance = {
 
 latest_payments = []
 
-# New Data Structures for Donations
+# Data Structures for Donations
 donations = []
 total_donations = 0
 
@@ -299,11 +306,19 @@ def fetch_donation_details():
             "lnurl": "Unavailable"
         }
     
-    # Extract Lightning Address and LNURL from LNURLp info
-    lightning_address = lnurlp_info.get('lightning_address', 'Unavailable')  # Adjust key as per your data structure
+    # Extract username and construct lightning_address
+    username = lnurlp_info.get('username')  # Adjust the key based on your LNURLp response
+    if not username:
+            username = "Unknown"
+            logger.warning("Username not found in LNURLp info.")
+
+    # Construct the full Lightning Address
+    lightning_address = f"{username}@{LNBITS_DOMAIN}"
+    
+    # Extract LNURL
     lnurl = lnurlp_info.get('lnurl', 'Unavailable')  # Adjust key as per your data structure
     
-    logger.debug(f"Fetched Lightning Address: {lightning_address}")
+    logger.debug(f"Constructed Lightning Address: {lightning_address}")
     logger.debug(f"Fetched LNURL: {lnurl}")
     
     return {
@@ -351,7 +366,7 @@ def updateDonations(data):
     if updated_data["donations"]:
         latestDonation = updated_data["donations"][-1]
         # Again, frontend handles DOM updates
-        logger.info(f'Latest donation: {latestDonation["amount"]} Sats - "{latestDonation["memo"]}"')
+        logger.info(f'Latest donation: {latestDonation["amount"]} sats - "{latestDonation["memo"]}"')
     else:
         logger.info('Latest donation: None yet.')
     
@@ -428,8 +443,8 @@ def send_latest_payments():
 
         # Check for donation via LNURLp ID
         extra_data = payment.get("extra", {})
-        lnurlp_id = extra_data.get("link")
-        if lnurlp_id == LNURLP_ID:
+        lnurlp_id_payment = extra_data.get("link")
+        if lnurlp_id_payment == LNURLP_ID:
             # It's a donation
             donation_memo = extra_data.get("comment", "No memo")
             # Ensure 'extra' is a numeric value and in msats
@@ -805,6 +820,33 @@ def handle_balance_command(chat_id):
         logger.error(f"Failed to send /balance message to Telegram: {telegram_error}")
         logger.debug(traceback.format_exc())
 
+def handle_help_command(chat_id):
+    """
+    Handle the /help command sent by the user.
+    """
+    logger.info(f"Handling /help command for chat_id: {chat_id}")
+    help_message = (
+        f"ℹ️ *{INSTANCE_NAME}* - *Available Commands*\n\n"
+        f"/balance - Show current wallet balance\n"
+        f"/transactions - Show latest transactions\n"
+        f"/info - Show system information\n"
+        f"/help - Show this help message"
+    )
+
+    # Define the inline keyboard with "View Details", "View Donations", and "View Transactions" buttons
+    keyboard = [
+        [InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)],
+        [InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)],
+        [InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')]
+    ]
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    try:
+        bot.send_message(chat_id=chat_id, text=help_message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send /help message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
 def process_update(update):
     """
     Process incoming updates from the Telegram webhook.
@@ -995,7 +1037,7 @@ def get_donations_data():
         logger.debug(traceback.format_exc())
         return jsonify({"error": "Error fetching donations data"}), 500
 
-# New Endpoint for Long-Polling Updates
+# Endpoint for Long-Polling Updates
 @app.route('/donations_updates', methods=['GET'])
 def donations_updates():
     """
