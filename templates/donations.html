@@ -1,5 +1,4 @@
 <!-- donations.html -->
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -18,7 +17,7 @@
             <!-- Info Icon with Tooltip -->
             <div class="info-tooltip">
                 <i class="material-icons info-icon">psychology_alt</i>
-                <span class="tooltip-text">More about</span>
+                <span class="tooltip-text">Our Mission</span>
                 <a href="{{ information_url }}" target="_blank" class="info-link" aria-label="More about"></a>
             </div>
         </div>
@@ -73,13 +72,30 @@
     </div>
 
     <!-- Footer -->
-    <div class="footer">
-        <p>Connect with us</p>
-        <div class="social-icons">
-            <a href="#"><i class="material-icons">home</i></a>
-            <a href="https://github.com/DoktorShift"><i class="material-icons">hub</i></a>
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section about">
+                <h3>About Us</h3>
+                <p>
+                    We collect and save money for the purpose of supporting our community and enhancing our services. Learn more about our mission and values.
+                </p>
+            </div>
+            <div class="footer-section links">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="{{ INFORMATION_URL }}" target="_blank">Our Mission</a></li>
+                </ul>
+            </div>
+            <div class="footer-section social">
+                <h3>Connect with Us</h3>
+                <div class="social-icons">
+                    <a href="#"><i class="material-icons">home</i></a>
+                    <a href="#"><i class="material-icons">email</i></a>
+                    <a href="https://github.com/DoktorShift"><i class="material-icons">hub</i></a>
+                </div>
+            </div>
         </div>
-    </div>
+    </footer>
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
