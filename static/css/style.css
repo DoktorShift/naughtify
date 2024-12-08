@@ -1,26 +1,28 @@
-/* CSS Variables for Colors */
+/* style.css */
+
+/* CSS Variables for Colors and Themes */
 :root {
-    --primary-color: #1f4b6d;
-    --secondary-color: #3498db;
-    --background-gradient-start: #d3e8f3;
-    --background-gradient-end: #eef4f7;
-    --card-background-start: #ffffff;
-    --card-background-end: #f7fbfd;
-    --text-color: #333;
-    --text-color-light: #666;
-    --highlight-background: #ffe0b2;
-    --highlight-text-color: #e65100;
-    --highlight-border: #ff9800;
-    --donation-amount-color: #27ae60;
-    --copy-field-background: #e3eff5;
-    --copy-field-hover-background: #d0e4f1;
-    --footer-background: #1f4b6d;
-    --footer-text-color: #fff;
+    --primary-color: #1f4b6d; /* Dark Blue */
+    --secondary-color: #3498db; /* Blue */
+    --background-gradient-start: #d3e8f3; /* Light Blue */
+    --background-gradient-end: #eef4f7; /* Very Light Blue */
+    --card-background-start: #ffffff; /* White */
+    --card-background-end: #f7fbfd; /* Very Light Gray */
+    --text-color: #333; /* Dark Gray */
+    --text-color-light: #666; /* Medium Gray */
+    --highlight-background: #ffe0b2; /* Light Orange */
+    --highlight-text-color: #e65100; /* Dark Orange */
+    --highlight-border: #ff9800; /* Orange */
+    --donation-amount-color: #27ae60; /* Green */
+    --copy-field-background: #e3eff5; /* Very Light Blue */
+    --copy-field-hover-background: #d0e4f1; /* Light Blue */
+    --footer-background: #1f4b6d; /* Dark Blue */
+    --footer-text-color: #fff; /* White */
     /* Toast Colors */
     --toast-success-bg: #4caf50; /* Green */
-    --toast-success-text: #fff;
+    --toast-success-text: #fff; /* White */
     --toast-error-bg: #f44336; /* Red */
-    --toast-error-text: #fff;
+    --toast-error-text: #fff; /* White */
     --toast-transition: opacity 0.5s ease, transform 0.5s ease;
 }
 
@@ -62,7 +64,7 @@ a {
     color: var(--primary-color);
 }
 
-.header p {
+.header h5 {
     font-size: 1.1rem;
     color: var(--text-color-light);
 }
@@ -100,9 +102,9 @@ a {
     box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
 }
 
-.card h2 {
+.card h5 {
     margin-bottom: 0.625rem;
-    font-size: 1.6rem;
+    font-size: 1.1rem;
     color: var(--primary-color);
 }
 
