@@ -84,9 +84,9 @@ function updateDonations(data) {
     // Update latest donation
     if (data.donations.length > 0) {
         const latestDonation = data.donations[data.donations.length - 1];
-        document.getElementById('donationHistory').textContent = `Latest donation: ${latestDonation.amount} Sats - "${latestDonation.memo}"`;
+        document.getElementById('donationHistory').textContent = `Last Donor: ${latestDonation.amount} Sats - "${latestDonation.memo}"`;
     } else {
-        document.getElementById('donationHistory').textContent = 'Latest donation: None yet.';
+        document.getElementById('donationHistory').textContent = 'Last Donor: None yet.';
     }
 
     // Update transactions data
@@ -128,7 +128,7 @@ function renderTable() {
     const visibleTransactions = transactionsData.slice().reverse().slice(startIndex, endIndex);
 
     if (visibleTransactions.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="3" class="no-data">No transactions yet.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="3" class="no-data">No donors yet.</td></tr>';
     } else {
         visibleTransactions.forEach((transaction) => {
             const row = document.createElement('tr');
@@ -228,6 +228,30 @@ async function checkForUpdates() {
     } finally {
         // Schedule the next update check
         setTimeout(checkForUpdates, 5000); // Every 5 seconds
+    }
+}
+
+// Modal Functionality
+function openInfoModal(event) {
+    event.stopPropagation(); // Prevent triggering other click events
+    const modal = document.getElementById('infoModal');
+    if (modal) {
+        modal.style.display = 'block';
+    }
+}
+
+function closeInfoModal() {
+    const modal = document.getElementById('infoModal');
+    if (modal) {
+        modal.style.display = 'none';
+    }
+}
+
+// Close the modal when clicking outside the modal content
+window.onclick = function(event) {
+    const modal = document.getElementById('infoModal');
+    if (modal && event.target == modal) {
+        modal.style.display = 'none';
     }
 }
 
