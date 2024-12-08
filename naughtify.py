@@ -515,8 +515,6 @@ def send_latest_payments():
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
-    if INFORMATION_URL:
-        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -576,8 +574,6 @@ def check_balance_change():
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
-    if INFORMATION_URL:
-        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -638,8 +634,6 @@ def send_wallet_balance():
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
-    if INFORMATION_URL:
-        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -754,8 +748,6 @@ def handle_transactions_command(chat_id):
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
-    if INFORMATION_URL:
-        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -790,9 +782,6 @@ def handle_info_command(chat_id):
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
-    if INFORMATION_URL:
-        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
-    keyboard.append([InlineKeyboardButton("🔧 Manage LNBits Backend", url=LNBITS_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -827,8 +816,6 @@ def handle_balance_command(chat_id):
         keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
     if DONATIONS_URL:
         keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
-    if INFORMATION_URL:
-        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
     keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -836,53 +823,6 @@ def handle_balance_command(chat_id):
         bot.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
     except Exception as telegram_error:
         logger.error(f"Failed to send /balance message to Telegram: {telegram_error}")
-        logger.debug(traceback.format_exc())
-
-def handle_help_command(chat_id):
-    """
-    Handle the /help command sent by the user.
-    """
-    logger.info(f"Handling /help command for chat_id: {chat_id}")
-    help_message = (
-        f"ℹ️ *{INSTANCE_NAME}* - *Available Commands*\n\n"
-        f"/balance - Show current wallet balance\n"
-        f"/transactions - Show latest transactions\n"
-        f"/info - Show system information\n"
-        f"/help - Show this help message\n\n"
-    )
-    
-    # Prepare Useful Links section
-    useful_links = []
-    if OVERWATCH_URL or DONATIONS_URL or INFORMATION_URL:
-        useful_links.append("📎 *Useful Links:*")
-        if OVERWATCH_URL:
-            useful_links.append(f"🔗 [View Details]({OVERWATCH_URL})")
-        if DONATIONS_URL:
-            useful_links.append(f"💰 [View Donations]({DONATIONS_URL})")
-        if INFORMATION_URL:
-            useful_links.append(f"ℹ️ [More Information]({INFORMATION_URL})")
-        useful_links.append("")  # Add an empty line
-    
-    # Append Useful Links if any
-    if useful_links:
-        help_message += "\n".join(useful_links)
-    
-    # Define the inline keyboard with available buttons
-    keyboard = []
-    if OVERWATCH_URL:
-        keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
-    if DONATIONS_URL:
-        keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
-    if INFORMATION_URL:
-        keyboard.append([InlineKeyboardButton("ℹ️ More Information", url=INFORMATION_URL)])
-    # Always include "View Transactions" button
-    keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    try:
-        bot.send_message(chat_id=chat_id, text=help_message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
-    except Exception as telegram_error:
-        logger.error(f"Failed to send /help message to Telegram: {telegram_error}")
         logger.debug(traceback.format_exc())
 
 def process_update(update):
