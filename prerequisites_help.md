@@ -4,7 +4,7 @@ Naughtify requires some prerequisites that not everyone is familiar with. Here a
 
 1. VPS - Virtual Private Server
 2. Domain - Your Link to the Server 
-3. LNbits - The Wallet invoice key and lighting address
+3. LNbits - The Wallet invoice key and LNURLp-ID
 4. Telegram Bot - Botfather and bot token
 5. UserInfoBot - Your User / Chat ID
 
@@ -16,7 +16,7 @@ If you don't have your own LNbits server that is publicly accessible, then you c
 
 If you host your own LNbits server publicly, you also have your own domain. You can set up additional subdomains with domain hosting providers. If you don't have your own domain and use someone else's LNbits server, you can use [duckdns.org](https://www.duckdns.org/). There you can get a free subdomain in the format `mysubdomain.duckdns.org`. All you have to do is point the domain to the IP address of the VPS on which Naughtify is installed and set up Caddy accordingly. That's it. 
 
-### 3. LNbits - The Wallet invoice key and lighting address
+### 3. LNbits - The Wallet invoice key and LNURLp-ID
 
 LNbits is a wallet and account system. Each account can have multiple wallets and add extensions for different functions. Below is a brief explanation of how to create a wallet, receive the wallet invoice key and generate a static LNURLpay link with a Lightning⚡ address.
 
@@ -28,27 +28,27 @@ You will also receive an LNbits wallet with your account. If you have not logged
 
 3.2. Optain the Wallet Invoice Key 
 
-In LNbits, click once on your wallet on the left and then you will see a key symbol 🗝️ on the right with the note `Node URL, API keys and API docs`. Select this and then copy the `Invoice/read key`. Save it well, you need it for the `.env`.  
+In LNbits, click once on your wallet on the left and then you will see a key symbol 🗝️ on the right with the note `Node URL, API keys and API docs`. Select this and then copy the `Invoice/read key`. Save it well, you need it for the `.env` file.  
 
 3.3. Optain the LNURLp-ID
 
-For a static address and a Lightning⚡ address, the LNbits extension `Pay Links` is required. This can be added under `Manage > Extensions`. Once it has been added, you can add a new Pay Link instance under `Extensions > Pay Links > NEW PAY LINK`. You can find an example of this in the images below. 
+For a static address and a Lightning⚡ address, the LNbits extension `Pay Links` is required. This can be added under `Manage > Extensions`. Once it has been added, you can add a new Pay Link instance under `Extensions > Pay Links > NEW PAY LINK`. You can find an example of this in the images below. Save the LNURLp ID as well, as you will need it for the `.env` file.
 
 invoice read key          |  set up instance   |  LNURLp ID
 :-------------------------:|:-------------------------:|:-------------------------:
-<img src="./assets/wallet1invoice.png" width="300">  |  <img src="./assets/wallet2instance.png" width="300">  |  <img src="./assets/wallet3id.png" width="300"> 
+<img src="./assets/wallet1invoice.png" width="400">  |  <img src="./assets/wallet2instance.png" width="400">  |  <img src="./assets/wallet3id.png" width="400"> 
 
 ### 4. Telegram Bot - Botfather and bot token
 
 To create a bot, open the [BotFather](https://t.me/BotFather) and click on `Start`. Write the command `/newbot` and then choose a name. Then give the bot a Telegram bot username by simply adding `_bot` after your bot name. The magic is done. The BotFather will then show you the link to your bot and token. Save both well.
 
-@BotFather            |  @userinfobot
-:-------------------------:|:-------------------------:
-<img src="./assets/TelegramBot.png" width="300">  |  <img src="./assets/UserInfoBot.png" width="300"> 
-
 ### 5. UserInfoBot - Your User / Chat ID
 
 To determine your own user ID (chat ID), open the [@userinfobot](https://t.me/userinfobot) and click on `Start`. That was it. The bot will now show you your user ID.
+
+@BotFather            |  @userinfobot
+:-------------------------:|:-------------------------:
+<img src="./assets/TelegramBot.png" width="300">  |  <img src="./assets/UserInfoBot.png" width="300"> 
 
 ---
 ### [Back to Naughtify](./README.md)

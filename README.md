@@ -55,7 +55,8 @@ Balance Notification            |  Transaction Summary
 4. **Telegram Bot:** Create a Telegram bot via [BotFather](https://t.me/BotFather) and obtain your bot token.
 5. **Chat ID:** Use the [@userinfobot](https://t.me/userinfobot) on Telegram to find your User ID = chat ID.
 
-Hilfe für die letzten drei Voraussetzungen findet iher hier: 
+You can find help with the requirements here: [prerequisites_help.md](prerequisites_help.md)
+
 ---
 ## Installation
 ### Step 1: Clone the Repository
