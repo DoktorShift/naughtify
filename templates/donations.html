@@ -30,8 +30,9 @@
 
                 <!-- Lightning Address Card -->
                 <div class="card lightning-card">
-                    <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address">
-                        <p>⚡️{{ lightning_address }}</p>
+                    <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address" data-address="{{ lightning_address }}">
+                        <span class="emoji">⚡️</span>
+                        <span class="address">{{ lightning_address }}</span>
                     </div>
                 </div>
             </div>
