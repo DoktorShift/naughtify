@@ -267,7 +267,7 @@ Option 2: Easier Deployment with Netlify [here](https://github.com/DoktorShift/O
 
 ### Option: LiveTicker
 
-Naughtify can also provide a simple public website that displays the data and transactions of a wallet. This function is called “LiveTicker”. Examples of this would be a donation page or a crowdfunding page. Anyone can view the page, send funds directly, leave a comment (if desired) and shortly afterwards see that their contribution with the comment has been received. If activated, the entire wallet balance is also displayed, which can be particularly necessary for crowdfunding projects and ensures absolute transparency.
+Naughtify can also provide a simple public website that displays the data and transactions of a wallet. This function is called “LiveTicker”. Examples of this would be a donation page or a crowdfunding page. Anyone can view the page, send funds directly, leave a comment (if desired) and shortly afterwards see that their contribution with the comment has been received, which can be particularly necessary for crowdfunding projects and ensures absolute transparency.
 
 To use the LiveTicker, you need another subdomain via which the website can later be accessed. At the hosting provider, the A (and AAAA) entry for e.g. “liveticker.yourdomomain.com” must point to the server on which Naughtify is installed. The .env file must then be adapted accordingly and the entry added to Caddy.
 
