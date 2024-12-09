@@ -36,10 +36,10 @@ function copyText(element) {
     console.log('Attempting to copy Lightning Address:', address); // Debugging
     navigator.clipboard.writeText(address).then(() => {
         console.log('Lightning Address copied successfully');
-        showToast('Lightning address copied to clipboard!');
+        showToast('Lightning Address copied to clipboard!');
     }).catch(err => {
         console.error('Error copying Lightning Address:', err);
-        showToast('Failed to copy Lightning address.', true);
+        showToast('Failed to copy Lightning Address.', true);
     });
 }
 
@@ -84,9 +84,9 @@ function updateDonations(data) {
     // Update latest donation
     if (data.donations.length > 0) {
         const latestDonation = data.donations[data.donations.length - 1];
-        document.getElementById('donationHistory').textContent = `Last Donor: ${latestDonation.amount} Sats - "${latestDonation.memo}"`;
+        document.getElementById('donationHistory').textContent = `Latest Patron: ${latestDonation.amount} Sats - "${latestDonation.memo}"`;
     } else {
-        document.getElementById('donationHistory').textContent = 'Last Donor: None yet.';
+        document.getElementById('donationHistory').textContent = 'Latest Patron: None yet.';
     }
 
     // Update transactions data
@@ -231,7 +231,37 @@ async function checkForUpdates() {
     }
 }
 
-// Modal Functionality
+// Function to toggle Dark Mode
+function toggleDarkMode(isDark) {
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('darkMode', 'enabled');
+    } else {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('darkMode', 'disabled');
+    }
+}
+
+// Function to initialize Dark Mode based on user preference
+function initializeDarkMode() {
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const darkModeSetting = localStorage.getItem('darkMode');
+
+    if (darkModeSetting === 'enabled') {
+        darkModeToggle.checked = true;
+        document.body.classList.add('dark-mode');
+    } else {
+        darkModeToggle.checked = false;
+        document.body.classList.remove('dark-mode');
+    }
+
+    // Add event listener for the toggle
+    darkModeToggle.addEventListener('change', (e) => {
+        toggleDarkMode(e.target.checked);
+    });
+}
+
+// Modal Functionality (If Needed)
 function openInfoModal(event) {
     event.stopPropagation(); // Prevent triggering other click events
     const modal = document.getElementById('infoModal');
@@ -257,6 +287,9 @@ window.onclick = function(event) {
 
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function() {
+    // Initialize Dark Mode
+    initializeDarkMode();
+    
     // Fetch initial donations data
     fetchInitialDonations();
     // Start checking for updates
