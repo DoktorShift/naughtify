@@ -1,29 +1,82 @@
 /* style.css */
 
-/* CSS Variables for Colors and Themes */
+/* CSS Variables for Light Mode Colors and Themes */
 :root {
+    /* Primary Colors */
     --primary-color: #1f4b6d; /* Dark Blue */
     --secondary-color: #3498db; /* Blue */
+
+    /* Backgrounds */
     --background-gradient-start: #d3e8f3; /* Light Blue */
     --background-gradient-end: #eef4f7; /* Very Light Blue */
     --card-background-start: #ffffff; /* White */
     --card-background-end: #f7fbfd; /* Very Light Gray */
+
+    /* Text Colors */
     --text-color: #333; /* Dark Gray */
     --text-color-light: #666; /* Medium Gray */
+
+    /* Highlight Colors */
     --highlight-background: #ffe0b2; /* Light Orange */
     --highlight-text-color: #e65100; /* Dark Orange */
     --highlight-border: #ff9800; /* Orange */
+
+    /* Donation Colors */
     --donation-amount-color: #27ae60; /* Green */
+
+    /* Copy Field Colors */
     --copy-field-background: #e3eff5; /* Very Light Blue */
     --copy-field-hover-background: #d0e4f1; /* Light Blue */
+
+    /* Footer Colors */
     --footer-background: #1f4b6d; /* Dark Blue */
     --footer-text-color: #fff; /* White */
+
     /* Toast Colors */
     --toast-success-bg: #4caf50; /* Green */
     --toast-success-text: #fff; /* White */
     --toast-error-bg: #f44336; /* Red */
     --toast-error-text: #fff; /* White */
     --toast-transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+/* Dark Mode Overrides */
+body.dark-mode {
+    /* Primary Colors */
+    --primary-color: #2c3e50; /* Dark Slate Blue */
+    --secondary-color: #2980b9; /* Strong Blue */
+
+    /* Backgrounds */
+    --background-gradient-start: #1e2a38; /* Very Dark Blue */
+    --background-gradient-end: #16202c; /* Almost Black Blue */
+    --card-background-start: #2c3e50; /* Dark Slate Blue */
+    --card-background-end: #34495e; /* Darker Blue Gray */
+
+    /* Text Colors */
+    --text-color: #ecf0f1; /* Light Gray */
+    --text-color-light: #bdc3c7; /* Medium Light Gray */
+
+    /* Highlight Colors */
+    --highlight-background: #e67e22; /* Orange */
+    --highlight-text-color: #ffffff; /* White */
+    --highlight-border: #d35400; /* Dark Orange */
+
+    /* Donation Colors */
+    --donation-amount-color: #2ecc71; /* Emerald Green */
+
+    /* Copy Field Colors */
+    --copy-field-background: #34495e; /* Dark Blue Gray */
+    --copy-field-hover-background: #3c5a73; /* Slightly Lighter Dark Blue */
+
+    /* Footer Colors */
+    --footer-background: #1e2a38; /* Very Dark Blue */
+    --footer-text-color: #ecf0f1; /* White */
+
+    /* Toast Colors */
+    --toast-success-bg: #27ae60; /* Green */
+    --toast-success-text: #ffffff; /* White */
+    --toast-error-bg: #c0392b; /* Red */
+    --toast-error-text: #ffffff; /* White */
 }
 
 /* General Styles */
@@ -33,6 +86,7 @@ body {
     background: linear-gradient(135deg, var(--background-gradient-start), var(--background-gradient-end));
     color: var(--text-color);
     overflow-x: hidden;
+    transition: background 0.3s, color 0.3s;
 }
 
 .dashboard {
@@ -41,9 +95,10 @@ body {
     padding: 1.25rem;
 }
 
-h1, h2 {
+h1, h2, h3, h4, h5, h6 {
     margin: 0;
     padding: 0;
+    font-family: 'Arial', sans-serif;
 }
 
 a {
@@ -61,6 +116,7 @@ a {
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     position: relative;
+    transition: background 0.3s, box-shadow 0.3s;
 }
 
 .header h1 {
@@ -72,6 +128,58 @@ a {
 .header h5 {
     font-size: 1.3rem;
     color: #f0f0f0;
+}
+
+/* Dark Mode Toggle Styles */
+.toggle-container {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+}
+
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 24px;
+}
+
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: background-color 0.4s;
+    border-radius: 24px;
+}
+
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: transform 0.4s;
+    border-radius: 50%;
+}
+
+input:checked + .slider {
+    background-color: var(--secondary-color);
+}
+
+input:checked + .slider:before {
+    transform: translateX(26px);
 }
 
 /* Info Tooltip Styles */
@@ -163,7 +271,7 @@ a {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
     padding: 1.25rem;
     text-align: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s;
 }
 
 .card:hover {
@@ -194,11 +302,12 @@ a {
     max-width: 100%;
     border-radius: 0.75rem;
     cursor: pointer;
-    transition: transform 0.3s ease;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .qr-card img:hover {
     transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
 /* Lightning Address Card Styling */
@@ -209,6 +318,11 @@ a {
     word-break: break-all;
     cursor: pointer;
     transition: background 0.3s ease, transform 0.2s ease;
+    display: flex;
+    flex-direction: column; /* For central alignment */
+    align-items: center; /* Horizontal centering */
+    justify-content: center; /* Vertical centering */
+    gap: 0.5rem;
 }
 
 .lightning-card .copy-field:hover {
@@ -220,6 +334,11 @@ a {
     margin-bottom: 0.3125rem;
     font-weight: bold;
     font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+.lightning-card .emoji {
+    font-size: 1.5rem;
 }
 
 /* Donations Box */
@@ -231,6 +350,7 @@ a {
     text-align: center;
     flex: 1;
     min-width: 280px;
+    transition: background 0.3s, box-shadow 0.3s;
 }
 
 .donations-box h2 {
@@ -257,6 +377,7 @@ a {
     border-radius: 1rem;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
     padding: 1.25rem;
+    transition: background-color 0.3s, box-shadow 0.3s;
 }
 
 .transactions h2 {
@@ -274,19 +395,26 @@ table th, table td {
     padding: 0.75rem 0.9375rem;
     text-align: left;
     border-bottom: 1px solid var(--copy-field-background);
+    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
+    font-size: 1rem; /* Consistent font size */
 }
 
 table th {
     background-color: #e9f3f7;
-    color: var(--primary-color);
+    color: var(--text-color); /* Changed to use text-color for better readability */
 }
 
 table td {
     background-color: #f9fbfc;
+    color: var(--text-color);
 }
 
 table tr:hover td {
     background-color: var(--copy-field-background);
+}
+
+table td.amount {
+    color: var(--donation-amount-color);
 }
 
 /* Highlight Class for Large Donations */
@@ -311,17 +439,22 @@ table tr:hover td {
     color: white;
     border-radius: 0.3125rem;
     text-decoration: none;
-    transition: background-color 0.3s;
+    transition: background-color 0.3s, transform 0.3s;
+    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
+    font-size: 1rem; /* Consistent font size */
 }
 
 .pagination a:hover {
     background-color: var(--secondary-color);
+    transform: translateY(-2px);
 }
 
 .no-data {
     text-align: center;
     color: #999;
     padding: 1.25rem;
+    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
+    font-size: 1rem; /* Consistent font size */
 }
 
 /* Modern Footer Styles */
@@ -348,11 +481,13 @@ footer.footer {
     margin-bottom: 1rem;
     font-size: 1.5rem;
     color: var(--secondary-color);
+    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
 }
 
 .footer-section p, .footer-section ul {
     font-size: 1rem;
     line-height: 1.6;
+    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
 }
 
 .footer-section ul {
@@ -367,6 +502,8 @@ footer.footer {
 .footer-section ul li a {
     color: var(--text-color-light);
     transition: color 0.3s;
+    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
+    font-size: 1rem; /* Consistent font size */
 }
 
 .footer-section ul li a:hover {
@@ -402,6 +539,7 @@ footer.footer {
     margin-top: 2rem;
     font-size: 0.9rem;
     color: var(--text-color-light);
+    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
 }
 
 /* Toast Notification Styles */
@@ -426,6 +564,8 @@ footer.footer {
     opacity: 0;
     transform: translateX(100%);
     animation: fadeIn 0.5s forwards, fadeOut 0.5s forwards 2.5s;
+    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
+    font-size: 1rem; /* Consistent font size */
 }
 
 .toast.error {
@@ -445,4 +585,51 @@ footer.footer {
         opacity: 0;
         transform: translateX(100%);
     }
+}
+
+/* Dark Mode Specific Styles */
+body.dark-mode .header {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .card {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .donations-box {
+    background: linear-gradient(145deg, #2c3e50, #34495e);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode .transactions {
+    background-color: #2c3e50;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+
+body.dark-mode table th {
+    background-color: #1e2a38;
+    color: var(--text-color); /* Ensure headers use text-color */
+}
+
+body.dark-mode table td {
+    background-color: #2c3e50;
+    color: var(--text-color);
+}
+
+body.dark-mode table tr:hover td {
+    background-color: #3c5a73;
+}
+
+body.dark-mode footer.footer {
+    background-color: var(--footer-background);
+}
+
+body.dark-mode .tooltip-text {
+    background-color: rgba(44, 62, 80, 0.9);
+    color: #ecf0f1;
+}
+
+body.dark-mode .tooltip-text::after {
+    border-color: rgba(44, 62, 80, 0.9) transparent transparent transparent;
 }
