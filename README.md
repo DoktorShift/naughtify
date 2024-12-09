@@ -170,7 +170,7 @@ The SSL certificate e.g. with this: https://www.sslshopper.com/ssl-checker.html
 ---
 
 ### Step 5: Telegram Bot Webhook Setup
-To enable inline commands (like `/balance`, `/transactions`, `/info`), connect your Telegram bot to the app:
+To enable inline commands (like `/balance`, `/transactions`, `/info`, `/help`), connect your Telegram bot to the app:
 1. **Prepare Your Webhook URL:**  
    Combine your domain with the `/webhook` endpoint.  
    Example:  

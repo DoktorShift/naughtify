@@ -22,7 +22,7 @@ LNbits is a wallet and account system. Each account can have multiple wallets an
 
 3.1 Create an account with an LNbits server of your choice
 
-E.g. at the official demo server [demo.lnbits.com](https://demo.lnbits.com) or at LNbits.de [LNbits.de](https://LNbits.de). 
+E.g. at the official demo server [demo.lnbits.com](https://demo.lnbits.com) or at community driven TimeCatcher Server [timecatcher.lnbits.de](https://timecatcher.lnbits.de/). 
 
 You will also receive an LNbits wallet with your account. If you have not logged in with your username and password, save the user ID of the account to be on the safe side. To do this, click on the “Person” icon at the top right, select “My Account” and make the user ID visible by clicking on the eye. Copy the user ID and put it away. This is your fall-back solution. You can use it to access your account again at any time.
 
