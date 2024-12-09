@@ -297,7 +297,7 @@ sudo journalctl -u naughtify -f --since "2 hour ago"
 
 ### 6.1 Deploy Overwatch
 
-Follow the instruction [here](https://github.com/DoktorShift/Overwatch)
+General information find [here](https://github.com/DoktorShift/Overwatch)
 
 Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT.md)
 
