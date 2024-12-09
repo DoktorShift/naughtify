@@ -1,12 +1,13 @@
-# 🤖 **Help with the prerequisites** 🤖
+# 🤖 **Help with the prerequisites** 🤖 <!-- omit from toc -->
 
 Naughtify requires some prerequisites that not everyone is familiar with. Here are some approaches that may help you.
 
-1. VPS - Virtual Private Server
-2. Domain - Your Link to the Server 
-3. LNbits - The Wallet invoice key and LNURLp-ID
-4. Telegram Bot - Botfather and bot token
-5. UserInfoBot - Your User / Chat ID
+- [1. VPS - Virtual Private Server](#1-vps---virtual-private-server)
+- [2. Domain - Your Link to the Server](#2-domain---your-link-to-the-server)
+- [3. LNbits - The Wallet invoice key and LNURLp-ID](#3-lnbits---the-wallet-invoice-key-and-lnurlp-id)
+- [4. Telegram Bot - Botfather and bot token](#4-telegram-bot---botfather-and-bot-token)
+- [5. UserInfoBot - Your User / Chat ID](#5-userinfobot---your-user--chat-id)
+
 
 ### 1. VPS - Virtual Private Server
 
@@ -34,9 +35,9 @@ In LNbits, click once on your wallet on the left and then you will see a key sym
 
 For a static address and a Lightning⚡ address, the LNbits extension `Pay Links` is required. This can be added under `Manage > Extensions`. Once it has been added, you can add a new Pay Link instance under `Extensions > Pay Links > NEW PAY LINK`. You can find an example of this in the images below. Save the LNURLp ID as well, as you will need it for the `.env` file.
 
-invoice read key          |  set up instance   |  LNURLp ID
-:-------------------------:|:-------------------------:|:-------------------------:
-<img src="./assets/wallet1invoice.png" width="400">  |  <img src="./assets/wallet2instance.png" width="400">  |  <img src="./assets/wallet3id.png" width="400"> 
+|                  invoice read key                   |                   set up instance                    |                   LNURLp ID                    |
+| :-------------------------------------------------: | :--------------------------------------------------: | :--------------------------------------------: |
+| <img src="./assets/wallet1invoice.png" width="400"> | <img src="./assets/wallet2instance.png" width="400"> | <img src="./assets/wallet3id.png" width="400"> |
 
 ### 4. Telegram Bot - Botfather and bot token
 
@@ -46,10 +47,9 @@ To create a bot, open the [@BotFather](https://t.me/BotFather) and click on `Sta
 
 To determine your own user ID (chat ID), open the [@userinfobot](https://t.me/userinfobot) and click on `Start`. That was it. The bot will now show you your user ID.
 
-@BotFather            |  @userinfobot
-:-------------------------:|:-------------------------:
-<img src="./assets/TelegramBot.png" width="300">  |  <img src="./assets/UserInfoBot.png" width="300"> 
+|                    @BotFather                    |                   @userinfobot                   |
+| :----------------------------------------------: | :----------------------------------------------: |
+| <img src="./assets/TelegramBot.png" width="300"> | <img src="./assets/UserInfoBot.png" width="300"> |
 
 ---
-### [Back to Naughtify Mainpage](./README.md)
-
+### [Back to Naughtify Mainpage](./README.md) <!-- omit from toc -->

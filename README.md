@@ -1,41 +1,63 @@
-# 🤖 **Naughtify** 🤖
+# 🤖 **Naughtify** 🤖<!-- omit from toc -->
 
 LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monitoring your LNBits wallet. It connects to your LNbits instance and provides nearly real-time updates directly through Telegram. Additionally, the bot includes a dedicated view only transaction Overwatch as well as a LiveTicker Page specifically designed for static payment links.
 
+
+ ### Table of contents <!-- omit from toc -->
+- [🔍 **What Does This Bot Do?**](#-what-does-this-bot-do)
+- [1. Prerequisites](#1-prerequisites)
+- [2. Installation](#2-installation)
+  - [2.1 Clone the Repository](#21-clone-the-repository)
+  - [2.2 Installing Dependencies in a Virtual Environment](#22-installing-dependencies-in-a-virtual-environment)
+  - [2.3 Configure the Environment](#23-configure-the-environment)
+- [3. Setting Up Caddy Web Server](#3-setting-up-caddy-web-server)
+  - [3.1 Install Caddy](#31-install-caddy)
+  - [3.2 Configure the Caddyfile](#32-configure-the-caddyfile)
+  - [3.3 Reload Caddy](#33-reload-caddy)
+- [4. Telegram Bot Webhook Setup](#4-telegram-bot-webhook-setup)
+- [5. Naughtify Start](#5-naughtify-start)
+  - [5.1 Start Manually](#51-start-manually)
+  - [5.2 Autostart Service](#52-autostart-service)
+- [6. Optional Additions](#6-optional-additions)
+  - [6.1 Deploy Overwatch](#61-deploy-overwatch)
+  - [6.2 LiveTicker](#62-liveticker)
+- [Contributing](#contributing)
+- [Acknowledgments](#acknowledgments)
+
 ---
 
-## 🔍 **What Does This Bot Do?**
+## 🔍 **What Does This Bot Do?** 
 The bot offers:
 - Provide updates of your wallet balance.
 - A categorized view of recent transactions.
 - Notifications about significant wallet changes.
 - Direct access to LNbits, Overwatch, and a LiveTicker 📺 Page.
 
-## 🛠️ **Available Commands**
+## 🛠️ **Available Commands** <!-- omit from toc -->
  
-### 📊 **/balance**
+### 📊 **/balance** <!-- omit from toc -->
 - Displays your current wallet balance in sats.
 - Perfect for quickly checking your available funds.
-### ⚡️ **/transactions**
+### ⚡️ **/transactions** <!-- omit from toc -->
 - Lists your recent wallet transactions in three categories:
   - **Incoming:** Payments you’ve received.
   - **Outgoing:** Payments you’ve sent.
   - **Pending:** Transactions still being processed.
-### ℹ️ **/info**
+### ℹ️ **/info** <!-- omit from toc -->
 - Provides detailed information about the bot’s configuration, including:
   - Update intervals for balances and transactions.
   - Thresholds for notifications.
   - General details about your LNbits instance.
-### ❓ **/help**
+### ❓ **/help** <!-- omit from toc -->
 - Displays this guide to help you use the bot effectively.
 
-## 🔗 **Useful Links**
+## 🔗 **Useful Links** <!-- omit from toc -->
 
 - **LiveTicker Page**: Shows the latest donations, total donation balance, and memos. This page is tied to a static payment code and provides a transparent overview of donation activity.
 - **Overwatch Dashboard**: A read-only dashboard for monitoring wallet activity and status.
 - **LNbits Manage Dashboard**: Direct access to manage wallets, transactions, and settings.
 
-## 💡 **Helpful Tips**
+## 💡 **Helpful Tips** <!-- omit from toc -->
 - All timestamps are in **UTC** for consistency.
 - Adjust notification thresholds to receive only relevant updates.
 - Use the LNbits interface to maximize the potential of your wallet.
@@ -43,12 +65,15 @@ The bot offers:
 
 ---
 
-## Screenshots
-Balance Notification            |  Transaction Summary
-:-------------------------:|:-------------------------:
-![](https://github.com/user-attachments/assets/dc52e9e5-17a8-4016-ad1f-3e4c4f5b18c0)  |  ![](https://github.com/user-attachments/assets/abd4269a-c137-40e9-bfda-5b322befa8df)
+## Screenshots <!-- omit from toc -->
+|                                 Balance Notification                                 |                                 Transaction Summary                                  |
+| :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
+| ![](https://github.com/user-attachments/assets/dc52e9e5-17a8-4016-ad1f-3e4c4f5b18c0) | ![](https://github.com/user-attachments/assets/abd4269a-c137-40e9-bfda-5b322befa8df) |
+
 ---
-## Prerequisites
+
+## 1. Prerequisites 
+
 1. **VPS:** Virtual private server or other computer that is publicly accessible via a web domain.
 2. **Second Web Domain or Subdomain:** Required to serve the app and enable inline commands.
 3. **LNbits Wallet:** Access your LNbits API key (read-only).
@@ -58,15 +83,15 @@ Balance Notification            |  Transaction Summary
 If you need help with the requirements, have a look here: __[prerequisites_help.md](prerequisites_help.md)__
 
 ---
-## Installation
-### Step 1: Clone the Repository
-```bash
+## 2. Installation
+### 2.1 Clone the Repository 
+```
 git clone https://github.com/DoktorShift/naughtify.git
 cd naughtify
 ```
 
 ---
-### Step 2: Installing Dependencies in a Virtual Environment
+### 2.2 Installing Dependencies in a Virtual Environment
 The dependencies are installed in a virtual environment so that they are isolated from the system. Even “pip” is not installed on every system from the outset, so here are a few preparations.
 ```bash
 sudo apt-get update
@@ -89,7 +114,7 @@ source venv/bin/activate
 ```
 
 ---
-### Step 3: Configure the Environment
+### 2.3 Configure the Environment
 Settings are applied and parameters are transferred here.
 1. Copy the `.env` and open it.
 ```bash
@@ -105,10 +130,10 @@ sudo nano .env
 These are heavily needed
 
 ---
-### Step 4: Setting Up Caddy Web Server
+## 3. Setting Up Caddy Web Server 
 To expose the Flask app and enable inline commands, the Telegram bot must be able to reach the server. To do this, we use a subdomain, such as naughtify.yourdomain.com. Caddy then only needs to be set up as a reverse proxy on the server.
 __Important:__ Make sure that you point the DNS addresses (A and AAAA, if applicable) of your subdomain/domain to the IP address of your Virtual Private Server so that the requests are forwarded to the VPS via the domain. If you do not yet have a domain, you can obtain a free subdomain from duckdns.org.  
-#### Step a: Install Caddy
+### 3.1 Install Caddy
 ```bash
 sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https
 curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
@@ -119,7 +144,7 @@ sudo apt install caddy
 
 -> Test the web server in your internet browser with: http://yourIPaddress. You should see a Caddy web page.
 
-#### Step b: Configure the Caddyfile
+### 3.2 Configure the Caddyfile
 
 Create and open your Caddyfile
 
@@ -144,12 +169,24 @@ naughtify.yourdomain.com {
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         Referrer-Policy "no-referrer-when-downgrade"
-        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; font-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+        Content-Security-Policy
+        "
+          default-src 'self';
+          script-src 'self';
+          style-src 'self' 'unsafe-inline';
+          img-src 'self' data:;
+          connect-src 'self';
+          font-src 'self';
+          object-src 'none';
+          frame-ancestors 'none';
+          base-uri 'self';
+          form-action 'self';
+        "
     }
 }
 ```
 
-#### Step c: Reload Caddy
+### 3.3 Reload Caddy
 
 Restart or reload Caddy to apply the changes:
 ```bash
@@ -169,7 +206,7 @@ The SSL certificate e.g. with this: https://www.sslshopper.com/ssl-checker.html
 
 ---
 
-### Step 5: Telegram Bot Webhook Setup
+## 4. Telegram Bot Webhook Setup
 To enable inline commands (like `/balance`, `/transactions`, `/info`, `/help`), connect your Telegram bot to the app:
 1. **Prepare Your Webhook URL:**  
    Combine your domain with the `/webhook` endpoint.  
@@ -201,7 +238,8 @@ To enable inline commands (like `/balance`, `/transactions`, `/info`, `/help`), 
    }
    ```
 ---
-### Step 6: Start the Application
+## 5. Naughtify Start
+### 5.1 Start Manually
 ```bash
 python naughtify.py
 ```
@@ -217,7 +255,7 @@ Output:
  * Running on http://127.0.0.1:5009
 ```
 ---
-### Step 7: Naughtify Autostart Service
+### 5.2 Autostart Service
 1. Create new system service:
 ```bash
 sudo nano /etc/systemd/system/naughtify.service
@@ -255,9 +293,9 @@ sudo journalctl -u naughtify -f --since "2 hour ago"
 
 ---
 
-## OPTIONAL Additions
+## 6. Optional Additions
 
-### Option: Deploy Overwatch
+### 6.1 Deploy Overwatch
 
 Follow the instruction [here](https://github.com/DoktorShift/Overwatch)
 
@@ -265,7 +303,7 @@ Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Ove
 
 Option 2: Easier Deployment with Netlify [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT_Netlify.md)
 
-### Option: LiveTicker
+### 6.2 LiveTicker
 
 Naughtify can also provide a simple public website that displays the data and transactions of a wallet. This function is called “LiveTicker”. Examples of this would be a donation page or a crowdfunding page. Anyone can view the page, send funds directly, leave a comment (if desired) and shortly afterwards see that their contribution with the comment has been received, which can be particularly necessary for crowdfunding projects and ensures absolute transparency.
 
@@ -295,21 +333,34 @@ Add the following content to the end of the file and customize `yourdomain.com` 
 ```plaintext
 # Configuration for LiveTicker
 liveticker.yourdomain.com {
-    # Matcher for the root request
+    # Match for the root request
     @root path /
-    # Rewriting the root request to /liveticker
-    rewrite @root /liveticker
+    # Rewrite root request to /donations
+    rewrite @root /donations
     # Reverse proxy for all requests
     reverse_proxy 127.0.0.1:5009
-    # Activate GZIP compression
+    # Enable GZIP compression
     encode gzip
-    # Set security header
+    # Set security headers
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
         Referrer-Policy "no-referrer-when-downgrade"
-        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src >    }
+        Content-Security-Policy
+        "
+            default-src 'self';
+            script-src 'self' 'unsafe-inline';
+            style-src 'self' 'unsafe-inline' https://fonts.googleapis.com;
+            font-src 'self' https://fonts.gstatic.com;
+            img-src 'self' data:;
+            connect-src 'self';
+            object-src 'none';
+            frame-ancestors 'none';
+            base-uri 'self';
+            form-action 'self';
+        "
+    }
 }
 ```
 
@@ -327,7 +378,7 @@ If you now call up your domain `liveticker.yourdomain.com`, you should see your 
 ## Contributing
 I welcome feedback and pull requests! Feel free to submit issues or enhance the app with new features.  
 Licensed under the MIT License.
-### A Note on This Solution
+### A Note on This Solution <!-- omit from toc -->
 This bot is a simple hack designed to keep you informed about your LNbits wallet activity. While it fulfills its purpose, a more robust solution could be built as an official LNbits extension.  
 If you're inspired to take this further, feel free to develop a proper LNbits extension! You can find detailed information on creating an extension here:  
 [**LNbits Extensions Wiki**](https://github.com/lnbits/lnbits/wiki/LNbits-Extensions)
