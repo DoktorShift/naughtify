@@ -5,7 +5,6 @@ LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monit
 
  ### Table of contents <!-- omit from toc -->
 - [🔍 **What Does This Bot Do?**](#-what-does-this-bot-do)
-- [|  |  |](#----)
 - [1. Prerequisites](#1-prerequisites)
 - [2. Installation](#2-installation)
   - [2.1 Clone the Repository](#21-clone-the-repository)
@@ -70,6 +69,7 @@ The bot offers:
 |                                 Balance Notification                                 |                                 Transaction Summary                                  |
 | :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
 | ![](https://github.com/user-attachments/assets/dc52e9e5-17a8-4016-ad1f-3e4c4f5b18c0) | ![](https://github.com/user-attachments/assets/abd4269a-c137-40e9-bfda-5b322befa8df) |
+
 ---
 
 ## 1. Prerequisites 
