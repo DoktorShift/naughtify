@@ -305,7 +305,7 @@ def fetch_donation_details():
             "lightning_address": "Unavailable",
             "lnurl": "Unavailable"
         }
-    
+
     # Extract username and construct lightning_address
     username = lnurlp_info.get('username')  # Adjust the key based on your LNURLp response
     if not username:
@@ -314,13 +314,13 @@ def fetch_donation_details():
 
     # Construct the full Lightning Address
     lightning_address = f"{username}@{LNBITS_DOMAIN}"
-    
+
     # Extract LNURL
     lnurl = lnurlp_info.get('lnurl', 'Unavailable')  # Adjust key as per your data structure
-    
+
     logger.debug(f"Constructed Lightning Address: {lightning_address}")
     logger.debug(f"Fetched LNURL: {lnurl}")
-    
+
     return {
         "total_donations": total_donations,
         "donations": donations,
@@ -356,12 +356,12 @@ def updateDonations(data):
     """
     # Integrate additional donation details
     updated_data = update_donations_with_details(data)
-    
+
     totalDonations = updated_data["total_donations"]
     # Update total donations in the frontend
     # Since this is a backend function, the frontend will fetch updated data via API
     # Hence, no direct DOM manipulation here
-    
+
     # Update latest donation
     if updated_data["donations"]:
         latestDonation = updated_data["donations"][-1]
@@ -369,14 +369,14 @@ def updateDonations(data):
         logger.info(f'Latest donation: {latestDonation["amount"]} sats - "{latestDonation["memo"]}"')
     else:
         logger.info('Latest donation: None yet.')
-    
+
     # Update transactions data
     # Frontend fetches via API
-    
+
     # Update Lightning Address and LNURL
     logger.debug(f"Lightning Address: {updated_data.get('lightning_address')}")
     logger.debug(f"LNURL: {updated_data.get('lnurl')}")
-    
+
     # Save updated donations data
     save_donations()
 
@@ -823,6 +823,36 @@ def handle_balance_command(chat_id):
         bot.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
     except Exception as telegram_error:
         logger.error(f"Failed to send /balance message to Telegram: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+def handle_help_command(chat_id):
+    """
+    Handle the /help command sent by the user.
+    """
+    logger.info(f"Handling /help command for chat_id: {chat_id}")
+    help_message = (
+        f"ℹ️ *{INSTANCE_NAME}* - *Help*\n\n"
+        f"Available Commands:\n"
+        f"• `/balance` – Displays the current wallet balance.\n"
+        f"• `/transactions` – Shows the latest transactions.\n"
+        f"• `/info` – Provides information about the monitor and current settings.\n"
+        f"• `/help` – Displays this help message.\n\n"
+        f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
+    )
+
+    # Define the inline keyboard with available buttons
+    keyboard = []
+    if OVERWATCH_URL:
+        keyboard.append([InlineKeyboardButton("🔗 View Details", url=OVERWATCH_URL)])
+    if DONATIONS_URL:
+        keyboard.append([InlineKeyboardButton("💰 View Donations", url=DONATIONS_URL)])
+    keyboard.append([InlineKeyboardButton("📈 View Transactions", callback_data='view_transactions')])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+
+    try:
+        bot.send_message(chat_id=chat_id, text=help_message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+    except Exception as telegram_error:
+        logger.error(f"Failed to send /help message to Telegram: {telegram_error}")
         logger.debug(traceback.format_exc())
 
 def process_update(update):
