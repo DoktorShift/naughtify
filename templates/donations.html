@@ -59,20 +59,22 @@
             </div>
         </div>
 
-        <!-- Transactions Table -->
+        <!-- Donations Table with Likes and Dislikes -->
         <div class="transactions">
-            <h2>Incoming Transactions</h2>
+            <h2>Donations</h2>
             <table>
                 <thead>
                     <tr>
                         <th style="width: 20%;">Date</th>
-                        <th style="width: 60%;">Memo</th>
-                        <th style="width: 20%;">Amount</th>
+                        <th style="width: 40%;">Memo</th>
+                        <th style="width: 10%;">Amount</th>
+                        <th style="width: 15%;">Likes</th>
+                        <th style="width: 15%;">Dislikes</th>
                     </tr>
                 </thead>
                 <tbody id="transactions">
                     <tr>
-                        <td colspan="3" class="no-data">No donors yet.</td>
+                        <td colspan="5" class="no-data">No donors yet.</td>
                     </tr>
                 </tbody>
             </table>
@@ -110,6 +112,7 @@
     <div id="toast-container"></div>
 
     <!-- External JS File -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
