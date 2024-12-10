@@ -125,7 +125,7 @@ function updateLightningAddress(lightningAddress, lnurl) {
     }
 }
 
-// Function to render the transaction table
+// Function to render the donation table
 function renderTable() {
     const tableBody = document.getElementById('transactions');
     tableBody.innerHTML = '';
@@ -135,10 +135,11 @@ function renderTable() {
     const visibleTransactions = transactionsData.slice().reverse().slice(startIndex, endIndex);
 
     if (visibleTransactions.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="3" class="no-data">No donors yet.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4" class="no-data">No donors yet.</td></tr>';
     } else {
         visibleTransactions.forEach((transaction) => {
             const row = document.createElement('tr');
+            row.setAttribute('data-id', transaction.id); // Adding data-id attribute
 
             // Check if donation is greater than highlight threshold
             if (transaction.amount > highlightThreshold) { // Use dynamic threshold
@@ -149,6 +150,14 @@ function renderTable() {
                 <td>${formatDate(transaction.date)}</td>
                 <td>${transaction.memo}</td>
                 <td>${transaction.amount} Sats</td>
+                <td class="actions">
+                    <span class="like-button" onclick="voteDonation('${transaction.id}', 'like')">
+                        <i class="material-icons">thumb_up</i> <span class="likes-count">${transaction.likes}</span>
+                    </span>
+                    <span class="dislike-button" onclick="voteDonation('${transaction.id}', 'dislike')">
+                        <i class="material-icons">thumb_down</i> <span class="dislikes-count">${transaction.dislikes}</span>
+                    </span>
+                </td>
             `;
             tableBody.appendChild(row);
         });
@@ -236,6 +245,51 @@ async function checkForUpdates() {
         // Schedule the next update check
         setTimeout(checkForUpdates, 5000); // Every 5 seconds
     }
+}
+
+// Function to handle voting (like/dislike)
+async function voteDonation(donationId, voteType) {
+    try {
+        const response = await fetch('/api/vote', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ donation_id: donationId, vote_type: voteType })
+        });
+
+        const result = await response.json();
+
+        if (response.ok) {
+            // Update the likes/dislikes counts in the table
+            const row = document.querySelector(`tr[data-id="${donationId}"]`);
+            if (row) {
+                if (voteType === 'like') {
+                    const likesCell = row.querySelector('.likes-count');
+                    likesCell.textContent = result.likes;
+                    showToast('You liked this donation!');
+                } else if (voteType === 'dislike') {
+                    const dislikesCell = row.querySelector('.dislikes-count');
+                    dislikesCell.textContent = result.dislikes;
+                    showToast('You disliked this donation!');
+                }
+            } else {
+                console.error(`Row with donationId ${donationId} not found.`);
+                showToast('Donation not found.', true);
+            }
+        } else {
+            showToast(result.error || 'Error processing your vote.', true);
+        }
+
+    } catch (error) {
+        console.error('Error voting donation:', error);
+        showToast('Error processing your vote.', true);
+    }
+}
+
+// Helper function to get donation data by ID
+function getDonationById(donationId) {
+    return transactionsData.find(donation => donation.id === donationId);
 }
 
 // Function to toggle Dark Mode
