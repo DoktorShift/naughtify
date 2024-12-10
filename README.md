@@ -21,6 +21,8 @@ LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monit
 - [6. Optional Additions](#6-optional-additions)
   - [6.1 Deploy Overwatch](#61-deploy-overwatch)
   - [6.2 LiveTicker](#62-liveticker)
+- [7. Appendix](#7-appendix)
+  - [7.1 Update Naughtify](#71-update-naughtify)
 - [Contributing](#contributing)
 - [Acknowledgments](#acknowledgments)
 
@@ -374,6 +376,57 @@ If you now call up your domain `liveticker.yourdomain.com`, you should see your 
 
 ---
 
+## 7. Appendix
+
+### 7.1 Update Naughtify
+
+New version available? Here is the way to update Naughtify to the latest version.
+
+Simple `git pull` to pull latest version:
+
+```bash
+# git pull
+cd ~/naughtify
+git pull
+```
+
+Does the .env also need to be updated?
+
+```bash
+# backup .env
+cd ~/naughtify
+cp .env .env.bak
+# edit .env
+sudo nano .env
+# compare with:
+# https://github.com/DoktorShift/naughtify/blob/main/example.env
+```
+
+Have requirements changed?
+
+```bash
+# compare stock
+cat requirements.txt
+# with:
+# https://github.com/DoktorShift/naughtify/blob/main/requirements.txt
+```
+
+Update requirements:
+
+```bash
+cd ~/naughtify
+source venv/bin/activate
+pip install -r requirements.txt
+deactivate
+```
+
+Finally, restart the server and check journal:
+
+```bash
+sudo systemctl restart naughtify
+sudo journalctl -u naughtify -f --since "2 hour ago"
+```
+---
 
 ## Contributing
 I welcome feedback and pull requests! Feel free to submit issues or enhance the app with new features.  
