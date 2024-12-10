@@ -49,7 +49,7 @@ OVERWATCH_URL = os.getenv("OVERWATCH_URL")  # Optional
 LNURLP_ID = os.getenv("LNURLP_ID")
 
 # Forbidden Words Configuration
-FORBIDDEN_WORDS = os.getenv("FORBIDDEN_WORDS", "badword1,badword2,badword3").split(',')
+FORBIDDEN_WORDS_FILE = os.getenv("FORBIDDEN_WORDS_FILE", "forbidden_words.txt")
 
 # Notification Settings
 BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))  # Default: 10 sats
@@ -114,6 +114,34 @@ logger.addHandler(console_handler)
 
 # --------------------- Helper Functions ---------------------
 
+def load_forbidden_words(file_path):
+    """
+    Load forbidden words from a specified file into a set.
+    
+    Args:
+        file_path (str): Path to the forbidden words file.
+        
+    Returns:
+        set: A set containing all forbidden words.
+    """
+    forbidden = set()
+    try:
+        with open(file_path, 'r') as f:
+            for line in f:
+                word = line.strip()
+                if word:  # Avoid empty lines
+                    forbidden.add(word.lower())
+        logger.debug(f"Loaded {len(forbidden)} forbidden words from {file_path}.")
+    except FileNotFoundError:
+        logger.error(f"Forbidden words file not found at {file_path}.")
+    except Exception as e:
+        logger.error(f"Error loading forbidden words from {file_path}: {e}")
+        logger.debug(traceback.format_exc())
+    return forbidden
+
+# Load forbidden words at startup
+FORBIDDEN_WORDS = load_forbidden_words(FORBIDDEN_WORDS_FILE)
+
 def sanitize_memo(memo):
     """
     Sanitize the memo field by replacing forbidden words with asterisks.
@@ -127,11 +155,16 @@ def sanitize_memo(memo):
     if not memo:
         return "No memo"
     
+    # Function to replace matched word with asterisks
     def replace_match(match):
         word = match.group()
         return '*' * len(word)
     
-    pattern = re.compile('|'.join(map(re.escape, FORBIDDEN_WORDS)), re.IGNORECASE)
+    # Create a regex pattern that matches any forbidden word
+    if not FORBIDDEN_WORDS:
+        return memo  # No forbidden words to sanitize
+    
+    pattern = re.compile(r'\b(' + '|'.join(map(re.escape, FORBIDDEN_WORDS)) + r')\b', re.IGNORECASE)
     sanitized_memo = pattern.sub(replace_match, memo)
     logger.debug(f"Sanitized memo: Original: '{memo}' -> Sanitized: '{sanitized_memo}'")
     return sanitized_memo
@@ -343,7 +376,9 @@ def fetch_donation_details():
     lightning_address = f"{username}@{LNBITS_DOMAIN}"
 
     # Extract LNURL
-    lnurl = lnurlp_info.get('lnurl', 'Unavailable')  # Adjust key as per your data structure
+    lnurl = lnurlp_info.get('lnurl', '')
+    if not lnurl:
+        logger.warning("LNURL not found in LNURLp info.")
 
     logger.debug(f"Constructed Lightning Address: {lightning_address}")
     logger.debug(f"Fetched LNURL: {lnurl}")
@@ -442,7 +477,7 @@ def send_latest_payments():
             continue  # Skip already processed payments
 
         amount_msat = payment.get("amount", 0)
-        memo = payment.get("memo", "No memo")
+        memo = sanitize_memo(payment.get("memo", "No memo"))
         status = payment.get("status", "completed")
 
         try:
@@ -489,7 +524,10 @@ def send_latest_payments():
             total_donations += donation_amount_sats
             last_update = datetime.utcnow()
             logger.info(f"New donation detected: {donation_amount_sats} sats - {donation_memo}")
-            save_donations()  # Save updated donations
+            updateDonations({
+                "total_donations": total_donations,
+                "donations": donations
+            })  # Update donations with details
 
         # Mark payment as processed
         processed_payments.add(payment_hash)
