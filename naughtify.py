@@ -16,6 +16,7 @@ import io
 import base64
 import json
 from urllib.parse import urlparse
+import re
 
 # --------------------- Configuration and Setup ---------------------
 
@@ -46,6 +47,9 @@ OVERWATCH_URL = os.getenv("OVERWATCH_URL")  # Optional
 
 # Donation Parameters
 LNURLP_ID = os.getenv("LNURLP_ID")
+
+# Forbidden Words Configuration
+FORBIDDEN_WORDS = os.getenv("FORBIDDEN_WORDS", "badword1,badword2,badword3").split(',')
 
 # Notification Settings
 BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))  # Default: 10 sats
@@ -109,6 +113,28 @@ logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
 # --------------------- Helper Functions ---------------------
+
+def sanitize_memo(memo):
+    """
+    Sanitize the memo field by replacing forbidden words with asterisks.
+    
+    Args:
+        memo (str): The original memo text.
+        
+    Returns:
+        str: The sanitized memo text.
+    """
+    if not memo:
+        return "No memo"
+    
+    def replace_match(match):
+        word = match.group()
+        return '*' * len(word)
+    
+    pattern = re.compile('|'.join(map(re.escape, FORBIDDEN_WORDS)), re.IGNORECASE)
+    sanitized_memo = pattern.sub(replace_match, memo)
+    logger.debug(f"Sanitized memo: Original: '{memo}' -> Sanitized: '{sanitized_memo}'")
+    return sanitized_memo
 
 def load_processed_payments():
     """
@@ -200,7 +226,7 @@ def save_donations():
             json.dump({
                 "total_donations": total_donations,
                 "donations": donations
-            }, f)
+            }, f, indent=4)
         logger.debug("Donations data saved successfully.")
     except Exception as e:
         logger.error(f"Failed to save donations: {e}")
@@ -447,7 +473,7 @@ def send_latest_payments():
         lnurlp_id_payment = extra_data.get("link")
         if lnurlp_id_payment == LNURLP_ID:
             # It's a donation
-            donation_memo = extra_data.get("comment", "No memo")
+            donation_memo = sanitize_memo(extra_data.get("comment", "No memo"))
             # Ensure 'extra' is a numeric value and in msats
             try:
                 donation_amount_msat = int(extra_data.get("extra", 0))
@@ -681,7 +707,7 @@ def handle_transactions_command(chat_id):
 
     for payment in latest:
         amount_msat = payment.get("amount", 0)
-        memo = payment.get("memo", "No memo")
+        memo = sanitize_memo(payment.get("memo", "No memo"))
         status = payment.get("status", "completed")
 
         try:
