@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 import requests
 import traceback
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, make_response
 from datetime import datetime, timedelta
 import threading
 import qrcode
@@ -17,6 +17,7 @@ import base64
 import json
 from urllib.parse import urlparse
 import re
+import uuid
 
 # --------------------- Configuration and Setup ---------------------
 
@@ -139,9 +140,6 @@ def load_forbidden_words(file_path):
         logger.debug(traceback.format_exc())
     return forbidden
 
-# Load forbidden words at startup
-FORBIDDEN_WORDS = load_forbidden_words(FORBIDDEN_WORDS_FILE)
-
 def sanitize_memo(memo):
     """
     Sanitize the memo field by replacing forbidden words with asterisks.
@@ -245,6 +243,16 @@ def load_donations():
                 data = json.load(f)
                 donations = data.get("donations", [])
                 total_donations = data.get("total_donations", 0)
+            
+            # Ensure each donation has a unique ID
+            for donation in donations:
+                if "id" not in donation:
+                    donation["id"] = str(uuid.uuid4())
+                if "likes" not in donation:
+                    donation["likes"] = 0
+                if "dislikes" not in donation:
+                    donation["dislikes"] = 0
+            
             logger.debug(f"Loaded {len(donations)} donations from file.")
         except Exception as e:
             logger.error(f"Failed to load donations: {e}")
@@ -289,6 +297,9 @@ last_update = datetime.utcnow()
 
 # Load existing donations at startup
 load_donations()
+
+# Load forbidden words at startup
+FORBIDDEN_WORDS = load_forbidden_words(FORBIDDEN_WORDS_FILE)
 
 # --------------------- Functions ---------------------
 
@@ -363,7 +374,8 @@ def fetch_donation_details():
             "total_donations": total_donations,
             "donations": donations,
             "lightning_address": "Unavailable",
-            "lnurl": "Unavailable"
+            "lnurl": "Unavailable",
+            "highlight_threshold": HIGHLIGHT_THRESHOLD
         }
 
     # Extract username and construct lightning_address
@@ -387,7 +399,8 @@ def fetch_donation_details():
         "total_donations": total_donations,
         "donations": donations,
         "lightning_address": lightning_address,
-        "lnurl": lnurl
+        "lnurl": lnurl,
+        "highlight_threshold": HIGHLIGHT_THRESHOLD
     }
 
 def update_donations_with_details(data):
@@ -403,7 +416,8 @@ def update_donations_with_details(data):
     donation_details = fetch_donation_details()
     data.update({
         "lightning_address": donation_details.get("lightning_address"),
-        "lnurl": donation_details.get("lnurl")
+        "lnurl": donation_details.get("lnurl"),
+        "highlight_threshold": donation_details.get("highlight_threshold")  # Include threshold
     })
     return data
 
@@ -427,7 +441,7 @@ def updateDonations(data):
     # Update latest donation
     if updated_data["donations"]:
         latestDonation = updated_data["donations"][-1]
-        # Again, frontend handles DOM updates
+        # Frontend handles DOM updates
         logger.info(f'Latest donation: {latestDonation["amount"]} sats - "{latestDonation["memo"]}"')
     else:
         logger.info('Latest donation: None yet.')
@@ -516,9 +530,12 @@ def send_latest_payments():
             except (ValueError, TypeError):
                 donation_amount_sats = amount_sats  # Fallback if 'extra' is not numeric
             donation = {
+                "id": str(uuid.uuid4()),  # Unique ID
                 "date": datetime.utcnow().isoformat(),
                 "memo": donation_memo,
-                "amount": donation_amount_sats
+                "amount": donation_amount_sats,
+                "likes": 0,
+                "dislikes": 0
             }
             donations.append(donation)
             total_donations += donation_amount_sats
@@ -921,6 +938,35 @@ def handle_help_command(chat_id):
         logger.error(f"Failed to send /help message to Telegram: {telegram_error}")
         logger.debug(traceback.format_exc())
 
+def handle_vote_command(donation_id, vote_type):
+    """
+    Handle a vote (like or dislike) for a specific donation.
+    
+    Parameters:
+        donation_id (str): The unique ID of the donation.
+        vote_type (str): Either 'like' or 'dislike'.
+    
+    Returns:
+        dict: Result of the vote operation.
+    """
+    try:
+        # Find the corresponding donation
+        for donation in donations:
+            if donation.get("id") == donation_id:
+                if vote_type == 'like':
+                    donation["likes"] += 1
+                elif vote_type == 'dislike':
+                    donation["dislikes"] += 1
+                else:
+                    return {"error": "Invalid vote type."}, 400
+                save_donations()
+                return {"success": True, "likes": donation["likes"], "dislikes": donation["dislikes"]}, 200
+        return {"error": "Donation not found."}, 404
+    except Exception as e:
+        logger.error(f"Error handling vote: {e}")
+        logger.debug(traceback.format_exc())
+        return {"error": "Internal server error."}, 500
+
 def process_update(update):
     """
     Process incoming updates from the Telegram webhook.
@@ -1128,6 +1174,53 @@ def donations_updates():
         logger.error(f"Error fetching last_update: {e}")
         logger.debug(traceback.format_exc())
         return jsonify({"error": "Error fetching last_update"}), 500
+
+# API Endpoint to Handle Votes (Likes/Dislikes)
+@app.route('/api/vote', methods=['POST'])
+def vote_donation():
+    """
+    API endpoint to handle likes and dislikes for a donation.
+    Expects JSON with 'donation_id' and 'vote_type' ('like' or 'dislike').
+    Utilizes cookies to prevent multiple votes by the same user on the same donation.
+    """
+    try:
+        data = request.get_json()
+        donation_id = data.get('donation_id')
+        vote_type = data.get('vote_type')
+
+        if not donation_id or not vote_type:
+            return jsonify({"error": "donation_id and vote_type are required."}), 400
+
+        if vote_type not in ['like', 'dislike']:
+            return jsonify({"error": "vote_type must be 'like' or 'dislike'."}), 400
+
+        # Retrieve existing voted donations from cookies
+        voted_donations = request.cookies.get('voted_donations', '')
+        voted_set = set(voted_donations.split(',')) if voted_donations else set()
+
+        # Check if user has already voted on this donation
+        if donation_id in voted_set:
+            return jsonify({"error": "You have already voted on this donation."}), 403
+
+        # Handle the vote
+        result, status_code = handle_vote_command(donation_id, vote_type)
+        if status_code != 200:
+            return jsonify(result), status_code
+
+        # Prepare response with updated likes and dislikes
+        response = make_response(jsonify(result), 200)
+
+        # Update the voted_donations cookie
+        voted_set.add(donation_id)
+        new_voted_donations = ','.join(voted_set)
+        response.set_cookie('voted_donations', new_voted_donations, max_age=60*60*24*365)  # 1 year
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Error processing vote: {e}")
+        logger.debug(traceback.format_exc())
+        return jsonify({"error": "Internal server error."}), 500
 
 # --------------------- Application Entry Point ---------------------
 
