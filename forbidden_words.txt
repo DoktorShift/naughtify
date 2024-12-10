@@ -24,9 +24,6 @@ TRON
 TRX
 Avalanche
 AVAX
-Chainlink
-LINK
-Wrapped
 WBTC
 Stellar
 XLM
