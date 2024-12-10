@@ -418,11 +418,11 @@ table td.amount {
     color: var(--donation-amount-color);
 }
 
-/* Like and Dislike Buttons */
+/* Like and Dislike Buttons within Actions Column */
 table td.actions {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 1rem; /* Increased gap for better spacing */
 }
 
 .like-button, .dislike-button {
@@ -442,6 +442,15 @@ table td.actions {
 .dislike-button:hover {
     color: #e74c3c; /* Red */
     transform: scale(1.2);
+}
+
+.like-button .material-icons, .dislike-button .material-icons {
+    font-size: 1.2rem;
+}
+
+.likes-count, .dislikes-count {
+    font-size: 0.9rem;
+    color: #555;
 }
 
 /* Highlight Class for Large Donations */
@@ -689,5 +698,14 @@ body.dark-mode .tooltip-text::after {
 
     .donations-box, .info-container, .transactions {
         min-width: 100%;
+    }
+
+    table td.actions {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .like-button, .dislike-button {
+        gap: 0.3rem;
     }
 }
