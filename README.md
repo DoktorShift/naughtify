@@ -408,7 +408,7 @@ Have requirements changed?
 # compare stock
 cat requirements.txt
 # with:
-# https://github.com/DoktorShift/naughtify/blob/main/example.env
+# https://github.com/DoktorShift/naughtify/blob/main/requirements.txt
 ```
 
 Update requirements:
