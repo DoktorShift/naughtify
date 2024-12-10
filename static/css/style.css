@@ -111,8 +111,8 @@ a {
     text-align: center;
     margin-bottom: 2.5rem;
     padding: 2rem 1rem;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); /* Updated Gradient */
-    color: #fff; /* White Text */
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     position: relative;
@@ -418,6 +418,32 @@ table td.amount {
     color: var(--donation-amount-color);
 }
 
+/* Like and Dislike Buttons */
+table td.actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.like-button, .dislike-button {
+    cursor: pointer;
+    color: #888;
+    transition: color 0.3s, transform 0.3s;
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.like-button:hover {
+    color: #27ae60; /* Green */
+    transform: scale(1.2);
+}
+
+.dislike-button:hover {
+    color: #e74c3c; /* Red */
+    transform: scale(1.2);
+}
+
 /* Highlight Class for Large Donations */
 .highlight {
     background-color: var(--highlight-background) !important;
@@ -443,6 +469,10 @@ table td.amount {
     transition: background-color 0.3s, transform 0.3s;
     font-family: 'Arial', sans-serif; /* Ensuring consistent font */
     font-size: 1rem; /* Consistent font size */
+}
+
+.pagination a.active {
+    background-color: var(--secondary-color);
 }
 
 .pagination a:hover {
@@ -633,4 +663,31 @@ body.dark-mode .tooltip-text {
 
 body.dark-mode .tooltip-text::after {
     border-color: rgba(44, 62, 80, 0.9) transparent transparent transparent;
+}
+
+/* Like and Dislike Button Styles */
+.like-button, .dislike-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+}
+
+.like-button .material-icons, .dislike-button .material-icons {
+    font-size: 1.2rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .info-section {
+        flex-direction: column;
+    }
+
+    table th, table td {
+        padding: 0.5rem;
+    }
+
+    .donations-box, .info-container, .transactions {
+        min-width: 100%;
+    }
 }
