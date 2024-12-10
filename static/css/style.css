@@ -282,7 +282,7 @@ input:checked + .slider:before {
 .card h5 {
     margin-bottom: 0.625rem;
     font-size: 1.1rem;
-    color: var(--primary-color);
+    color: var(--text-color-light);
 }
 
 .card p {
@@ -356,7 +356,7 @@ input:checked + .slider:before {
 .donations-box h2 {
     font-size: 2rem;
     margin-bottom: 0.625rem;
-    color: var(--primary-color);
+    color: var(--text-color-light);
 }
 
 .donations-box .donation-amount {
@@ -368,6 +368,7 @@ input:checked + .slider:before {
 .donations-box .donation-history {
     margin-top: 1.25rem;
     font-size: 0.9rem;
+    font-weight: bold;
     color: var(--text-color-light);
 }
 
@@ -383,7 +384,7 @@ input:checked + .slider:before {
 .transactions h2 {
     font-size: 1.6rem;
     margin-bottom: 0.9375rem;
-    color: var(--primary-color);
+    color: var(--text-color-light);
 }
 
 table {

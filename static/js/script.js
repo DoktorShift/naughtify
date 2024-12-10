@@ -5,6 +5,7 @@ let transactionsData = []; // Store transaction history
 const rowsPerPage = 10; // Number of rows to display per page
 let currentPage = 1;
 let lastUpdate = null; // Timestamp of the last update
+let highlightThreshold = 2100; // Default threshold
 
 // Function to show a toast notification
 function showToast(message, isError = false) {
@@ -95,6 +96,12 @@ function updateDonations(data) {
     // Update Lightning Address and LNURL
     updateLightningAddress(data.lightning_address, data.lnurl);
 
+    // Update Highlight Threshold
+    if (data.highlight_threshold) {
+        highlightThreshold = data.highlight_threshold;
+        console.log(`Highlight Threshold updated to: ${highlightThreshold} sats`);
+    }
+
     // Render the table and pagination
     renderTable();
     renderPagination();
@@ -134,7 +141,7 @@ function renderTable() {
             const row = document.createElement('tr');
 
             // Check if donation is greater than highlight threshold
-            if (transaction.amount > 2100) { // Example Threshold: 2,100 Sats
+            if (transaction.amount > highlightThreshold) { // Use dynamic threshold
                 row.classList.add('highlight');
             }
 
