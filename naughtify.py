@@ -49,6 +49,7 @@ LNURLP_ID = os.getenv("LNURLP_ID")
 
 # Notification Settings
 BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))  # Default: 10 sats
+HIGHLIGHT_THRESHOLD = int(os.getenv("HIGHLIGHT_THRESHOLD", "2100"))  # Default: 2100 sats
 LATEST_TRANSACTIONS_COUNT = int(os.getenv("LATEST_TRANSACTIONS_COUNT", "21"))  # Default: 21 transactions
 
 # Scheduler Intervals (in seconds)
@@ -765,6 +766,7 @@ def handle_info_command(chat_id):
     # Prepare Interval Information
     interval_info = (
         f"🔔 *Balance Change Threshold:* `{BALANCE_CHANGE_THRESHOLD} sats`\n"
+        f"🔔 *Highlight Threshold:* `{HIGHLIGHT_THRESHOLD} sats`\n"
         f"⏲️ *Balance Change Monitoring Interval:* Every `{WALLET_INFO_UPDATE_INTERVAL} seconds`\n"
         f"📊 *Daily Wallet Balance Notification Interval:* Every `{WALLET_BALANCE_NOTIFICATION_INTERVAL} seconds`\n"
         f"🔄 *Latest Payments Fetch Interval:* Every `{PAYMENTS_FETCH_INTERVAL} seconds`"
@@ -967,7 +969,8 @@ def status():
         "total_donations": donation_details["total_donations"],
         "donations": donation_details["donations"],
         "lightning_address": donation_details["lightning_address"],
-        "lnurl": donation_details["lnurl"]
+        "lnurl": donation_details["lnurl"],
+        "highlight_threshold": HIGHLIGHT_THRESHOLD
     })
 
 @app.route('/webhook', methods=['POST'])
@@ -1022,14 +1025,15 @@ def donations_page():
         donations_url=DONATIONS_URL,  # Pass the donations URL to the template
         information_url=INFORMATION_URL,  # Pass the information URL to the template
         total_donations=total_donations_current,  # Pass total donations
-        donations=donations  # Pass donations list
+        donations=donations,  # Pass donations list
+        highlight_threshold=HIGHLIGHT_THRESHOLD  # Pass highlight threshold
     )
 
 # API Endpoint to Serve Donation Data
 @app.route('/api/donations', methods=['GET'])
 def get_donations_data():
     """
-    Serve the donations data as JSON for the front-end, including Lightning Address and LNURL.
+    Serve the donations data as JSON for the front-end, including Lightning Address, LNURL, and Highlight Threshold.
     """
     try:
         donation_details = fetch_donation_details()
@@ -1037,7 +1041,8 @@ def get_donations_data():
             "total_donations": donation_details["total_donations"],
             "donations": donation_details["donations"],
             "lightning_address": donation_details["lightning_address"],
-            "lnurl": donation_details["lnurl"]
+            "lnurl": donation_details["lnurl"],
+            "highlight_threshold": HIGHLIGHT_THRESHOLD
         }
         logger.debug(f"Serving donations data with details: {data}")
         return jsonify(data), 200
@@ -1067,6 +1072,7 @@ if __name__ == "__main__":
 
     # Log the current configuration
     logger.info(f"🔔 Notification Threshold: {BALANCE_CHANGE_THRESHOLD} sats")
+    logger.info(f"🔔 Highlight Threshold: {HIGHLIGHT_THRESHOLD} sats")
     logger.info(f"📊 Fetching Latest {LATEST_TRANSACTIONS_COUNT} Transactions for Notifications")
     logger.info(f"⏲️ Scheduler Intervals - Balance Change Monitoring: {WALLET_INFO_UPDATE_INTERVAL} seconds, Daily Wallet Balance Notification: {WALLET_BALANCE_NOTIFICATION_INTERVAL} seconds, Latest Payments Fetch: {PAYMENTS_FETCH_INTERVAL} seconds")
 
