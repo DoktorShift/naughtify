@@ -135,11 +135,11 @@ function renderTable() {
     const visibleTransactions = transactionsData.slice().reverse().slice(startIndex, endIndex);
 
     if (visibleTransactions.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" class="no-data">No donors yet.</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="4" class="no-data">No donors yet.</td></tr>';
     } else {
         visibleTransactions.forEach((transaction) => {
             const row = document.createElement('tr');
-            row.setAttribute('data-id', transaction.id); // Hinzufügen des data-id Attributs
+            row.setAttribute('data-id', transaction.id); // Adding data-id attribute
 
             // Check if donation is greater than highlight threshold
             if (transaction.amount > highlightThreshold) { // Use dynamic threshold
@@ -150,14 +150,12 @@ function renderTable() {
                 <td>${formatDate(transaction.date)}</td>
                 <td>${transaction.memo}</td>
                 <td>${transaction.amount} Sats</td>
-                <td class="likes-count">${transaction.likes}</td>
-                <td class="dislikes-count">${transaction.dislikes}</td>
                 <td class="actions">
                     <span class="like-button" onclick="voteDonation('${transaction.id}', 'like')">
-                        <i class="material-icons">thumb_up</i>
+                        <i class="material-icons">thumb_up</i> <span class="likes-count">${transaction.likes}</span>
                     </span>
                     <span class="dislike-button" onclick="voteDonation('${transaction.id}', 'dislike')">
-                        <i class="material-icons">thumb_down</i>
+                        <i class="material-icons">thumb_down</i> <span class="dislikes-count">${transaction.dislikes}</span>
                     </span>
                 </td>
             `;
