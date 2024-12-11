@@ -3,8 +3,8 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from telegram import Bot, ReplyKeyboardMarkup, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
+from telegram import Bot, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
 from dotenv import load_dotenv
 import requests
 import traceback
@@ -47,7 +47,8 @@ LNBITS_DOMAIN = parsed_lnbits_url.netloc
 OVERWATCH_URL = os.getenv("OVERWATCH_URL")  # Optional
 
 # Donations Parameter
-LNURLP_ID = os.getenv("LNURLP_ID")
+DONATIONS_URL = os.getenv("DONATIONS_URL")  # Optional
+LNURLP_ID = os.getenv("LNURLP_ID") if DONATIONS_URL else None  # Only required if DONATIONS_URL is set
 
 # Forbidden Words Configuration
 FORBIDDEN_WORDS_FILE = os.getenv("FORBIDDEN_WORDS_FILE", "forbidden_words.txt")
@@ -58,8 +59,6 @@ HIGHLIGHT_THRESHOLD = int(os.getenv("HIGHLIGHT_THRESHOLD", "2100"))  # Default: 
 LATEST_TRANSACTIONS_COUNT = int(os.getenv("LATEST_TRANSACTIONS_COUNT", "21"))  # Default: 21 transactions
 
 # Scheduler Intervals (in seconds)
-WALLET_INFO_UPDATE_INTERVAL = int(os.getenv("WALLET_INFO_UPDATE_INTERVAL", "86400"))  # Default: 86400 seconds (24 hours)
-WALLET_BALANCE_NOTIFICATION_INTERVAL = int(os.getenv("WALLET_BALANCE_NOTIFICATION_INTERVAL", "86400"))  # Default: 86400 seconds (24 hours)
 PAYMENTS_FETCH_INTERVAL = int(os.getenv("PAYMENTS_FETCH_INTERVAL", "60"))  # Default: 60 seconds (1 minute)
 
 # Flask Server Configuration
@@ -71,13 +70,10 @@ PROCESSED_PAYMENTS_FILE = os.getenv("PROCESSED_PAYMENTS_FILE", "processed_paymen
 CURRENT_BALANCE_FILE = os.getenv("CURRENT_BALANCE_FILE", "current-balance.txt")
 DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
 
-# Donations Configuration
-DONATIONS_URL = os.getenv("DONATIONS_URL")  # Optional
-
 # Information URL Configuration
-INFORMATION_URL = os.getenv("INFORMATION_URL")  # New environment variable
+INFORMATION_URL = os.getenv("INFORMATION_URL")  # Optional
 
-# Validate essential environment variables (excluding OVERWATCH_URL and DONATIONS_URL)
+# Validate essential environment variables
 required_vars = {
     "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
     "CHAT_ID": CHAT_ID,
@@ -88,6 +84,10 @@ required_vars = {
 missing_vars = [var for var, value in required_vars.items() if not value]
 if missing_vars:
     raise EnvironmentError(f"Essential environment variables missing: {', '.join(missing_vars)}")
+
+# If DONATIONS_URL is provided, LNURLP_ID must also be set
+if DONATIONS_URL and not LNURLP_ID:
+    raise EnvironmentError("LNURLP_ID must be set when DONATIONS_URL is provided.")
 
 # Initialize the Telegram Bot
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
@@ -114,6 +114,76 @@ logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
 # --------------------- Helper Functions ---------------------
+
+def get_main_inline_keyboard():
+    """
+    Creates the main inline keyboard with three rows:
+    1. Balance button.
+    2. Latest Transactions and Live Ticker buttons.
+    3. Overwatch and LNBits buttons.
+    
+    Returns:
+        InlineKeyboardMarkup: The configured inline keyboard.
+    """
+    # First Row: Balance Button
+    balance_button = InlineKeyboardButton("💰 Balance", callback_data='balance')
+    
+    # Second Row: Latest Transactions and Live Ticker
+    latest_transactions_button = InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline')
+    if DONATIONS_URL:
+        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", url=DONATIONS_URL)
+    else:
+        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline')
+    
+    # Third Row: Overwatch and LNBits
+    if OVERWATCH_URL:
+        overwatch_button = InlineKeyboardButton("📊 Overwatch", url=OVERWATCH_URL)
+    else:
+        overwatch_button = InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline')
+    
+    if LNBITS_URL:
+        lnbits_button = InlineKeyboardButton("⚡ LNBits", url=LNBITS_URL)
+    else:
+        lnbits_button = InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
+    
+    # Assemble the keyboard
+    inline_keyboard = [
+        [balance_button],  # First row
+        [latest_transactions_button, live_ticker_button],  # Second row
+        [overwatch_button, lnbits_button]  # Third row
+    ]
+    
+    return InlineKeyboardMarkup(inline_keyboard)
+
+def get_main_keyboard():
+    """
+    Creates the main reply keyboard with buttons arranged in 1:2:2 layout.
+
+    Returns:
+        ReplyKeyboardMarkup: The configured reply keyboard.
+    """
+    # Buttons for the keyboard
+    balance_button = ["💰 Balance"]  # First row: One button
+
+    # The main options arranged in two rows of two buttons each
+    main_options_row_1 = [
+        "📊 Overwatch",
+        "📡 Live Ticker"
+    ]
+
+    main_options_row_2 = [
+        "📜 Latest Transactions",
+        "⚡ LNBits"
+    ]
+
+    # Assemble the keyboard
+    keyboard = [
+        balance_button,        # First row: Single button
+        main_options_row_1,    # Second row: Two buttons
+        main_options_row_2     # Third row: Two buttons
+    ]
+
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
 
 def load_forbidden_words(file_path):
     """
@@ -154,17 +224,17 @@ def sanitize_memo(memo):
         str: The sanitized memo text.
     """
     if not memo:
-        return "No memo"
-    
+        return "No memo provided."
+
     # Function to replace the matched word with asterisks
     def replace_match(match):
         word = match.group()
         return '*' * len(word)
-    
+
     # Create a regex pattern that matches any forbidden word
     if not FORBIDDEN_WORDS:
         return memo  # No forbidden words to sanitize
-    
+
     pattern = re.compile(r'\b(' + '|'.join(map(re.escape, FORBIDDEN_WORDS)) + r')\b', re.IGNORECASE)
     sanitized_memo = pattern.sub(replace_match, memo)
     logger.debug(f"Sanitized memo: Original: '{memo}' -> Sanitized: '{sanitized_memo}'")
@@ -240,7 +310,7 @@ def load_donations():
     Load donations from the donations file into the donations list and set the total donations.
     """
     global donations, total_donations
-    if os.path.exists(DONATIONS_FILE):
+    if os.path.exists(DONATIONS_FILE) and DONATIONS_URL and LNURLP_ID:
         try:
             with open(DONATIONS_FILE, 'r') as f:
                 data = json.load(f)
@@ -255,16 +325,17 @@ def save_donations():
     """
     Save donations to the donations file.
     """
-    try:
-        with open(DONATIONS_FILE, 'w') as f:
-            json.dump({
-                "total_donations": total_donations,
-                "donations": donations
-            }, f, indent=4)
-        logger.debug("Donation data successfully saved.")
-    except Exception as e:
-        logger.error(f"Error saving donations: {e}")
-        logger.debug(traceback.format_exc())
+    if DONATIONS_URL and LNURLP_ID:
+        try:
+            with open(DONATIONS_FILE, 'w') as f:
+                json.dump({
+                    "total_donations": total_donations,
+                    "donations": donations
+                }, f, indent=4)
+            logger.debug("Donation data successfully saved.")
+        except Exception as e:
+            logger.error(f"Error saving donations: {e}")
+            logger.debug(traceback.format_exc())
 
 # Initialize processed payments
 processed_payments = load_processed_payments()
@@ -288,7 +359,7 @@ total_donations = 0
 # Global variable to track the last update time
 last_update = datetime.utcnow()
 
-# Load existing donations at startup
+# Load existing donations at startup if donations are enabled
 load_donations()
 
 # --------------------- Functions ---------------------
@@ -326,6 +397,10 @@ def fetch_pay_links():
     Returns:
         list or None: A list of pay links, or None if an error occurs.
     """
+    if not DONATIONS_URL or not LNURLP_ID:
+        logger.debug("Donations are not enabled. Skipping fetch_pay_links.")
+        return None
+
     url = f"{LNBITS_URL}/lnurlp/api/v1/links"
     headers = {"X-Api-Key": LNBITS_READONLY_API_KEY}
     try:
@@ -352,6 +427,10 @@ def get_lnurlp_info(lnurlp_id):
     Returns:
         dict or None: The pay link information, or None if not found.
     """
+    if not DONATIONS_URL or not LNURLP_ID:
+        logger.debug("Donations are not enabled. Skipping get_lnurlp_info.")
+        return None
+
     pay_links = fetch_pay_links()
     if pay_links is None:
         logger.error("Could not fetch Pay Links.")
@@ -372,6 +451,15 @@ def fetch_donation_details():
     Returns:
         dict: A dictionary containing total donations, donation list, Lightning Address, and LNURL.
     """
+    if not DONATIONS_URL or not LNURLP_ID:
+        logger.debug("Donations are not enabled. Skipping fetch_donation_details.")
+        return {
+            "total_donations": total_donations,
+            "donations": donations,
+            "lightning_address": "Not available",
+            "lnurl": "Not available"
+        }
+
     lnurlp_info = get_lnurlp_info(LNURLP_ID)
     if lnurlp_info is None:
         logger.error("Could not fetch LNURLp information for donation details.")
@@ -450,12 +538,9 @@ def updateDonations(data):
     # Save updated donation data
     save_donations()
 
-# Global dictionary to track transaction pages per chat
-transaction_pages = {}
-
 def send_latest_payments():
     """
-    Fetch the latest payments and send a notification via Telegram.
+    Fetch the latest payments and send notifications via Telegram.
     Additionally, check payments to determine if they qualify as donations.
     """
     global total_donations, donations, last_update  # Declare global variables
@@ -487,7 +572,7 @@ def send_latest_payments():
             continue  # Skip already processed payments
 
         amount_msat = payment.get("amount", 0)
-        memo = sanitize_memo(payment.get("memo", "No memo"))
+        memo = sanitize_memo(payment.get("memo", "No memo provided."))
         status = payment.get("status", "completed")
 
         try:
@@ -512,325 +597,176 @@ def send_latest_payments():
             })
 
         # Check for donation via LNURLp ID
-        extra_data = payment.get("extra", {})
-        lnurlp_id_payment = extra_data.get("link")
-        if lnurlp_id_payment == LNURLP_ID:
-            # It's a donation
-            donation_memo = sanitize_memo(extra_data.get("comment", "No memo"))
-            # Ensure 'extra' is a numeric value and in msats
-            try:
-                donation_amount_msat = int(extra_data.get("extra", 0))
-                donation_amount_sats = donation_amount_msat / 1000  # Convert msats to sats
-            except (ValueError, TypeError):
-                donation_amount_sats = amount_sats  # Fallback if 'extra' is not numeric
-            donation = {
-                "date": datetime.utcnow().isoformat(),
-                "memo": donation_memo,
-                "amount": donation_amount_sats
-            }
-            donations.append(donation)
-            total_donations += donation_amount_sats
-            last_update = datetime.utcnow()
-            logger.info(f"New donation detected: {donation_amount_sats} sats - {donation_memo}")
-            updateDonations({
-                "total_donations": total_donations,
-                "donations": donations
-            })  # Update donations with details
+        if DONATIONS_URL and LNURLP_ID:
+            extra_data = payment.get("extra", {})
+            lnurlp_id_payment = extra_data.get("link")
+            if lnurlp_id_payment == LNURLP_ID:
+                # It's a donation
+                donation_memo = sanitize_memo(extra_data.get("comment", "No memo provided."))
+                # Ensure 'extra' is a numeric value and in msats
+                try:
+                    donation_amount_msat = int(extra_data.get("extra", 0))
+                    donation_amount_sats = donation_amount_msat / 1000  # Convert msats to sats
+                except (ValueError, TypeError):
+                    donation_amount_sats = amount_sats  # Fallback if 'extra' is not numeric
+                donation = {
+                    "date": datetime.utcnow().isoformat(),
+                    "memo": donation_memo,
+                    "amount": donation_amount_sats
+                }
+                donations.append(donation)
+                total_donations += donation_amount_sats
+                last_update = datetime.utcnow()
+                logger.info(f"New donation detected: {donation_amount_sats} sats - {donation_memo}")
+                updateDonations({
+                    "total_donations": total_donations,
+                    "donations": donations
+                })  # Update donations with details
 
         # Mark payment as processed
         processed_payments.add(payment_hash)
         new_processed_hashes.append(payment_hash)
         add_processed_payment(payment_hash)
 
+    # Send individual notifications for new incoming payments
+    for payment in incoming_payments:
+        notify_transaction(payment, "incoming")
+
+    # Send individual notifications for new outgoing payments
+    for payment in outgoing_payments:
+        notify_transaction(payment, "outgoing")
+
     if not incoming_payments and not outgoing_payments:
         logger.info("No new incoming or outgoing payments to notify.")
         return
 
-    message_lines = [
-        f"💰 *{INSTANCE_NAME}* - *Latest Transactions* 💰\n"
-    ]
+    # Removed summary notifications as per new design
 
-    for payment in incoming_payments + outgoing_payments:
-        emoji = "🟢" if payment in incoming_payments else "🔴"
-        date_str = payment.get("date", datetime.utcnow().isoformat())
-        try:
-            date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%fZ")
-        except ValueError:
-            try:
-                date = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%SZ")
-            except ValueError:
-                date = datetime.utcnow()
-        formatted_date = date.strftime("%b %d, %Y %H:%M")  # Improved readability
+def notify_transaction(payment, direction):
+    """
+    Send a notification message for a single transaction.
 
+    Args:
+        payment (dict): The payment details.
+        direction (str): 'incoming' or 'outgoing'.
+    """
+    try:
         amount = payment["amount"]
-        sign = "+" if emoji == "🟢" else "-"
-        message_lines.append(f"{emoji} {formatted_date} {sign}{amount} sat")
-        message_lines.append(f"✉️ {payment['memo']}")
+        memo = payment["memo"]
 
-    # Append timestamp
-    timestamp_text = f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
-    message_lines.append(timestamp_text)
+        emoji = "🟢" if direction == "incoming" else "🔴"
+        sign = "+" if direction == "incoming" else "-"
+        transaction_type = "Incoming Payment" if direction == "incoming" else "Outgoing Payment"
 
-    full_message = "\n".join(message_lines)
-
-    # Define the inline keyboard with a static Balance button on top and smaller buttons below
-    inline_keyboard = [
-        # Static "Balance" button
-        [InlineKeyboardButton("💰 Balance 170 sat", callback_data='balance')],
-        # Smaller buttons in a single row
-        [
-            InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline'),
-            InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline'),
-            InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline'),
-            InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
-        ]
-    ]
-
-    inline_reply_markup = InlineKeyboardMarkup(inline_keyboard)
-
-    # Define the Reply Keyboard
-    main_keyboard = [
-        "📊 Overwatch",
-        "📡 Live Ticker",
-        "📜 Latest Transactions",
-        "⚡ LNBits"
-    ]
-
-    reply_markup = ReplyKeyboardMarkup([main_keyboard], resize_keyboard=True, one_time_keyboard=False)
-
-    # Send the transactions message with the inline keyboard
-    try:
-        bot.send_message(
-            chat_id=CHAT_ID,
-            text=full_message,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=inline_reply_markup
+        message = (
+            f"{emoji} *{transaction_type}*\n"
+            f"💰 Amount: {sign}{amount} sats\n"
+            f"✉️ Memo: {memo}"
         )
-        logger.info("Latest payments notification successfully sent to Telegram.")
-    except Exception as telegram_error:
-        logger.error(f"Error sending transactions message to Telegram: {telegram_error}")
-        logger.debug(traceback.format_exc())
 
-def check_balance_change():
-    """
-    Periodically check the wallet balance and notify if it has changed beyond the threshold.
-    """
-    global last_update
-    logger.info("Checking for balance changes...")
-    wallet_info = fetch_api("wallet")
-    if wallet_info is None:
-        return
-
-    current_balance_msat = wallet_info.get("balance", 0)
-    current_balance_sats = current_balance_msat / 1000  # Convert msats to sats
-
-    last_balance = load_last_balance()
-
-    if last_balance is None:
-        # First run, initialize balance file
-        save_current_balance(current_balance_sats)
-        latest_balance["balance_sats"] = current_balance_sats
-        latest_balance["last_change"] = "Initial balance set."
-        latest_balance["memo"] = "N/A"
-        logger.info(f"Initial balance set to {current_balance_sats:.0f} sats.")
-        return
-
-    change_amount = current_balance_sats - last_balance
-    if abs(change_amount) < BALANCE_CHANGE_THRESHOLD:
-        logger.info(f"Balance change ({abs(change_amount):.0f} sats) below threshold ({BALANCE_CHANGE_THRESHOLD} sats). No notification sent.")
-        return
-
-    direction = "increased" if change_amount > 0 else "decreased"
-    abs_change = abs(change_amount)
-
-    # Determine emoji based on direction
-    emoji = "🟢" if change_amount > 0 else "🔴"
-
-    # Prepare the message
-    message = (
-        f"⚡ *{INSTANCE_NAME}* - *Balance Update* ⚡\n\n"
-        f"🔹 *Last Balance:* {int(last_balance)} sats\n"
-        f"🔹 *Change:* {emoji}{int(abs_change)} sats\n"
-        f"🔹 *New Balance:* {int(current_balance_sats)} sats\n\n"
-        f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
-    )
-
-    # Define the inline keyboard with a static Balance button on top and smaller buttons below
-    inline_keyboard = [
-        # Static "Balance" button
-        [InlineKeyboardButton("💰 Balance 170 sat", callback_data='balance')],
-        # Smaller buttons in a single row
-        [
-            InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline'),
-            InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline'),
-            InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline'),
-            InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
-        ]
-    ]
-
-    inline_reply_markup = InlineKeyboardMarkup(inline_keyboard)
-
-    # Define the Reply Keyboard
-    main_keyboard = [
-        "📊 Overwatch",
-        "📡 Live Ticker",
-        "📜 Latest Transactions",
-        "⚡ LNBits"
-    ]
-
-    reply_markup = ReplyKeyboardMarkup([main_keyboard], resize_keyboard=True, one_time_keyboard=False)
-
-    # Send the balance update message with the inline keyboard
-    try:
+        # Send the transaction notification message without inline keyboard
         bot.send_message(
             chat_id=CHAT_ID,
             text=message,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=reply_markup
+            parse_mode=ParseMode.MARKDOWN
+            # No reply_markup to exclude buttons
         )
-        logger.info(f"Balance changed from {last_balance:.0f} to {current_balance_sats:.0f} sats. Notification sent.")
-        # Update balance file and latest_balance
-        save_current_balance(current_balance_sats)
-        latest_balance["balance_sats"] = current_balance_sats
-        latest_balance["last_change"] = f"Balance {direction} by {int(abs_change)} sats."
-        latest_balance["memo"] = "N/A"
-    except Exception as telegram_error:
-        logger.error(f"Error sending balance update message to Telegram: {telegram_error}")
+        logger.info(f"Notification for {transaction_type} sent successfully.")
+    except Exception as e:
+        logger.error(f"Error sending transaction notification: {e}")
         logger.debug(traceback.format_exc())
 
 def send_main_inline_keyboard():
     """
-    Send an inline keyboard with a static Balance button at the top and smaller buttons below.
+    Send an inline keyboard with a long Balance button and other specified buttons arranged in rows.
     """
-    inline_keyboard = [
-        # Static "Balance" button
-        [InlineKeyboardButton("💰 Balance 170 sat", callback_data='balance')],
-        # Smaller buttons in a single row
-        [
-            InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline'),
-            InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline'),
-            InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline'),
-            InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
-        ]
-    ]
-
-    inline_reply_markup = InlineKeyboardMarkup(inline_keyboard)
+    inline_reply_markup = get_main_inline_keyboard()
 
     try:
+        welcome_message = (
+            "😶‍🌫️ Here we go!\n\n"
+            "I'm now ready again to assist you with monitoring your LNbits transactions.\n\n"
+            "Use the buttons below to navigate through my features."
+        )
         bot.send_message(
             chat_id=CHAT_ID,
-            text="",  # Removed "Main Menu" text
+            text=welcome_message,
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=inline_reply_markup
         )
-        logger.info("Main inline keyboard with static Balance button sent successfully.")
+        logger.info("Main inline keyboard with updated welcome message successfully sent.")
     except Exception as telegram_error:
         logger.error(f"Error sending the main inline keyboard: {telegram_error}")
         logger.debug(traceback.format_exc())
 
-def handle_balance_command(update, context):
+def send_start_message(update, context):
     """
-    Handle the /balance command sent by the user.
+    Handler for the /start command.
+    Sends a welcome message along with the Reply-Keyboard.
     """
     chat_id = update.effective_chat.id
-    logger.info(f"Handling /balance command for chat_id: {chat_id}")
+    welcome_message = (
+        "👋 Welcome to Naughtify your LNBits Wallet Monitor!\n\n"
+        "Use the buttons below to perform various actions."
+    )
+    reply_markup = get_main_keyboard()
+    
+    try:
+        bot.send_message(
+            chat_id=chat_id,
+            text=welcome_message,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        logger.info(f"Start message and Reply-Keyboard sent to chat_id {chat_id}.")
+    except Exception as e:
+        logger.error(f"Error sending the start message: {e}")
+        logger.debug(traceback.format_exc())
+
+def send_balance_message(chat_id):
+    """
+    Fetch the current balance and send it to the specified chat.
+
+    Args:
+        chat_id (int): The chat ID to send the balance to.
+    """
+    logger.info(f"Fetching balance for chat_id: {chat_id}")
     wallet_info = fetch_api("wallet")
     if wallet_info is None:
-        update.message.reply_text("❌ Error fetching balance.")
+        bot.send_message(chat_id=chat_id, text="❌ Unable to fetch the balance at the moment. Please try again later.")
         return
 
     current_balance_msat = wallet_info.get("balance", 0)
     current_balance_sats = current_balance_msat / 1000  # Convert msats to sats
 
     # Message with the balance
-    balance_text = f"💰 *Balance:* {int(current_balance_sats)} sats"
+    balance_text = f"💰 *Current Balance:* {int(current_balance_sats)} sats"
 
-    # Define the main reply keyboard with four buttons in a row
-    main_keyboard = [
-        "📊 Overwatch",
-        "📡 Live Ticker",
-        "📜 Latest Transactions",
-        "⚡ LNBits"
-    ]
-
-    # Define the reply keyboard
-    reply_markup = ReplyKeyboardMarkup([main_keyboard], resize_keyboard=True, one_time_keyboard=False)
-
-    # Send the balance message with the main reply keyboard
     try:
-        update.message.reply_text(balance_text, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        bot.send_message(
+            chat_id=chat_id,
+            text=balance_text,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=get_main_keyboard()  # Include the main reply keyboard
+        )
+        logger.info(f"Balance message sent to chat_id: {chat_id}")
     except Exception as telegram_error:
-        logger.error(f"Error sending /balance message to Telegram: {telegram_error}")
+        logger.error(f"Error sending balance message to chat_id {chat_id}: {telegram_error}")
         logger.debug(traceback.format_exc())
 
-def handle_overwatch(update, context):
+def send_transactions_message(chat_id, page=1, message_id=None):
     """
-    Handle the '📊 Overwatch' button click.
-    Send an inline keyboard with the Overwatch URL.
-    """
-    if OVERWATCH_URL:
-        inline_keyboard = [
-            [InlineKeyboardButton("Open Overwatch", url=OVERWATCH_URL)]
-        ]
-        inline_reply_markup = InlineKeyboardMarkup(inline_keyboard)
-        update.message.reply_text("🔗 *Overwatch Details:*", parse_mode=ParseMode.MARKDOWN, reply_markup=inline_reply_markup)
-    else:
-        update.message.reply_text("❌ Overwatch URL is not configured.")
-
-def handle_live_ticker(update, context):
-    """
-    Handle the '📡 Live Ticker' button click.
-    Send an inline keyboard with the Live Ticker URL.
-    """
-    if DONATIONS_URL:
-        inline_keyboard = [
-            [InlineKeyboardButton("Open Live Ticker", url=DONATIONS_URL)]
-        ]
-        inline_reply_markup = InlineKeyboardMarkup(inline_keyboard)
-        update.message.reply_text("🔗 *Live Ticker Details:*", parse_mode=ParseMode.MARKDOWN, reply_markup=inline_reply_markup)
-    else:
-        update.message.reply_text("❌ Live Ticker URL is not configured.")
-
-def handle_latest_transactions(update, context):
-    """
-    Handle the '📜 Latest Transactions' button click.
-    """
-    chat_id = update.effective_chat.id
-    logger.info(f"Handling '📜 Latest Transactions' for chat_id: {chat_id}")
-    send_transactions_page(chat_id, page=1)
-
-def handle_lnbits(update, context):
-    """
-    Handle the '⚡ LNBits' button click.
-    """
-    if LNBITS_URL:
-        inline_keyboard = [
-            [InlineKeyboardButton("Open LNBits", url=LNBITS_URL)]
-        ]
-        inline_reply_markup = InlineKeyboardMarkup(inline_keyboard)
-        update.message.reply_text("🔗 *LNBits Details:*", parse_mode=ParseMode.MARKDOWN, reply_markup=inline_reply_markup)
-    else:
-        update.message.reply_text("❌ LNBits URL is not configured.")
-
-def handle_transactions_command(update, context):
-    """
-    Handle the /transactions command sent by the user.
-    """
-    chat_id = update.effective_chat.id
-    logger.info(f"Handling /transactions command for chat_id: {chat_id}")
-    send_transactions_page(chat_id, page=1)
-
-def send_transactions_page(chat_id, page=1):
-    """
-    Send a page of transactions to the user with only pagination arrows.
+    Fetch and send a page of transactions to the specified chat.
 
     Args:
-        chat_id (int): The chat ID to send the message to.
-        page (int): The page number to send.
+        chat_id (int): The chat ID to send the transactions to.
+        page (int, optional): The page number to send. Defaults to 1.
+        message_id (int, optional): The ID of the message to edit. If None, send a new message.
     """
+    logger.info(f"Fetching transactions for chat_id: {chat_id}, page: {page}")
     payments = fetch_api("payments")
     if payments is None:
-        bot.send_message(chat_id=chat_id, text="❌ Error fetching transactions.")
+        bot.send_message(chat_id=chat_id, text="❌ Unable to fetch transactions at the moment.")
         return
 
     # Filter out pending transactions
@@ -843,8 +779,11 @@ def send_transactions_page(chat_id, page=1):
     transactions_per_page = 13
     total_pages = (total_transactions + transactions_per_page - 1) // transactions_per_page  # Round up
 
+    if total_pages == 0:
+        total_pages = 1  # Ensure at least one page
+
     if page < 1 or page > total_pages:
-        bot.send_message(chat_id=chat_id, text="❌ Invalid page.")
+        bot.send_message(chat_id=chat_id, text="❌ Invalid page number.")
         return
 
     start_index = (page - 1) * transactions_per_page
@@ -852,7 +791,7 @@ def send_transactions_page(chat_id, page=1):
     page_transactions = sorted_payments[start_index:end_index]
 
     if not page_transactions:
-        bot.send_message(chat_id=chat_id, text="❌ No transactions on this page.")
+        bot.send_message(chat_id=chat_id, text="❌ No transactions found on this page.")
         return
 
     message_lines = [
@@ -861,7 +800,7 @@ def send_transactions_page(chat_id, page=1):
 
     for payment in page_transactions:
         amount_msat = payment.get("amount", 0)
-        memo = sanitize_memo(payment.get("memo", "No memo"))
+        memo = sanitize_memo(payment.get("memo", "No memo provided."))
         status = payment.get("status", "completed")
         created_at = payment.get("created_at", datetime.utcnow().isoformat())
 
@@ -898,27 +837,28 @@ def send_transactions_page(chat_id, page=1):
 
     inline_reply_markup = InlineKeyboardMarkup(inline_keyboard) if inline_keyboard else None
 
-    # Define the reply keyboard (optional, keep it if you want users to access other features via keyboard)
-    main_keyboard = [
-        "📊 Overwatch",
-        "📡 Live Ticker",
-        "📜 Latest Transactions",
-        "⚡ LNBits"
-    ]
-
-    reply_markup = ReplyKeyboardMarkup([main_keyboard], resize_keyboard=True, one_time_keyboard=False)
-
-    # Send the transactions message with the inline keyboard containing only pagination arrows
     try:
-        bot.send_message(
-            chat_id=chat_id,
-            text=full_message,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=inline_reply_markup
-        )
-        logger.info(f"Latest transactions page {page} sent to Telegram.")
+        if message_id:
+            # Edit the existing message
+            bot.edit_message_text(
+                chat_id=chat_id,
+                message_id=message_id,
+                text=full_message,
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=inline_reply_markup  # Only pagination buttons
+            )
+            logger.info(f"Transactions page {page} successfully edited for chat_id: {chat_id}")
+        else:
+            # Send a new message
+            bot.send_message(
+                chat_id=chat_id,
+                text=full_message,
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=inline_reply_markup  # Only pagination buttons
+            )
+            logger.info(f"Transactions page {page} successfully sent to chat_id: {chat_id}")
     except Exception as telegram_error:
-        logger.error(f"Error sending transactions message to Telegram: {telegram_error}")
+        logger.error(f"Error sending or editing transactions message: {telegram_error}")
         logger.debug(traceback.format_exc())
 
 def handle_prev_page(update, context):
@@ -929,6 +869,7 @@ def handle_prev_page(update, context):
     if not query:
         return
     chat_id = query.message.chat.id
+    message_id = query.message.message_id
     data = query.data
     match = re.match(r'prev_(\d+)', data)
     if match:
@@ -936,7 +877,7 @@ def handle_prev_page(update, context):
         new_page = current_page - 1
         if new_page < 1:
             new_page = 1
-        send_transactions_page(chat_id, page=new_page)
+        send_transactions_message(chat_id, page=new_page, message_id=message_id)
     query.answer()
 
 def handle_next_page(update, context):
@@ -947,86 +888,127 @@ def handle_next_page(update, context):
     if not query:
         return
     chat_id = query.message.chat.id
+    message_id = query.message.message_id
     data = query.data
     match = re.match(r'next_(\d+)', data)
     if match:
         current_page = int(match.group(1))
         new_page = current_page + 1
-        send_transactions_page(chat_id, page=new_page)
+        send_transactions_message(chat_id, page=new_page, message_id=message_id)
     query.answer()
 
 def handle_balance_callback(query):
     """
     Handle the 'balance' callback query.
 
-    Sends the balance message.
+    Sends the balance message without buttons.
     """
     try:
-        wallet_info = fetch_api("wallet")
-        if wallet_info is None:
-            query.message.reply_text("❌ Error fetching balance.")
-            return
-        current_balance_msat = wallet_info.get("balance", 0)
-        current_balance_sats = current_balance_msat / 1000  # Convert msats to sats
-        balance_message = f"💰 *Balance:* {int(current_balance_sats)} sats"
-
-        # Define the inline keyboard with a static Balance button on top and smaller buttons below
-        inline_keyboard = [
-            # Static "Balance" button
-            [InlineKeyboardButton("💰 Balance 170 sat", callback_data='balance')],
-            # Smaller buttons in a single row
-            [
-                InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline'),
-                InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline'),
-                InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline'),
-                InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
-            ]
-        ]
-
-        inline_reply_markup = InlineKeyboardMarkup(inline_keyboard)
-
-        # Define the reply keyboard
-        main_keyboard = [
-            "📊 Overwatch",
-            "📡 Live Ticker",
-            "📜 Latest Transactions",
-            "⚡ LNBits"
-        ]
-
-        reply_markup = ReplyKeyboardMarkup([main_keyboard], resize_keyboard=True, one_time_keyboard=False)
-
-        try:
-            query.message.reply_text(balance_message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
-            logger.info(f"Balance message sent via callback.")
-        except Exception as telegram_error:
-            logger.error(f"Error sending balance message via callback: {telegram_error}")
-            logger.debug(traceback.format_exc())
+        chat_id = query.message.chat.id
+        send_balance_message(chat_id)
     except Exception as e:
         logger.error(f"Error handling balance callback: {e}")
         logger.debug(traceback.format_exc())
 
+def handle_transactions_inline_callback(query):
+    """
+    Handle the 'transactions_inline' callback query.
+
+    Sends the transactions message.
+    """
+    try:
+        chat_id = query.message.chat.id
+        send_transactions_message(chat_id, page=1, message_id=query.message.message_id)
+    except Exception as e:
+        logger.error(f"Error handling transactions_inline callback: {e}")
+        logger.debug(traceback.format_exc())
+
+def handle_donations_inline_callback(query):
+    """
+    Handle the 'overwatch_inline', 'liveticker_inline', and 'lnbits_inline' callbacks.
+
+    Sends the respective URLs or feedback if not configured.
+    """
+    data = query.data
+    try:
+        if data == 'overwatch_inline' and OVERWATCH_URL:
+            bot.send_message(
+                chat_id=query.message.chat.id,
+                text="🔗 *Overwatch Details:*",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔗 Open Overwatch", url=OVERWATCH_URL)]
+                ])
+            )
+        elif data == 'liveticker_inline' and DONATIONS_URL:
+            bot.send_message(
+                chat_id=query.message.chat.id,
+                text="🔗 *Live Ticker Details:*",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔗 Open Live Ticker", url=DONATIONS_URL)]
+                ])
+            )
+        elif data == 'lnbits_inline' and LNBITS_URL:
+            bot.send_message(
+                chat_id=query.message.chat.id,
+                text="🔗 *LNBits Details:*",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔗 Open LNBits", url=LNBITS_URL)]
+                ])
+            )
+        else:
+            bot.send_message(
+                chat_id=query.message.chat.id,
+                text="❌ URL is not configured. Please contact the administrator."
+            )
+    except Exception as e:
+        logger.error(f"Error handling donations_inline callback: {e}")
+        logger.debug(traceback.format_exc())
+
+def handle_other_inline_callbacks(data, query):
+    """
+    Handle other inline button callbacks that might require custom handling.
+
+    Args:
+        data (str): The callback data.
+        query (CallbackQuery): The callback query object.
+    """
+    # Placeholder for handling other inline callbacks if needed
+    bot.answer_callback_query(callback_query_id=query.id, text="❓ Unknown action.")
+
 def handle_transactions_callback(update, context):
     """
-    Handle callback queries for transaction pagination and balance display.
+    General handler for transaction-related callbacks.
+
+    Args:
+        update (Update): The update object.
+        context (CallbackContext): The context object.
     """
     query = update.callback_query
-    if not query:
-        return
     data = query.data
-    if data.startswith('prev_'):
-        page = int(data.split('_')[1]) - 1
-        if page < 1:
-            page = 1
-        send_transactions_page(query.message.chat.id, page=page)
-    elif data.startswith('next_'):
-        page = int(data.split('_')[1]) + 1
-        send_transactions_page(query.message.chat.id, page=page)
-    elif data == 'balance':
-        # Handle balance display
+    logger.debug(f"Handling callback data: {data}")
+
+    if data == 'balance':
         handle_balance_callback(query)
+    elif data == 'transactions_inline':
+        handle_transactions_inline_callback(query)
+    elif data.startswith('prev_') or data.startswith('next_'):
+        # Pagination
+        if data.startswith('prev_'):
+            current_page = int(data.split('_')[1])
+            new_page = current_page - 1
+        elif data.startswith('next_'):
+            current_page = int(data.split('_')[1])
+            new_page = current_page + 1
+        send_transactions_message(query.message.chat.id, page=new_page, message_id=query.message.message_id)
+    elif data in ['overwatch_inline', 'liveticker_inline', 'lnbits_inline']:
+        handle_donations_inline_callback(query)
     else:
-        # For any other inline buttons (if any exist elsewhere), handle accordingly
-        bot.answer_callback_query(callback_query_id=query.id, text="❓ Unknown action.")
+        # Unknown callback_data
+        handle_other_inline_callbacks(data, query)
+
     query.answer()
 
 def handle_info_command(update, context):
@@ -1039,9 +1021,7 @@ def handle_info_command(update, context):
     interval_info = (
         f"🔔 *Balance Change Threshold:* {BALANCE_CHANGE_THRESHOLD} sats\n"
         f"🔔 *Highlight Threshold:* {HIGHLIGHT_THRESHOLD} sats\n"
-        f"⏲️ *Balance Change Monitoring Interval:* Every {WALLET_INFO_UPDATE_INTERVAL} seconds\n"
-        f"📊 *Daily Balance Notification Interval:* Every {WALLET_BALANCE_NOTIFICATION_INTERVAL} seconds\n"
-        f"🔄 *Latest Payments Fetch Interval:* Every {PAYMENTS_FETCH_INTERVAL} seconds"
+        f"🔄 *Latest Payments Fetch Interval:* Every {PAYMENTS_FETCH_INTERVAL / 60:.1f} minutes"
     )
 
     info_message = (
@@ -1049,19 +1029,14 @@ def handle_info_command(update, context):
         f"{interval_info}"
     )
 
-    # Define the main reply keyboard with four buttons in a row
-    main_keyboard = [
-        "📊 Overwatch",
-        "📡 Live Ticker",
-        "📜 Latest Transactions",
-        "⚡ LNBits"
-    ]
-
-    # Define the reply keyboard
-    reply_markup = ReplyKeyboardMarkup([main_keyboard], resize_keyboard=True, one_time_keyboard=False)
-
     try:
-        update.message.reply_text(info_message, parse_mode=ParseMode.MARKDOWN, disable_web_page_preview=True, reply_markup=reply_markup)
+        bot.send_message(
+            chat_id=chat_id,
+            text=info_message,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=get_main_keyboard()  # Include the main reply keyboard
+        )
+        logger.info(f"Info message sent to chat_id: {chat_id}")
     except Exception as telegram_error:
         logger.error(f"Error sending /info message to Telegram: {telegram_error}")
         logger.debug(traceback.format_exc())
@@ -1074,29 +1049,105 @@ def handle_help_command(update, context):
     logger.info(f"Handling /help command for chat_id: {chat_id}")
     help_message = (
         f"ℹ️ *{INSTANCE_NAME}* - *Help*\n\n"
-        f"Available commands:\n"
-        f"• `/balance` – Shows the current balance.\n"
-        f"• `/transactions` – Shows the latest transactions.\n"
-        f"• `/info` – Provides information about the monitor and current settings.\n"
-        f"• `/help` – Shows this help message."
+        f"Here are the commands you can use:\n"
+        f"• `/balance` – View your current balance.\n"
+        f"• `/transactions` – View your latest transactions.\n"
+        f"• `/info` – View information about the bot and settings.\n"
+        f"• `/help` – Show this help message.\n\n"
+        f"You can also use the buttons below to navigate through the bot's features."
     )
 
-    # Define the main reply keyboard with four buttons in a row
-    main_keyboard = [
-        "📊 Overwatch",
-        "📡 Live Ticker",
-        "📜 Latest Transactions",
-        "⚡ LNBits"
-    ]
-
-    # Define the reply keyboard
-    reply_markup = ReplyKeyboardMarkup([main_keyboard], resize_keyboard=True, one_time_keyboard=False)
-
     try:
-        update.message.reply_text(help_message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
+        bot.send_message(
+            chat_id=chat_id,
+            text=help_message,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=get_main_keyboard()  # Include the main reply keyboard
+        )
+        logger.info(f"Help message sent to chat_id: {chat_id}")
     except Exception as telegram_error:
         logger.error(f"Error sending /help message to Telegram: {telegram_error}")
         logger.debug(traceback.format_exc())
+
+def handle_balance(update, context):
+    """
+    Handle the '💰 Balance' button from the Reply Keyboard.
+    """
+    chat_id = update.effective_chat.id
+    send_balance_message(chat_id)
+
+def handle_latest_transactions(update, context):
+    """
+    Handle the '📜 Latest Transactions' button from the Reply Keyboard.
+    """
+    chat_id = update.effective_chat.id
+    send_transactions_message(chat_id, page=1)
+
+def handle_live_ticker(update, context):
+    """
+    Handle the '📡 Live Ticker' button from the Reply Keyboard.
+    """
+    chat_id = update.effective_chat.id
+    if DONATIONS_URL:
+        try:
+            bot.send_message(
+                chat_id=chat_id,
+                text="🔗 *Live Ticker Details:*",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔗 Open Live Ticker", url=DONATIONS_URL)]
+                ])
+            )
+            logger.info(f"Live Ticker message sent to chat_id: {chat_id}")
+        except Exception as e:
+            logger.error(f"Error sending Live Ticker message: {e}")
+            logger.debug(traceback.format_exc())
+    else:
+        bot.send_message(chat_id=chat_id, text="❌ Live Ticker URL is not configured. Please contact the administrator.")
+
+def handle_overwatch(update, context):
+    """
+    Handle the '📊 Overwatch' button from the Reply Keyboard.
+    """
+    chat_id = update.effective_chat.id
+    if OVERWATCH_URL:
+        try:
+            bot.send_message(
+                chat_id=chat_id,
+                text="🔗 *Overwatch Details:*",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔗 Open Overwatch", url=OVERWATCH_URL)]
+                ])
+            )
+            logger.info(f"Overwatch message sent to chat_id: {chat_id}")
+        except Exception as e:
+            logger.error(f"Error sending Overwatch message: {e}")
+            logger.debug(traceback.format_exc())
+    else:
+        bot.send_message(chat_id=chat_id, text="❌ Overwatch URL is not configured. Please contact the administrator.")
+
+def handle_lnbits(update, context):
+    """
+    Handle the '⚡ LNBits' button from the Reply Keyboard.
+    """
+    chat_id = update.effective_chat.id
+    if LNBITS_URL:
+        try:
+            bot.send_message(
+                chat_id=chat_id,
+                text="🔗 *LNBits Details:*",
+                parse_mode=ParseMode.MARKDOWN,
+                reply_markup=InlineKeyboardMarkup([
+                    [InlineKeyboardButton("🔗 Open LNBits", url=LNBITS_URL)]
+                ])
+            )
+            logger.info(f"LNBits message sent to chat_id: {chat_id}")
+        except Exception as e:
+            logger.error(f"Error sending LNBits message: {e}")
+            logger.debug(traceback.format_exc())
+    else:
+        bot.send_message(chat_id=chat_id, text="❌ LNBits URL is not configured. Please contact the administrator.")
 
 def process_update(update):
     """
@@ -1109,52 +1160,37 @@ def process_update(update):
             text = message.get('text', '').strip()
 
             if text.startswith('/balance'):
-                handle_balance_command(message, None)
+                send_balance_message(chat_id)
             elif text.startswith('/transactions'):
-                handle_transactions_command(message, None)
+                send_transactions_message(chat_id, page=1)
             elif text.startswith('/info'):
-                handle_info_command(message, None)
+                handle_info_command(update, None)
             elif text.startswith('/help'):
-                handle_help_command(message, None)
+                handle_help_command(update, None)
             else:
-                # Handle Custom Keyboard Buttons
-                if text == "📊 Overwatch":
-                    handle_overwatch(message, None)
-                elif text == "📡 Live Ticker":
-                    handle_live_ticker(message, None)
+                # Handle Reply Keyboard Buttons
+                if text == "💰 Balance":
+                    handle_balance(update, None)
                 elif text == "📜 Latest Transactions":
-                    handle_latest_transactions(message, None)
+                    handle_latest_transactions(update, None)
+                elif text == "📡 Live Ticker":
+                    handle_live_ticker(update, None)
+                elif text == "📊 Overwatch":
+                    handle_overwatch(update, None)
                 elif text == "⚡ LNBits":
-                    handle_lnbits(message, None)
+                    handle_lnbits(update, None)
                 else:
                     bot.send_message(
                         chat_id=chat_id,
-                        text="❓ Unknown command or option. Available options: 📊 Overwatch, 📡 Live Ticker, 📜 Latest Transactions, ⚡ LNBits"
+                        text="❓ Unknown command or option. Please use /help to see available commands."
                     )
         elif 'callback_query' in update:
-            process_callback_query(update['callback_query'])
+            # The CallbackQueryHandler will handle this
+            pass
         else:
             logger.info("Update contains neither a message nor a callback query. Ignored.")
     except Exception as e:
         logger.error(f"Error processing update: {e}")
-        logger.debug(traceback.format_exc())
-
-def process_callback_query(callback_query):
-    """
-    Process callback queries from inline keyboards in Telegram messages.
-    """
-    try:
-        query_id = callback_query['id']
-        data = callback_query.get('data', '')
-        chat_id = callback_query['from']['id']
-
-        if data.startswith('prev_') or data.startswith('next_') or data == 'balance' or data.endswith('_inline'):
-            # Handle pagination or inline buttons
-            handle_transactions_callback(callback_query)
-        else:
-            bot.answer_callback_query(callback_query_id=query_id, text="❓ Unknown action.")
-    except Exception as e:
-        logger.error(f"Error processing callback query: {e}")
         logger.debug(traceback.format_exc())
 
 def start_scheduler():
@@ -1162,30 +1198,6 @@ def start_scheduler():
     Start the scheduler for periodic tasks using BackgroundScheduler.
     """
     scheduler = BackgroundScheduler(timezone='UTC')
-
-    if WALLET_INFO_UPDATE_INTERVAL > 0:
-        scheduler.add_job(
-            check_balance_change,
-            'interval',
-            seconds=WALLET_INFO_UPDATE_INTERVAL,
-            id='balance_check',
-            next_run_time=datetime.utcnow() + timedelta(seconds=1)
-        )
-        logger.info(f"Balance change monitoring scheduled every {WALLET_INFO_UPDATE_INTERVAL} seconds.")
-    else:
-        logger.info("Balance change monitoring disabled (WALLET_INFO_UPDATE_INTERVAL set to 0).")
-
-    if WALLET_BALANCE_NOTIFICATION_INTERVAL > 0:
-        scheduler.add_job(
-            send_wallet_balance,
-            'interval',
-            seconds=WALLET_BALANCE_NOTIFICATION_INTERVAL,
-            id='wallet_balance_notification',
-            next_run_time=datetime.utcnow() + timedelta(seconds=1)
-        )
-        logger.info(f"Daily balance notification scheduled every {WALLET_BALANCE_NOTIFICATION_INTERVAL} seconds.")
-    else:
-        logger.info("Daily balance notification disabled (WALLET_BALANCE_NOTIFICATION_INTERVAL set to 0).")
 
     if PAYMENTS_FETCH_INTERVAL > 0:
         scheduler.add_job(
@@ -1195,89 +1207,13 @@ def start_scheduler():
             id='latest_payments_fetch',
             next_run_time=datetime.utcnow() + timedelta(seconds=1)
         )
-        logger.info(f"Latest payments fetch scheduled every {PAYMENTS_FETCH_INTERVAL} seconds.")
+        logger.info(f"Latest Payments Fetch scheduled every {PAYMENTS_FETCH_INTERVAL / 60:.1f} minutes.")
     else:
-        logger.info("Latest payments fetch notification disabled (PAYMENTS_FETCH_INTERVAL set to 0).")
+        logger.info("Latest Payments Fetch Notification disabled (PAYMENTS_FETCH_INTERVAL set to 0).")
 
+    # Start the scheduler
     scheduler.start()
     logger.info("Scheduler successfully started.")
-
-def send_wallet_balance():
-    """
-    Send the current wallet balance daily via Telegram in a professional and clear format.
-    """
-    logger.info("Sending daily wallet balance notification...")
-    wallet_info = fetch_api("wallet")
-    if wallet_info is None:
-        return
-
-    current_balance_msat = wallet_info.get("balance", 0)
-    current_balance_sats = current_balance_msat / 1000  # Convert msats to sats
-
-    # Fetch payments to calculate counts and totals
-    payments = fetch_api("payments")
-    incoming_count = outgoing_count = 0
-    incoming_total = outgoing_total = 0
-    if payments and isinstance(payments, list):
-        for payment in payments:
-            amount_msat = payment.get("amount", 0)
-            status = payment.get("status", "completed")
-            if status.lower() == "pending":
-                continue  # Exclude pending transactions from daily balance
-            if amount_msat > 0:
-                incoming_count += 1
-                incoming_total += amount_msat / 1000
-            elif amount_msat < 0:
-                outgoing_count += 1
-                outgoing_total += abs(amount_msat) / 1000
-
-    # Prepare the Telegram message with Markdown formatting
-    message = (
-        f"📊 *{INSTANCE_NAME}* - *Daily Balance* 📊\n\n"
-        f"🔹 *Current Balance:* {int(current_balance_sats)} sats\n"
-        f"🔹 *Total Incoming:* {int(incoming_total)} sats over {incoming_count} transactions\n"
-        f"🔹 *Total Outgoing:* {int(outgoing_total)} sats over {outgoing_count} transactions\n\n"
-        f"🕒 *Timestamp:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
-    )
-
-    # Define the inline keyboard with a static Balance button on top and smaller buttons below
-    inline_keyboard = [
-        # Static "Balance" button
-        [InlineKeyboardButton("💰 Balance 170 sat", callback_data='balance')],
-        # Smaller buttons in a single row
-        [
-            InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline'),
-            InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline'),
-            InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline'),
-            InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
-        ]
-    ]
-
-    inline_reply_markup = InlineKeyboardMarkup(inline_keyboard)
-
-    # Define the reply keyboard
-    main_keyboard = [
-        "📊 Overwatch",
-        "📡 Live Ticker",
-        "📜 Latest Transactions",
-        "⚡ LNBits"
-    ]
-
-    reply_markup = ReplyKeyboardMarkup([main_keyboard], resize_keyboard=True, one_time_keyboard=False)
-
-    # Send the message to Telegram with the custom keyboard
-    try:
-        bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=ParseMode.MARKDOWN, reply_markup=reply_markup)
-        logger.info("Daily wallet balance notification successfully sent.")
-        # Update the latest balance
-        latest_balance["balance_sats"] = current_balance_sats
-        latest_balance["last_change"] = "Daily balance report."
-        latest_balance["memo"] = "N/A"
-        # Save the current balance
-        save_current_balance(current_balance_sats)
-    except Exception as telegram_error:
-        logger.error(f"Error sending daily wallet balance message to Telegram: {telegram_error}")
-        logger.debug(traceback.format_exc())
 
 # --------------------- Flask Routes ---------------------
 
@@ -1317,6 +1253,9 @@ def webhook():
 
 @app.route('/donations')
 def donations_page():
+    if not DONATIONS_URL or not LNURLP_ID:
+        return "Donations are not enabled.", 404
+
     # Fetch LNURLp info
     lnurlp_id = LNURLP_ID
     lnurlp_info = get_lnurlp_info(lnurlp_id)
@@ -1363,6 +1302,11 @@ def get_donations_data():
     """
     Provides donation data as JSON for the frontend, including Lightning Address, LNURL, and Highlight Threshold.
     """
+    if not DONATIONS_URL or not LNURLP_ID:
+        return jsonify({
+            "error": "Donations are not enabled."
+        }), 404
+
     try:
         donation_details = fetch_donation_details()
         data = {
@@ -1386,6 +1330,9 @@ def donations_updates():
     Endpoint for clients to check the timestamp of the latest donation update.
     """
     global last_update
+    if not DONATIONS_URL or not LNURLP_ID:
+        return jsonify({"error": "Donations are not enabled."}), 404
+
     try:
         return jsonify({"last_update": last_update.isoformat()}), 200
     except Exception as e:
@@ -1404,10 +1351,10 @@ def main():
     dispatcher = updater.dispatcher
 
     # CommandHandler for /balance
-    dispatcher.add_handler(CommandHandler('balance', handle_balance_command))
+    dispatcher.add_handler(CommandHandler('balance', lambda update, context: send_balance_message(update.effective_chat.id)))
 
     # CommandHandler for /transactions
-    dispatcher.add_handler(CommandHandler('transactions', handle_transactions_command))
+    dispatcher.add_handler(CommandHandler('transactions', lambda update, context: send_transactions_message(update.effective_chat.id, page=1)))
 
     # CommandHandler for /info
     dispatcher.add_handler(CommandHandler('info', handle_info_command))
@@ -1415,14 +1362,18 @@ def main():
     # CommandHandler for /help
     dispatcher.add_handler(CommandHandler('help', handle_help_command))
 
-    # MessageHandlers for Custom Keyboard Buttons
-    dispatcher.add_handler(MessageHandler(Filters.regex('^📊 Overwatch$'), handle_overwatch))
-    dispatcher.add_handler(MessageHandler(Filters.regex('^📡 Live Ticker$'), handle_live_ticker))
-    dispatcher.add_handler(MessageHandler(Filters.regex('^📜 Latest Transactions$'), handle_latest_transactions))
-    dispatcher.add_handler(MessageHandler(Filters.regex('^⚡ LNBits$'), handle_lnbits))
+    # CommandHandler for /start (send Reply Keyboard)
+    dispatcher.add_handler(CommandHandler('start', send_start_message))
 
-    # CallbackQueryHandler for Inline Buttons (Pagination and Inline Buttons)
-    dispatcher.add_handler(CallbackQueryHandler(handle_transactions_callback, pattern='^(prev|next)_\d+$|^balance$|^.*_inline$'))
+    # CallbackQueryHandler for Inline Buttons (Balance, Transactions, Overwatch, Live Ticker, LNBits, Pagination)
+    dispatcher.add_handler(CallbackQueryHandler(handle_transactions_callback, pattern='^(balance|transactions_inline|prev_\d+|next_\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'))
+
+    # MessageHandler for Reply Keyboard Buttons
+    dispatcher.add_handler(MessageHandler(Filters.regex('^💰 Balance$'), handle_balance))
+    dispatcher.add_handler(MessageHandler(Filters.regex('^📜 Latest Transactions$'), handle_latest_transactions))
+    dispatcher.add_handler(MessageHandler(Filters.regex('^📡 Live Ticker$'), handle_live_ticker))
+    dispatcher.add_handler(MessageHandler(Filters.regex('^📊 Overwatch$'), handle_overwatch))
+    dispatcher.add_handler(MessageHandler(Filters.regex('^⚡ LNBits$'), handle_lnbits))
 
     # Start the Bot
     updater.start_polling()
@@ -1443,7 +1394,10 @@ if __name__ == "__main__":
     logger.info(f"🔔 Balance Change Threshold: {BALANCE_CHANGE_THRESHOLD} sats")
     logger.info(f"🔔 Highlight Threshold: {HIGHLIGHT_THRESHOLD} sats")
     logger.info(f"📊 Fetching the latest {LATEST_TRANSACTIONS_COUNT} transactions for notifications")
-    logger.info(f"⏲️ Scheduler Intervals - Balance Change Monitoring: {WALLET_INFO_UPDATE_INTERVAL} seconds, Daily Balance Notification: {WALLET_BALANCE_NOTIFICATION_INTERVAL} seconds, Latest Payments Fetch: {PAYMENTS_FETCH_INTERVAL} seconds")
+    if PAYMENTS_FETCH_INTERVAL > 0:
+        logger.info(f"⏲️ Scheduler Intervals - Latest Payments Fetch: Every {PAYMENTS_FETCH_INTERVAL / 60:.1f} minutes")
+    else:
+        logger.info("⏲️ Scheduler Intervals - Latest Payments Fetch: Disabled")
 
     # Start the scheduler in a separate thread
     scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
