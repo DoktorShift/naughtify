@@ -3,7 +3,7 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from telegram import Bot, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import Bot, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
 from dotenv import load_dotenv
 import requests
@@ -122,38 +122,38 @@ def get_main_inline_keyboard():
     1. Balance button.
     2. Latest Transactions and Live Ticker buttons.
     3. Overwatch and LNBits buttons.
-    
+
     Returns:
         InlineKeyboardMarkup: The configured inline keyboard.
     """
     # First Row: Balance Button
     balance_button = InlineKeyboardButton("💰 Balance", callback_data='balance')
-    
+
     # Second Row: Latest Transactions and Live Ticker
     latest_transactions_button = InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline')
     if DONATIONS_URL:
         live_ticker_button = InlineKeyboardButton("📡 Live Ticker", url=DONATIONS_URL)
     else:
         live_ticker_button = InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline')
-    
+
     # Third Row: Overwatch and LNBits
     if OVERWATCH_URL:
         overwatch_button = InlineKeyboardButton("📊 Overwatch", url=OVERWATCH_URL)
     else:
         overwatch_button = InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline')
-    
+
     if LNBITS_URL:
         lnbits_button = InlineKeyboardButton("⚡ LNBits", url=LNBITS_URL)
     else:
         lnbits_button = InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
-    
+
     # Assemble the keyboard
     inline_keyboard = [
         [balance_button],  # First row
         [latest_transactions_button, live_ticker_button],  # Second row
         [overwatch_button, lnbits_button]  # Third row
     ]
-    
+
     return InlineKeyboardMarkup(inline_keyboard)
 
 def get_main_keyboard():
@@ -294,18 +294,6 @@ def load_last_balance():
         logger.debug(traceback.format_exc())
         return 0.0
 
-def save_current_balance(balance):
-    """
-    Save the current balance to the balance file.
-    """
-    try:
-        with open(CURRENT_BALANCE_FILE, 'w') as f:
-            f.write(f"{balance}")
-        logger.debug(f"Current balance {balance} saved to file.")
-    except Exception as e:
-        logger.error(f"Error saving current balance: {e}")
-        logger.debug(traceback.format_exc())
-
 def load_donations():
     """
     Load donations from the donations file into the donations list and set the total donations.
@@ -317,7 +305,7 @@ def load_donations():
                 data = json.load(f)
                 donations = data.get("donations", [])
                 total_donations = data.get("total_donations", 0)
-                
+
                 # Ensure each donation has id, likes, and dislikes
                 for donation in donations:
                     if "id" not in donation:
@@ -547,6 +535,35 @@ def updateDonations(data):
 
     # Save updated donation data
     save_donations()
+
+def handle_vote_command(donation_id, vote_type):
+    """
+    Handle a vote (like or dislike) for a specific donation.
+
+    Parameters:
+        donation_id (str): The unique ID of the donation.
+        vote_type (str): Either 'like' or 'dislike'.
+
+    Returns:
+        tuple: (dict, int) Result of the vote operation and HTTP status code.
+    """
+    try:
+        # Find the corresponding donation
+        for donation in donations:
+            if donation.get("id") == donation_id:
+                if vote_type == 'like':
+                    donation["likes"] += 1
+                elif vote_type == 'dislike':
+                    donation["dislikes"] += 1
+                else:
+                    return {"error": "Invalid vote type."}, 400
+                save_donations()
+                return {"success": True, "likes": donation["likes"], "dislikes": donation["dislikes"]}, 200
+        return {"error": "Donation not found."}, 404
+    except Exception as e:
+        logger.error(f"Error handling vote: {e}")
+        logger.debug(traceback.format_exc())
+        return {"error": "Internal server error."}, 500
 
 def send_latest_payments():
     """
