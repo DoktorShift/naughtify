@@ -120,6 +120,13 @@ function updateLightningAddress(lightningAddress, lnurl) {
             copyField.setAttribute('data-address', 'Unknown Lightning Address');
             addressSpan.textContent = 'Unknown Lightning Address';
         }
+
+        if (lnurl && lnurl !== 'Unavailable') {
+            copyField.setAttribute('data-lnurl', lnurl);
+            // Optionally, you can update an element to show the LNURL
+        } else {
+            copyField.setAttribute('data-lnurl', '');
+        }
     } else {
         console.error('Lightning Address elements not found in the DOM.');
     }

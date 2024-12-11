@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 import requests
 import traceback
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, jsonify, request, render_template
+from flask import Flask, jsonify, request, render_template, make_response
 from datetime import datetime, timedelta
 import threading
 import qrcode
@@ -18,6 +18,7 @@ import base64
 import json
 from urllib.parse import urlparse
 import re
+import uuid
 
 # --------------------- Configuration and Setup ---------------------
 
@@ -316,6 +317,15 @@ def load_donations():
                 data = json.load(f)
                 donations = data.get("donations", [])
                 total_donations = data.get("total_donations", 0)
+                
+                # Ensure each donation has id, likes, and dislikes
+                for donation in donations:
+                    if "id" not in donation:
+                        donation["id"] = str(uuid.uuid4())
+                    if "likes" not in donation:
+                        donation["likes"] = 0
+                    if "dislikes" not in donation:
+                        donation["dislikes"] = 0
             logger.debug(f"{len(donations)} donations loaded from file.")
         except Exception as e:
             logger.error(f"Error loading donations: {e}")
@@ -610,9 +620,12 @@ def send_latest_payments():
                 except (ValueError, TypeError):
                     donation_amount_sats = amount_sats  # Fallback if 'extra' is not numeric
                 donation = {
+                    "id": str(uuid.uuid4()),  # Unique ID
                     "date": datetime.utcnow().isoformat(),
                     "memo": donation_memo,
-                    "amount": donation_amount_sats
+                    "amount": donation_amount_sats,
+                    "likes": 0,
+                    "dislikes": 0
                 }
                 donations.append(donation)
                 total_donations += donation_amount_sats
@@ -1231,7 +1244,7 @@ def status():
         "latest_balance": latest_balance,
         "latest_payments": latest_payments,
         "total_donations": donation_details["total_donations"],
-        "donations": donation_details["donations"],
+        "donations": donation_details["donations"],  # Each donation includes id, likes, dislikes
         "lightning_address": donation_details["lightning_address"],
         "lnurl": donation_details["lnurl"],
         "highlight_threshold": HIGHLIGHT_THRESHOLD
@@ -1311,7 +1324,7 @@ def get_donations_data():
         donation_details = fetch_donation_details()
         data = {
             "total_donations": donation_details["total_donations"],
-            "donations": donation_details["donations"],
+            "donations": donation_details["donations"],  # Each donation includes id, likes, dislikes
             "lightning_address": donation_details["lightning_address"],
             "lnurl": donation_details["lnurl"],
             "highlight_threshold": HIGHLIGHT_THRESHOLD
@@ -1322,6 +1335,53 @@ def get_donations_data():
         logger.error(f"Error fetching donation data: {e}")
         logger.debug(traceback.format_exc())
         return jsonify({"error": "Error fetching donation data"}), 500
+
+# API Endpoint to handle voting
+@app.route('/api/vote', methods=['POST'])
+def vote_donation():
+    """
+    API endpoint to handle likes and dislikes for a donation.
+    Expects JSON with 'donation_id' and 'vote_type' ('like' or 'dislike').
+    Utilizes cookies to prevent multiple votes by the same user on the same donation.
+    """
+    try:
+        data = request.get_json()
+        donation_id = data.get('donation_id')
+        vote_type = data.get('vote_type')
+
+        if not donation_id or not vote_type:
+            return jsonify({"error": "donation_id and vote_type are required."}), 400
+
+        if vote_type not in ['like', 'dislike']:
+            return jsonify({"error": "vote_type must be 'like' or 'dislike'."}), 400
+
+        # Retrieve existing voted donations from cookies to prevent multiple votes
+        voted_donations = request.cookies.get('voted_donations', '')
+        voted_set = set(voted_donations.split(',')) if voted_donations else set()
+
+        # Check if user has already voted on this donation
+        if donation_id in voted_set:
+            return jsonify({"error": "You have already voted on this donation."}), 403
+
+        # Handle the vote
+        result, status_code = handle_vote_command(donation_id, vote_type)
+        if status_code != 200:
+            return jsonify(result), status_code
+
+        # Prepare response with updated likes and dislikes
+        response = make_response(jsonify(result), 200)
+
+        # Update the voted_donations cookie
+        voted_set.add(donation_id)
+        new_voted_donations = ','.join(voted_set)
+        response.set_cookie('voted_donations', new_voted_donations, max_age=60*60*24*365)  # 1 year expiration
+
+        return response
+
+    except Exception as e:
+        logger.error(f"Error processing vote: {e}")
+        logger.debug(traceback.format_exc())
+        return jsonify({"error": "Internal server error."}), 500
 
 # Endpoint for Long-Polling Updates
 @app.route('/donations_updates', methods=['GET'])
@@ -1366,7 +1426,7 @@ def main():
     dispatcher.add_handler(CommandHandler('start', send_start_message))
 
     # CallbackQueryHandler for Inline Buttons (Balance, Transactions, Overwatch, Live Ticker, LNBits, Pagination)
-    dispatcher.add_handler(CallbackQueryHandler(handle_transactions_callback, pattern='^(balance|transactions_inline|prev_\d+|next_\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'))
+    dispatcher.add_handler(CallbackQueryHandler(handle_transactions_callback, pattern='^(balance|transactions_inline|prev_\\d+|next_\\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'))
 
     # MessageHandler for Reply Keyboard Buttons
     dispatcher.add_handler(MessageHandler(Filters.regex('^💰 Balance$'), handle_balance))
