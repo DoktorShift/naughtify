@@ -731,7 +731,6 @@ def notify_transaction(payment, direction):
 
         message = (
             f"{emoji} *{transaction_type}*\n"
-            f"📅 Date: {date}\n"
             f"💰 Amount: {sign}{amount} sats\n"
             f"✉️ Memo: {memo}"
         )
