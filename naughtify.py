@@ -565,6 +565,41 @@ def handle_vote_command(donation_id, vote_type):
         logger.debug(traceback.format_exc())
         return {"error": "Internal server error."}, 500
 
+def parse_time(time_input):
+    """
+    Parse the time field from payment data.
+
+    Args:
+        time_input (str or int or float): The time value to parse.
+
+    Returns:
+        datetime: The parsed datetime object.
+    """
+    if not time_input:
+        logger.warning("No 'time' field found in payment, using current time as fallback.")
+        return datetime.utcnow()
+
+    if isinstance(time_input, str):
+        try:
+            date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%S.%fZ")
+        except ValueError:
+            try:
+                date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%SZ")
+            except ValueError:
+                logger.error(f"Unable to parse time string: {time_input}")
+                date = datetime.utcnow()
+    elif isinstance(time_input, (int, float)):
+        try:
+            date = datetime.fromtimestamp(time_input)
+        except Exception as e:
+            logger.error(f"Unable to parse timestamp: {time_input}, error: {e}")
+            date = datetime.utcnow()
+    else:
+        logger.error(f"Unsupported time format: {time_input}")
+        date = datetime.utcnow()
+
+    return date
+
 def send_latest_payments():
     """
     Fetch the latest payments and send notifications via Telegram.
@@ -580,8 +615,8 @@ def send_latest_payments():
         logger.error("Unexpected data format for payments.")
         return
 
-    # Sort payments by creation time descending
-    sorted_payments = sorted(payments, key=lambda x: x.get("created_at", ""), reverse=True)
+    # Sort payments by 'time' descending
+    sorted_payments = sorted(payments, key=lambda x: x.get("time", ""), reverse=True)
     latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]  # Get the latest n payments
 
     if not latest:
@@ -601,6 +636,11 @@ def send_latest_payments():
         amount_msat = payment.get("amount", 0)
         memo = sanitize_memo(payment.get("memo", "No memo provided."))
         status = payment.get("status", "completed")
+        time_str = payment.get("time", None)
+
+        # Parse the 'time' field
+        date = parse_time(time_str)
+        formatted_date = date.strftime("%b %d, %Y %H:%M")  # Improved readability
 
         try:
             amount_sats = int(abs(amount_msat) / 1000)
@@ -614,13 +654,13 @@ def send_latest_payments():
             incoming_payments.append({
                 "amount": amount_sats,
                 "memo": memo,
-                "date": payment.get("created_at")
+                "date": formatted_date
             })
         elif amount_msat < 0:
             outgoing_payments.append({
                 "amount": amount_sats,
                 "memo": memo,
-                "date": payment.get("created_at")
+                "date": formatted_date
             })
 
         # Check for donation via LNURLp ID
@@ -638,7 +678,7 @@ def send_latest_payments():
                     donation_amount_sats = amount_sats  # Fallback if 'extra' is not numeric
                 donation = {
                     "id": str(uuid.uuid4()),  # Unique ID
-                    "date": datetime.utcnow().isoformat(),
+                    "date": formatted_date,
                     "memo": donation_memo,
                     "amount": donation_amount_sats,
                     "likes": 0,
@@ -683,6 +723,7 @@ def notify_transaction(payment, direction):
     try:
         amount = payment["amount"]
         memo = payment["memo"]
+        date = payment["date"]
 
         emoji = "🟢" if direction == "incoming" else "🔴"
         sign = "+" if direction == "incoming" else "-"
@@ -690,6 +731,7 @@ def notify_transaction(payment, direction):
 
         message = (
             f"{emoji} *{transaction_type}*\n"
+            f"📅 Date: {date}\n"
             f"💰 Amount: {sign}{amount} sats\n"
             f"✉️ Memo: {memo}"
         )
@@ -802,8 +844,8 @@ def send_transactions_message(chat_id, page=1, message_id=None):
     # Filter out pending transactions
     filtered_payments = [p for p in payments if p.get("status", "").lower() != "pending"]
 
-    # Sort transactions by creation time descending
-    sorted_payments = sorted(filtered_payments, key=lambda x: x.get("created_at", ""), reverse=True)
+    # Sort transactions by 'time' descending
+    sorted_payments = sorted(filtered_payments, key=lambda x: x.get("time", ""), reverse=True)
 
     total_transactions = len(sorted_payments)
     transactions_per_page = 13
@@ -832,18 +874,17 @@ def send_transactions_message(chat_id, page=1, message_id=None):
         amount_msat = payment.get("amount", 0)
         memo = sanitize_memo(payment.get("memo", "No memo provided."))
         status = payment.get("status", "completed")
-        created_at = payment.get("created_at", datetime.utcnow().isoformat())
+        time_str = payment.get("time", None)
 
-        try:
-            date = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%S.%fZ")
-        except ValueError:
-            try:
-                date = datetime.strptime(created_at, "%Y-%m-%dT%H:%M:%SZ")
-            except ValueError:
-                date = datetime.utcnow()
+        # Parse the 'time' field
+        date = parse_time(time_str)
         formatted_date = date.strftime("%b %d, %Y %H:%M")  # Improved readability
 
-        amount_sats = int(abs(amount_msat) / 1000)
+        try:
+            amount_sats = int(abs(amount_msat) / 1000)
+        except ValueError:
+            amount_sats = 0
+
         sign = "+" if amount_msat > 0 else "-"
         emoji = "🟢" if amount_msat > 0 else "🔴"
 
