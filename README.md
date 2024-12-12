@@ -437,6 +437,8 @@ This bot is a simple hack designed to keep you informed about your LNbits wallet
 If you're inspired to take this further, feel free to develop a proper LNbits extension! You can find detailed information on creating an extension here:  
 [**LNbits Extensions Wiki**](https://github.com/lnbits/lnbits/wiki/LNbits-Extensions)
 
+Additionally, you're welcome to explore the [Live-Ticker](https://donations.lnbot.de) feature. Testing it while donating helps support the project's development!
+
 ---
 ## Acknowledgments
 A big thank you to [**AxelHamburch**](https://github.com/AxelHamburch) for expressing the need for this bot and inspiring its creation.  
