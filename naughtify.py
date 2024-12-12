@@ -1192,7 +1192,7 @@ def handle_help_command(update, context):
         f"• `/transactions` – View your latest transactions.\n"
         f"• `/info` – View information about the bot and settings.\n"
         f"• `/help` – Show this help message.\n"
-        f"• `/ticker_ban` – Add forbidden words to ban from Live-Ticker.\n\n"
+        f"• `/ticker_ban` – Add forbidden words to ban from Live-Ticker (you can enter multiple words separated by spaces).\n\n"
         f"You can also use the buttons below to navigate through the bot's features."
     )
 
