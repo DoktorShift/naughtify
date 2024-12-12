@@ -365,27 +365,33 @@ input:checked + .slider:before {
     color: var(--donation-amount-color);
 }
 
-/* Logo Styling and Placement */
-.main-logo {
-    max-width: 150px; /* Adjust size as needed */
-    margin-top: 1rem;
-    display: block;
-    margin-left: auto;
-    margin-right: auto;
-    transition: transform 0.3s ease;
-}
-
-.main-logo:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
 .donations-box .donation-history {
     margin-top: 1.25rem;
     font-size: 0.9rem;
     font-weight: bold;
     color: var(--text-color-light);
 }
+
+/* Logo Styling and Placement */
+.main-logo {
+    max-width: 300px; /* Size */
+    margin-top: 1rem;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.header .main-logo {
+    margin-bottom: 1rem;
+}
+
+/* Rhover effect */
+/*
+.main-logo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+*/
 
 /* Transactions Table */
 .transactions {
@@ -411,13 +417,13 @@ table th, table td {
     padding: 0.75rem 0.9375rem;
     text-align: left;
     border-bottom: 1px solid var(--copy-field-background);
-    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
-    font-size: 1rem; /* Consistent font size */
+    font-family: 'Arial', sans-serif; 
+    font-size: 1rem; 
 }
 
 table th {
     background-color: #e9f3f7;
-    color: var(--text-color); /* Changed to use text-color for better readability */
+    color: var(--text-color); 
 }
 
 table td {
@@ -436,7 +442,7 @@ table td.amount {
 /* Like and Dislike Button Styles */
 /* Material Icons Adjustment for Like/Dislike */
 .like-button, .dislike-button {
-    /* Retaining existing styles as they are working */
+
 }
 
 .like-button .material-icons, .dislike-button .material-icons {
