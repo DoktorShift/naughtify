@@ -1,20 +1,22 @@
 <!-- donations.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <title>Live-Ticker Dashboard</title>
+    <title>Live⚡Ticker Dashboard</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <!-- External CSS File -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
+
 <body>
     <div class="dashboard">
         <!-- Header -->
         <div class="header">
-            <h1>Live Ticker</h1>
+            <h1>Live⚡Ticker</h1>
             <h5>Share payments in real-time.</h5>
-            
+
             <!-- Dark Mode Toggle -->
             <div class="toggle-container">
                 <label class="switch">
@@ -39,12 +41,14 @@
                 <div class="card qr-card">
                     <h5>Scan to send via Lightning Network.</h5>
                     <!-- QR Code with Click Handler to Copy LNURL -->
-                    <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}" onclick="copyLnurl(this)" title="Click to copy the LNURL">
+                    <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}"
+                        onclick="copyLnurl(this)" title="Click to copy the LNURL">
                 </div>
 
                 <!-- Lightning Address Card -->
                 <div class="card lightning-card">
-                    <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address" data-address="{{ lightning_address }}" id="lightning-address-container">
+                    <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address"
+                        data-address="{{ lightning_address }}" id="lightning-address-container">
                         <span class="emoji">⚡️</span>
                         <span class="address" id="lightning-address">{{ lightning_address }}</span>
                     </div>
@@ -55,10 +59,10 @@
             <div class="donations-box">
                 <h2>Total Amount</h2>
                 <div class="donation-amount" id="totalDonations">0 Sats</div>
-                
+
                 <!-- Logo source -->
                 <img src="{{ url_for('static', filename='assets/main_logo.png') }}" alt="Main Logo" class="main-logo">
-                
+
                 <div class="donation-history" id="donationHistory">Latest Patron: None yet.</div>
             </div>
         </div>
@@ -72,7 +76,7 @@
                         <th style="width: 20%;">Date</th>
                         <th style="width: 50%;">Memo</th>
                         <th style="width: 20%;">Amount</th>
-                        <th style="width: 10%;">Actions</th> 
+                        <th style="width: 10%;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="transactions">
@@ -91,7 +95,8 @@
             <div class="footer-section about">
                 <h3>About Us</h3>
                 <p>
-                    We collect and save money to support our community and enhance our services. Learn more about our mission and values.
+                    We collect and save money to support our community and enhance our services. Learn more about our
+                    mission and values.
                 </p>
             </div>
             <div class="footer-section links">
@@ -118,4 +123,5 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
+
 </html>
