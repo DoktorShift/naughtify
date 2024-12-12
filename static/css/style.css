@@ -365,6 +365,21 @@ input:checked + .slider:before {
     color: var(--donation-amount-color);
 }
 
+/* Logo Styling and Placement */
+.main-logo {
+    max-width: 150px; /* Adjust size as needed */
+    margin-top: 1rem;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    transition: transform 0.3s ease;
+}
+
+.main-logo:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
 .donations-box .donation-history {
     margin-top: 1.25rem;
     font-size: 0.9rem;
@@ -418,6 +433,17 @@ table td.amount {
     color: var(--donation-amount-color);
 }
 
+/* Like and Dislike Button Styles */
+/* Material Icons Adjustment for Like/Dislike */
+.like-button, .dislike-button {
+    /* Retaining existing styles as they are working */
+}
+
+.like-button .material-icons, .dislike-button .material-icons {
+    /* Retaining existing font size */
+    font-size: 1.2rem;
+}
+
 /* Like and Dislike Buttons within Actions Column */
 table td.actions {
     display: flex;
@@ -442,10 +468,6 @@ table td.actions {
 .dislike-button:hover {
     color: #e74c3c; /* Red */
     transform: scale(1.2);
-}
-
-.like-button .material-icons, .dislike-button .material-icons {
-    font-size: 1.2rem;
 }
 
 .likes-count, .dislikes-count {
@@ -674,16 +696,9 @@ body.dark-mode .tooltip-text::after {
     border-color: rgba(44, 62, 80, 0.9) transparent transparent transparent;
 }
 
-/* Like and Dislike Button Styles */
-.like-button, .dislike-button {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.2rem;
-}
-
-.like-button .material-icons, .dislike-button .material-icons {
-    font-size: 1.2rem;
+/* Material Icons Adjustment for Like/Dislike */
+.material-icons {
+    vertical-align: middle;
 }
 
 /* Responsive Design */
