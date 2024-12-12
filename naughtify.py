@@ -202,7 +202,7 @@ def load_forbidden_words(file_path):
             for line in f:
                 word = line.strip()
                 if word:  # Avoid empty lines
-                    forbidden.add(word.lower())
+                    forbidden.add(word)
         logger.debug(f"{len(forbidden)} forbidden words loaded from {file_path}.")
     except FileNotFoundError:
         logger.error(f"Forbidden words file not found: {file_path}.")
@@ -216,7 +216,7 @@ FORBIDDEN_WORDS = load_forbidden_words(FORBIDDEN_WORDS_FILE)
 
 def sanitize_memo(memo):
     """
-    Clean the memo field by replacing forbidden words with asterisks.
+    Sanitize a memo by replacing forbidden words with asterisks.
 
     Args:
         memo (str): The original memo text.
@@ -232,7 +232,7 @@ def sanitize_memo(memo):
         word = match.group()
         return '*' * len(word)
 
-    # Create a regex pattern that matches any forbidden word
+    # Create a regex pattern that matches any forbidden word (case-insensitive)
     if not FORBIDDEN_WORDS:
         return memo  # No forbidden words to sanitize
 
@@ -360,7 +360,75 @@ last_update = datetime.utcnow()
 # Load existing donations at startup if donations are enabled
 load_donations()
 
-# --------------------- Functions ---------------------
+def sanitize_donations():
+    """
+    Sanitize all existing donations to replace forbidden words in memos.
+    """
+    global donations
+    try:
+        for donation in donations:
+            donation['memo'] = sanitize_memo(donation.get('memo', ''))
+
+        # Save sanitized donations to file
+        save_donations()
+        logger.info("Donations sanitized and saved.")
+
+        # Notify frontend about the update if necessary
+        # This depends on how your frontend fetches updates. If it polls the /status endpoint, it's already covered.
+    except Exception as e:
+        logger.error(f"Error sanitizing donations: {e}")
+        logger.debug(traceback.format_exc())
+
+def handle_ticker_ban(update, context):
+    """
+    Handle the /ticker_ban command to add words to the forbidden words list.
+    Args:
+        update (telegram.Update): The update object.
+        context (telegram.ext.CallbackContext): The callback context object.
+    """
+    chat_id = update.effective_chat.id
+    if len(context.args) == 0:
+        bot.send_message(chat_id, text="❌ Please provide at least one word to ban. Example: `/ticker_ban badword`")
+        return
+
+    words_to_ban = [word.strip() for word in context.args if word.strip()]
+    if not words_to_ban:
+        bot.send_message(chat_id, text="❌ No valid words provided.")
+        return
+
+    added_words = []
+    duplicate_words = []
+
+    try:
+        with open(FORBIDDEN_WORDS_FILE, 'a') as f:
+            for word in words_to_ban:
+                if word in FORBIDDEN_WORDS:
+                    duplicate_words.append(word)
+                else:
+                    f.write(word + '\n')
+                    FORBIDDEN_WORDS.add(word)  # Update the in-memory set
+                    added_words.append(word)
+
+        if added_words:
+            logger.info(f"Added words to forbidden list: {added_words}")
+            # Sanitize existing donations and save changes
+            sanitize_donations()
+            if len(added_words) == 1:
+                success_message = f"✅ Successfully added '{added_words[0]}' to the banned list. It will be banned from Live-Ticker immediately."
+            else:
+                words_formatted = "', '".join(added_words)
+                success_message = f"✅ Successfully added '{words_formatted}' to the banned list. They will be banned from Live-Ticker immediately."
+            bot.send_message(chat_id, text=success_message)
+        if duplicate_words:
+            if len(duplicate_words) == 1:
+                duplicate_message = f"⚠️ The word '{duplicate_words[0]}' is already in the banned list."
+            else:
+                words_formatted = "', '".join(duplicate_words)
+                duplicate_message = f"⚠️ The words '{words_formatted}' are already in the banned list."
+            bot.send_message(chat_id, text=duplicate_message)
+    except Exception as e:
+        logger.error(f"Error adding words to forbidden list: {e}")
+        bot.send_message(chat_id, text="❌ An error occurred while banning words. Please try again.")
 
 def fetch_api(endpoint):
     """
@@ -804,7 +872,7 @@ def send_balance_message(chat_id):
     logger.info(f"Fetching balance for chat_id: {chat_id}")
     wallet_info = fetch_api("wallet")
     if wallet_info is None:
-        bot.send_message(chat_id=chat_id, text="❌ Unable to fetch the balance at the moment. Please try again later.")
+        bot.send_message(chat_id, text="❌ Unable to fetch the balance at the moment. Please try again later.")
         return
 
     current_balance_msat = wallet_info.get("balance", 0)
@@ -837,7 +905,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
     logger.info(f"Fetching transactions for chat_id: {chat_id}, page: {page}")
     payments = fetch_api("payments")
     if payments is None:
-        bot.send_message(chat_id=chat_id, text="❌ Unable to fetch transactions at the moment.")
+        bot.send_message(chat_id, text="❌ Unable to fetch transactions at the moment.")
         return
 
     # Filter out pending transactions
@@ -854,7 +922,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
         total_pages = 1  # Ensure at least one page
 
     if page < 1 or page > total_pages:
-        bot.send_message(chat_id=chat_id, text="❌ Invalid page number.")
+        bot.send_message(chat_id, text="❌ Invalid page number.")
         return
 
     start_index = (page - 1) * transactions_per_page
@@ -862,7 +930,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
     page_transactions = sorted_payments[start_index:end_index]
 
     if not page_transactions:
-        bot.send_message(chat_id=chat_id, text="❌ No transactions found on this page.")
+        bot.send_message(chat_id, text="❌ No transactions found on this page.")
         return
 
     message_lines = [
@@ -1123,7 +1191,8 @@ def handle_help_command(update, context):
         f"• `/balance` – View your current balance.\n"
         f"• `/transactions` – View your latest transactions.\n"
         f"• `/info` – View information about the bot and settings.\n"
-        f"• `/help` – Show this help message.\n\n"
+        f"• `/help` – Show this help message.\n"
+        f"• `/ticker_ban` – Add forbidden words to ban from Live-Ticker.\n\n"
         f"You can also use the buttons below to navigate through the bot's features."
     )
 
@@ -1237,6 +1306,8 @@ def process_update(update):
                 handle_info_command(update, None)
             elif text.startswith('/help'):
                 handle_help_command(update, None)
+            elif text.startswith('/ticker_ban'):
+                handle_ticker_ban(update, None)
             else:
                 # Handle Reply Keyboard Buttons
                 if text == "💰 Balance":
@@ -1481,6 +1552,9 @@ def main():
 
     # CommandHandler for /start (send Reply Keyboard)
     dispatcher.add_handler(CommandHandler('start', send_start_message))
+
+    # CommandHandler for /ticker_ban
+    dispatcher.add_handler(CommandHandler('ticker_ban', handle_ticker_ban))
 
     # CallbackQueryHandler for Inline Buttons (Balance, Transactions, Overwatch, Live Ticker, LNBits, Pagination)
     dispatcher.add_handler(CallbackQueryHandler(handle_transactions_callback, pattern='^(balance|transactions_inline|prev_\\d+|next_\\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'))
