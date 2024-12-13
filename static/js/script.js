@@ -6,6 +6,11 @@ const rowsPerPage = 10; // Number of rows to display per page
 let currentPage = 1;
 let lastUpdate = null; // Timestamp of the last update
 let highlightThreshold = 2100; // Default threshold
+let soundsEnabled = true; // Sound notifications enabled by default
+
+// Sound files
+const normalPaymentSound = new Audio('/static/sounds/normal_payment.mp3');
+const bigPaymentSound = new Audio('/static/sounds/big_payment.mp3');
 
 // Function to show a toast notification
 function showToast(message, isError = false) {
@@ -105,12 +110,26 @@ function updateDonations(data) {
     // Render the table and pagination
     renderTable();
     renderPagination();
+
+    // Play sound if sounds are enabled and there is a new update
+    if (soundsEnabled && lastUpdate && new Date(data.last_update) > lastUpdate) {
+        // Determine if the latest donation is a big payment
+        const latestPayment = data.donations[data.donations.length - 1];
+        if (latestPayment.amount >= highlightThreshold) {
+            bigPaymentSound.play();
+        } else {
+            normalPaymentSound.play();
+        }
+    }
+
+    // Update lastUpdate
+    lastUpdate = new Date(data.last_update);
 }
 
 // Function to update the Lightning Address and LNURL in the DOM
 function updateLightningAddress(lightningAddress, lnurl) {
-    const copyField = document.getElementById('lightning-address-container');
-    const addressSpan = document.getElementById('lightning-address');
+    const copyField = document.querySelector('.lightning-address-container');
+    const addressSpan = document.querySelector('.address');
 
     if (copyField && addressSpan) {
         if (lightningAddress && lightningAddress !== 'Unavailable') {
@@ -294,11 +313,6 @@ async function voteDonation(donationId, voteType) {
     }
 }
 
-// Helper function to get donation data by ID
-function getDonationById(donationId) {
-    return transactionsData.find(donation => donation.id === donationId);
-}
-
 // Function to toggle Dark Mode
 function toggleDarkMode(isDark) {
     if (isDark) {
@@ -358,6 +372,20 @@ document.addEventListener("DOMContentLoaded", function() {
     // Initialize Dark Mode
     initializeDarkMode();
     
+    // Initialize Sound Controls
+    const soundToggle = document.getElementById('soundToggle');
+    if (soundToggle) {
+        soundToggle.addEventListener('change', (e) => {
+            soundsEnabled = e.target.checked;
+            if (!soundsEnabled) {
+                normalPaymentSound.pause();
+                normalPaymentSound.currentTime = 0;
+                bigPaymentSound.pause();
+                bigPaymentSound.currentTime = 0;
+            }
+        });
+    }
+
     // Fetch initial donations data
     fetchInitialDonations();
     // Start checking for updates
