@@ -19,11 +19,11 @@ LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monit
   - [5.1 Start Manually](#51-start-manually)
   - [5.2 Autostart Service](#52-autostart-service)
 - [6. Optional Additions](#6-optional-additions)
-  - [6.1 Deploy Overwatch](#61-deploy-overwatch)
-  - [6.2 LiveTicker](#62-liveticker)
+  - [6.1 LiveTicker](#61-liveticker)
     - [Installation](#installation)
     - [Personalize page](#personalize-page)
     - [Good etiquette care](#good-etiquette-care)
+  - [6.2 Deploy Overwatch](#62-deploy-overwatch)
 - [7. Appendix](#7-appendix)
   - [7.1 Update Naughtify](#71-update-naughtify)
 - [Contributing](#contributing)
@@ -301,15 +301,7 @@ sudo journalctl -u naughtify -f --since "2 hour ago"
 
 ## 6. Optional Additions
 
-### 6.1 Deploy Overwatch
-
-General information find [here](https://github.com/DoktorShift/Overwatch)
-
-Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT.md)
-
-Option 2: Easier Deployment with Netlify [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT_Netlify.md)
-
-### 6.2 LiveTicker
+### 6.1 LiveTicker
 
 Naughtify can also provide a simple public website that displays the data and transactions of a wallet. This function is called “LiveTicker”. Examples of this would be a donation page or a crowdfunding page. Anyone can view the page, send funds directly, leave a comment (if desired) and shortly afterwards see that their contribution with the comment has been received, which can be particularly necessary for crowdfunding projects and ensures absolute transparency.
 
@@ -389,6 +381,14 @@ The structure of the Live⚡Ticker page is fixed. However, you can customize the
 Some comments may not be appropriate or someone may have inadvertently revealed something that they regret afterwards. There needs to be a way to clean this up. Therefore the list `forbidden_words.txt` and the command `/ticker_ban` was introduced. The list contains all words that you do not want to see on the screen. With the command `/ticker_ban` you can add words to this list from the Telegram bot. The words are then marked with asterisks.
 
 <img src="./assets/ban.jpg" width="800"> 
+
+### 6.2 Deploy Overwatch
+
+General information find [here](https://github.com/DoktorShift/Overwatch)
+
+Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT.md)
+
+Option 2: Easier Deployment with Netlify [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT_Netlify.md)
 
 ---
 
