@@ -1,10 +1,18 @@
 <!-- donations.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Live-Ticker Dashboard</title>
+    
+    <!-- Google Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    
     <!-- External CSS File -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
@@ -77,7 +85,7 @@
                 </thead>
                 <tbody id="transactions">
                     <tr>
-                        <td colspan="4" class="no-data">No donors yet.</td> <!-- Updated colspan -->
+                        <td colspan="4" class="no-data">No donors yet.</td>
                     </tr>
                 </tbody>
             </table>
@@ -97,7 +105,7 @@
             <div class="footer-section links">
                 <h3>Quick Links</h3>
                 <ul>
-                    <li><a href="{{ INFORMATION_URL }}" target="_blank">Our Mission</a></li>
+                    <li><a href="{{ information_url }}" target="_blank">Our Mission</a></li>
                 </ul>
             </div>
             <div class="footer-section social">
@@ -105,7 +113,9 @@
                 <div class="social-icons">
                     <a href="#"><i class="material-icons">home</i></a>
                     <a href="#"><i class="material-icons">email</i></a>
-                    <a href="https://github.com/DoktorShift"><i class="material-icons">hub</i></a>
+                    <a href="https://github.com/DoktorShift" target="_blank" aria-label="github">
+                        <i class="fab fa-github"></i>
+                    </a>
                 </div>
             </div>
         </div>
