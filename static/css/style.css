@@ -367,7 +367,7 @@ input:checked + .slider:before {
 
 .donations-box .donation-history {
     margin-top: 1.25rem;
-    font-size: 0.9rem;
+    font-size: 1.125rem;
     font-weight: bold;
     color: var(--text-color-light);
 }
