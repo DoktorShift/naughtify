@@ -1,0 +1,140 @@
+<!-- cinema.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cinema Mode - Live⚡️Ticker Dashboard</title>
+    
+    <!-- Google Material Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    
+    <!-- External CSS File -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="cinema-dashboard">
+        <!-- Header -->
+        <div class="header">
+            <h1>Cinema Mode Dashboard</h1>
+            <h5>All essential data on one screen.</h5>
+            
+            <!-- Dark Mode Toggle -->
+            <div class="toggle-container">
+                <label class="switch">
+                    <input type="checkbox" id="darkModeToggle" aria-label="Toggle Dark Mode">
+                    <span class="slider round"></span>
+                </label>
+            </div>
+
+            <!-- Info Icon with Tooltip -->
+            <div class="info-tooltip">
+                <i class="material-icons info-icon">psychology_alt</i>
+                <span class="tooltip-text">Our Mission</span>
+                <a href="{{ information_url }}" target="_blank" class="info-link" aria-label="More about"></a>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="cinema-content">
+            <!-- Total Donations -->
+            <div class="cinema-section">
+                <h2>Total Donations</h2>
+                <div class="cinema-amount" id="totalDonations">{{ total_donations }} Sats</div>
+            </div>
+
+            <!-- QR Code and Lightning Address -->
+            <div class="cinema-section qr-section">
+                <h2>Donate via Lightning Network</h2>
+                <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}" onclick="copyLnurl(this)" title="Click to copy the LNURL">
+                <div class="lightning-address-container" onclick="copyText(this)" title="Click to copy the Lightning Address" data-address="{{ lightning_address }}">
+                    <span class="emoji">⚡️</span>
+                    <span class="address">{{ lightning_address }}</span>
+                </div>
+            </div>
+
+            <!-- Top Patreons -->
+            <div class="cinema-section patreons-section">
+                <h2>Heroic Patreons</h2>
+                <div class="patreons-list">
+                    {% for patron in top_patreons %}
+                        <div class="patron">
+                            <div class="patron-amount">{{ patron.amount }} Sats</div>
+                            <div class="patron-memo">"{{ patron.memo }}"</div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Donations Table -->
+            <div class="cinema-section donations-table-section">
+                <h2>Donations</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">Date</th>
+                            <th style="width: 50%;">Memo</th>
+                            <th style="width: 20%;">Amount</th>
+                            <th style="width: 10%;">Actions</th> 
+                        </tr>
+                    </thead>
+                    <tbody id="transactions">
+                        <tr>
+                            <td colspan="4" class="no-data">No donors yet.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination" id="pagination"></div>
+            </div>
+
+            <!-- Sound Controls -->
+            <div class="cinema-section sound-controls">
+                <h2>Sound Notifications</h2>
+                <div class="slider-container">
+                    <label for="soundToggle">Enable Sounds:</label>
+                    <input type="checkbox" id="soundToggle" checked>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section about">
+                <h3>About Us</h3>
+                <p>
+                    We collect and save money to support our community and enhance our services. Learn more about our mission and values.
+                </p>
+            </div>
+            <div class="footer-section links">
+                <h3>Quick Links</h3>
+                <ul>
+                    <li><a href="{{ information_url }}" target="_blank">Our Mission</a></li>
+                </ul>
+            </div>
+            <div class="footer-section social">
+                <h3>Connect with Us</h3>
+                <div class="social-icons">
+                    <a href="#"><i class="material-icons">home</i></a>
+                    <a href="#"><i class="material-icons">email</i></a>
+                    <a href="https://github.com/DoktorShift/naughtify" target="_blank" aria-label="github">
+                        <i class="fab fa-github"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- External JS File -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>
