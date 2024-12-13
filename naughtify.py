@@ -44,13 +44,13 @@ LNURLP_ID = os.getenv("LNURLP_ID") if DONATIONS_URL else None
 
 FORBIDDEN_WORDS_FILE = os.getenv("FORBIDDEN_WORDS_FILE", "forbidden_words.txt")
 
-BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))  
-HIGHLIGHT_THRESHOLD = int(os.getenv("HIGHLIGHT_THRESHOLD", "2100"))  
-LATEST_TRANSACTIONS_COUNT = int(os.getenv("LATEST_TRANSACTIONS_COUNT", "21"))  
+BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))
+HIGHLIGHT_THRESHOLD = int(os.getenv("HIGHLIGHT_THRESHOLD", "2100"))
+LATEST_TRANSACTIONS_COUNT = int(os.getenv("LATEST_TRANSACTIONS_COUNT", "21"))
 
-PAYMENTS_FETCH_INTERVAL = int(os.getenv("PAYMENTS_FETCH_INTERVAL", "60"))  
+PAYMENTS_FETCH_INTERVAL = int(os.getenv("PAYMENTS_FETCH_INTERVAL", "60"))
 
-APP_HOST = os.getenv("APP_HOST", "127.0.0.1")  
+APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
 APP_PORT = int(os.getenv("APP_PORT", "5009"))
 
 PROCESSED_PAYMENTS_FILE = os.getenv("PROCESSED_PAYMENTS_FILE", "processed_payments.txt")
@@ -77,13 +77,17 @@ bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 logger = logging.getLogger("lnbits_logger")
 logger.setLevel(logging.DEBUG)
+
 file_handler = RotatingFileHandler("app.log", maxBytes=5 * 1024 * 1024, backupCount=3)
 file_handler.setLevel(logging.DEBUG)
+
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
+
 formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s')
 file_handler.setFormatter(formatter)
 console_handler.setFormatter(formatter)
+
 logger.addHandler(file_handler)
 logger.addHandler(console_handler)
 
@@ -115,14 +119,8 @@ def get_main_inline_keyboard():
 
 def get_main_keyboard():
     balance_button = ["💰 Balance"]
-    main_options_row_1 = [
-        "📊 Overwatch",
-        "📡 Live Ticker"
-    ]
-    main_options_row_2 = [
-        "📜 Latest Transactions",
-        "⚡ LNBits"
-    ]
+    main_options_row_1 = ["📊 Overwatch", "📡 Live Ticker"]
+    main_options_row_2 = ["📜 Latest Transactions", "⚡ LNBits"]
 
     keyboard = [
         balance_button,
@@ -153,9 +151,11 @@ FORBIDDEN_WORDS = load_forbidden_words(FORBIDDEN_WORDS_FILE)
 def sanitize_memo(memo):
     if not memo:
         return "No memo provided."
+
     def replace_match(match):
         word = match.group()
         return '*' * len(word)
+
     if not FORBIDDEN_WORDS:
         return memo
     pattern = re.compile(r'\b(' + '|'.join(map(re.escape, FORBIDDEN_WORDS)) + r')\b', re.IGNORECASE)
@@ -269,12 +269,12 @@ def sanitize_donations():
 def handle_ticker_ban(update, context):
     chat_id = update.effective_chat.id
     if len(context.args) == 0:
-        bot.send_message(chat_id, text="❌ Bitte geben Sie mindestens ein Wort an. Beispiel: /ticker_ban badword")
+        bot.send_message(chat_id, text="❌ Please provide at least one word to ban. Example: /ticker_ban badword")
         return
 
     words_to_ban = [word.strip() for word in context.args if word.strip()]
     if not words_to_ban:
-        bot.send_message(chat_id, text="❌ Keine gültigen Wörter angegeben.")
+        bot.send_message(chat_id, text="❌ No valid words provided.")
         return
 
     added_words = []
@@ -290,25 +290,28 @@ def handle_ticker_ban(update, context):
                     FORBIDDEN_WORDS.add(word)
                     added_words.append(word)
 
+        # Nach dem bannen aktualisieren wir die Spenden und aktualisieren last_update
+        sanitize_donations()
+        global last_update
+        last_update = datetime.utcnow()  # Dies triggert das automatische Refresh im Frontend
+
         if added_words:
-            logger.info(f"Added words to forbidden list: {added_words}")
-            sanitize_donations()
             if len(added_words) == 1:
-                success_message = f"✅ '{added_words[0]}' hinzugefügt."
+                success_message = f"✅ Great! I've successfully added the word '{added_words[0]}' to the banned list. The Live Ticker will update shortly!"
             else:
                 words_formatted = "', '".join(added_words)
-                success_message = f"✅ '{words_formatted}' hinzugefügt."
+                success_message = f"✅ Great! I've added these words to the banned list: '{words_formatted}'. The Live Ticker will update shortly!"
             bot.send_message(chat_id, text=success_message)
         if duplicate_words:
             if len(duplicate_words) == 1:
-                duplicate_message = f"⚠️ Das Wort '{duplicate_words[0]}' ist bereits gebannt."
+                duplicate_message = f"⚠️ The word '{duplicate_words[0]}' was already banned."
             else:
                 words_formatted = "', '".join(duplicate_words)
-                duplicate_message = f"⚠️ Die Wörter '{words_formatted}' sind bereits gebannt."
+                duplicate_message = f"⚠️ The following words were already banned: '{words_formatted}'."
             bot.send_message(chat_id, text=duplicate_message)
     except Exception as e:
         logger.error(f"Error adding words to forbidden list: {e}")
-        bot.send_message(chat_id, text="❌ Ein Fehler ist aufgetreten.")
+        bot.send_message(chat_id, text="❌ An error occurred while banning words. Please try again.")
 
 def fetch_api(endpoint):
     url = f"{LNBITS_URL}/api/v1/{endpoint}"
@@ -494,17 +497,9 @@ def send_latest_payments():
             continue
 
         if amount_msat > 0:
-            incoming_payments.append({
-                "amount": amount_sats,
-                "memo": memo,
-                "date": formatted_date
-            })
+            incoming_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
         elif amount_msat < 0:
-            outgoing_payments.append({
-                "amount": amount_sats,
-                "memo": memo,
-                "date": formatted_date
-            })
+            outgoing_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
 
         if DONATIONS_URL and LNURLP_ID:
             extra_data = payment.get("extra", {})
@@ -528,10 +523,7 @@ def send_latest_payments():
                 total_donations += donation_amount_sats
                 last_update = datetime.utcnow()
                 logger.info(f"New donation detected: {donation_amount_sats} sats - {donation_memo}")
-                updateDonations({
-                    "total_donations": total_donations,
-                    "donations": donations
-                })
+                updateDonations({"total_donations": total_donations, "donations": donations})
 
         processed_payments.add(payment_hash)
         new_processed_hashes.append(payment_hash)
@@ -542,9 +534,6 @@ def send_latest_payments():
 
     for payment in outgoing_payments:
         notify_transaction(payment, "outgoing")
-
-    if not incoming_payments and not outgoing_payments:
-        logger.info("No new incoming or outgoing payments to notify.")
 
 def notify_transaction(payment, direction):
     try:
@@ -576,8 +565,8 @@ def send_main_inline_keyboard():
     try:
         welcome_message = (
             "😶‍🌫️ Here we go!\n\n"
-            "I'm now ready again to assist you with monitoring your LNbits transactions.\n\n"
-            "Use the buttons below to navigate through my features."
+            "I'm ready to assist you with monitoring your LNbits transactions.\n\n"
+            "Use the buttons below to explore the features."
         )
         bot.send_message(
             chat_id=CHAT_ID,
@@ -594,7 +583,7 @@ def send_start_message(update, context):
     chat_id = update.effective_chat.id
     welcome_message = (
         "👋 Welcome to Naughtify your LNBits Wallet Monitor!\n\n"
-        "Use the buttons below to perform various actions."
+        "Use the buttons below for quick access to various features."
     )
     reply_markup = get_main_keyboard()
     
@@ -614,7 +603,7 @@ def send_balance_message(chat_id):
     logger.info(f"Fetching balance for chat_id: {chat_id}")
     wallet_info = fetch_api("wallet")
     if wallet_info is None:
-        bot.send_message(chat_id, text="❌ Unable to fetch balance.")
+        bot.send_message(chat_id, text="❌ Unable to fetch balance at the moment. Please try again.")
         return
     current_balance_msat = wallet_info.get("balance", 0)
     current_balance_sats = current_balance_msat / 1000
@@ -635,7 +624,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
     logger.info(f"Fetching transactions for chat_id: {chat_id}, page: {page}")
     payments = fetch_api("payments")
     if payments is None:
-        bot.send_message(chat_id, text="❌ Unable to fetch transactions.")
+        bot.send_message(chat_id, text="❌ Unable to fetch transactions right now.")
         return
 
     filtered_payments = [p for p in payments if p.get("status", "").lower() != "pending"]
@@ -656,9 +645,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
         bot.send_message(chat_id, text="❌ No transactions found on this page.")
         return
 
-    message_lines = [
-        f"📜 *Latest Transactions - Page {page}/{total_pages}* 📜\n"
-    ]
+    message_lines = [f"📜 *Latest Transactions - Page {page}/{total_pages}* 📜\n"]
     for payment in page_transactions:
         amount_msat = payment.get("amount", 0)
         memo = sanitize_memo(payment.get("memo", "No memo provided."))
@@ -787,7 +774,7 @@ def handle_donations_inline_callback(query):
         else:
             bot.send_message(
                 chat_id=query.message.chat.id,
-                text="❌ URL is not configured."
+                text="❌ No URL configured."
             )
     except Exception as e:
         logger.error(f"Error handling donations_inline callback: {e}")
@@ -831,7 +818,9 @@ def handle_info_command(update, context):
 
     info_message = (
         f"ℹ️ *{INSTANCE_NAME}* - *Information*\n\n"
-        f"{interval_info}"
+        f"Here are some current settings:\n\n"
+        f"{interval_info}\n\n"
+        f"These settings affect how I notify you and highlight incoming payments."
     )
 
     try:
@@ -851,13 +840,13 @@ def handle_help_command(update, context):
     logger.info(f"Handling /help command for chat_id: {chat_id}")
     help_message = (
         f"ℹ️ *{INSTANCE_NAME}* - *Help*\n\n"
-        f"Commands:\n"
-        f"• /balance\n"
-        f"• /transactions\n"
-        f"• /info\n"
-        f"• /help\n"
-        f"• /ticker_ban\n\n"
-        f"Use buttons below for navigation."
+        f"Hello! Here's what I can do for you:\n\n"
+        f"• /balance – Show your current LNbits wallet balance.\n"
+        f"• /transactions – Show your latest transactions with pagination.\n"
+        f"• /info – Display current settings and thresholds.\n"
+        f"• /help – Display this help message.\n"
+        f"• /ticker_ban <words> – Add forbidden words that will be censored in the Live Ticker.\n\n"
+        f"You can also use the buttons below to quickly navigate through features!"
     )
 
     try:
@@ -944,33 +933,26 @@ def process_update(update):
             chat_id = message['chat']['id']
             text = message.get('text', '').strip()
 
-            if text.startswith('/balance'):
-                send_balance_message(chat_id)
-            elif text.startswith('/transactions'):
-                send_transactions_message(chat_id, page=1)
-            elif text.startswith('/info'):
-                handle_info_command(update, None)
-            elif text.startswith('/help'):
-                handle_help_command(update, None)
-            elif text.startswith('/ticker_ban'):
-                handle_ticker_ban(update, None)
+            # Hier werden nur nicht erkannte Befehle oder Tasten behandelt,
+            # da für /help, /info, /ticker_ban etc. CommandHandler zuständig ist.
+            if text == "💰 Balance":
+                handle_balance(None, None)
+            elif text == "📜 Latest Transactions":
+                handle_latest_transactions(None, None)
+            elif text == "📡 Live Ticker":
+                handle_live_ticker(None, None)
+            elif text == "📊 Overwatch":
+                handle_overwatch(None, None)
+            elif text == "⚡ LNBits":
+                handle_lnbits(None, None)
             else:
-                if text == "💰 Balance":
-                    handle_balance(update, None)
-                elif text == "📜 Latest Transactions":
-                    handle_latest_transactions(update, None)
-                elif text == "📡 Live Ticker":
-                    handle_live_ticker(update, None)
-                elif text == "📊 Overwatch":
-                    handle_overwatch(update, None)
-                elif text == "⚡ LNBits":
-                    handle_lnbits(update, None)
-                else:
-                    bot.send_message(
-                        chat_id=chat_id,
-                        text="❓ Unknown command."
-                    )
+                # Unbekannte Eingabe
+                bot.send_message(
+                    chat_id=chat_id,
+                    text="❓ I didn't recognize that command. Use /help to see what I can do."
+                )
         elif 'callback_query' in update:
+            # Handled by CallbackQueryHandler
             pass
         else:
             logger.info("No message or callback in update.")
@@ -1122,7 +1104,6 @@ def donations_updates():
         logger.debug(traceback.format_exc())
         return jsonify({"error": "Error fetching last_update"}), 500
 
-# Neue Route für Cinema Mode, ohne Code zu löschen:
 @app.route('/cinema')
 def cinema_page():
     if not DONATIONS_URL or not LNURLP_ID:
@@ -1138,7 +1119,7 @@ def main():
     dispatcher.add_handler(CommandHandler('info', handle_info_command))
     dispatcher.add_handler(CommandHandler('help', handle_help_command))
     dispatcher.add_handler(CommandHandler('start', send_start_message))
-    dispatcher.add_handler(CommandHandler('ticker_ban', handle_ticker_ban))
+    dispatcher.add_handler(CommandHandler('ticker_ban', handle_ticker_ban, pass_args=True))
 
     dispatcher.add_handler(CallbackQueryHandler(handle_transactions_callback, pattern='^(balance|transactions_inline|prev_\\d+|next_\\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'))
 
