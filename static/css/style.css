@@ -385,14 +385,6 @@ input:checked + .slider:before {
     margin-bottom: 1rem;
 }
 
-/* Rhover effect */
-/*
-.main-logo:hover {
-    transform: scale(1.05);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-*/
-
 /* Transactions Table */
 .transactions {
     background-color: #f9fbfc;
@@ -440,13 +432,9 @@ table td.amount {
 }
 
 /* Like and Dislike Button Styles */
-/* Material Icons Adjustment for Like/Dislike */
-.like-button, .dislike-button {
-
-}
+.like-button, .dislike-button { }
 
 .like-button .material-icons, .dislike-button .material-icons {
-    /* Retaining existing font size */
     font-size: 1.2rem;
 }
 
@@ -454,7 +442,7 @@ table td.amount {
 table td.actions {
     display: flex;
     align-items: center;
-    gap: 1rem; /* Increased gap for better spacing */
+    gap: 1rem;
 }
 
 .like-button, .dislike-button {
@@ -504,8 +492,8 @@ table td.actions {
     border-radius: 0.3125rem;
     text-decoration: none;
     transition: background-color 0.3s, transform 0.3s;
-    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
-    font-size: 1rem; /* Consistent font size */
+    font-family: 'Arial', sans-serif; 
+    font-size: 1rem;
 }
 
 .pagination a.active {
@@ -521,8 +509,8 @@ table td.actions {
     text-align: center;
     color: #999;
     padding: 1.25rem;
-    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
-    font-size: 1rem; /* Consistent font size */
+    font-family: 'Arial', sans-serif; 
+    font-size: 1rem;
 }
 
 /* Modern Footer Styles */
@@ -549,13 +537,13 @@ footer.footer {
     margin-bottom: 1rem;
     font-size: 1.5rem;
     color: var(--secondary-color);
-    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
+    font-family: 'Arial', sans-serif;
 }
 
 .footer-section p, .footer-section ul {
     font-size: 1rem;
     line-height: 1.6;
-    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
+    font-family: 'Arial', sans-serif;
 }
 
 .footer-section ul {
@@ -570,8 +558,8 @@ footer.footer {
 .footer-section ul li a {
     color: var(--text-color-light);
     transition: color 0.3s;
-    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
-    font-size: 1rem; /* Consistent font size */
+    font-family: 'Arial', sans-serif;
+    font-size: 1rem;
 }
 
 .footer-section ul li a:hover {
@@ -607,7 +595,7 @@ footer.footer {
     margin-top: 2rem;
     font-size: 0.9rem;
     color: var(--text-color-light);
-    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
+    font-family: 'Arial', sans-serif;
 }
 
 /* Toast Notification Styles */
@@ -632,8 +620,8 @@ footer.footer {
     opacity: 0;
     transform: translateX(100%);
     animation: fadeIn 0.5s forwards, fadeOut 0.5s forwards 2.5s;
-    font-family: 'Arial', sans-serif; /* Ensuring consistent font */
-    font-size: 1rem; /* Consistent font size */
+    font-family: 'Arial', sans-serif;
+    font-size: 1rem;
 }
 
 .toast.error {
@@ -677,7 +665,7 @@ body.dark-mode .transactions {
 
 body.dark-mode table th {
     background-color: #1e2a38;
-    color: var(--text-color); /* Ensure headers use text-color */
+    color: var(--text-color);
 }
 
 body.dark-mode table td {
@@ -729,4 +717,15 @@ body.dark-mode .tooltip-text::after {
     .like-button, .dislike-button {
         gap: 0.3rem;
     }
+}
+
+/* styling for the GitHub icon to match others */
+.footer-section .social-icons a i {
+    font-size: 24px; /* Adjusting the icon size */
+    color: var(--footer-text-color);
+    transition: color 0.3s;
+}
+
+.footer-section .social-icons a:hover i {
+    color: #fff; /* On hover, icons get a brighter clor */
 }
