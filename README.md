@@ -324,6 +324,8 @@ DONATIONS_URL=YourLiveTickerPageURL <- liveticker.yourdomomain.com
 LNURLP_ID=YourLNURPID <- The ID (6 letters) of the Pay Link instance
 ```
 
+__Note:__ For more help on the LNURLP_ID, see point 3.3 of [prerequisites_help.md](./prerequisites_help.md).
+
 __Extend the caddy file:__
 
 ```bash
