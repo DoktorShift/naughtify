@@ -305,7 +305,7 @@ sudo journalctl -u naughtify -f --since "2 hour ago"
 
 Naughtify can also provide a simple public website that displays the data and transactions of a wallet. This function is called “LiveTicker”. Examples of this would be a donation page or a crowdfunding page. Anyone can view the page, send funds directly, leave a comment (if desired) and shortly afterwards see that their contribution with the comment has been received, which can be particularly necessary for crowdfunding projects and ensures absolute transparency.
 
-<img src="./assets/liveticker_example.jpg" width="600"> 
+<img src="./assets/liveticker_example.jpg" width="700"> 
 
 #### Installation
 
