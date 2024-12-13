@@ -19,8 +19,11 @@ LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monit
   - [5.1 Start Manually](#51-start-manually)
   - [5.2 Autostart Service](#52-autostart-service)
 - [6. Optional Additions](#6-optional-additions)
-  - [6.1 Deploy Overwatch](#61-deploy-overwatch)
-  - [6.2 LiveTicker](#62-liveticker)
+  - [6.1 Live⚡Ticker](#61-liveticker)
+    - [Installation](#installation)
+    - [Personalize page](#personalize-page)
+    - [Good etiquette care](#good-etiquette-care)
+  - [6.2 Deploy Overwatch](#62-deploy-overwatch)
 - [7. Appendix](#7-appendix)
   - [7.1 Update Naughtify](#71-update-naughtify)
 - [Contributing](#contributing)
@@ -298,17 +301,13 @@ sudo journalctl -u naughtify -f --since "2 hour ago"
 
 ## 6. Optional Additions
 
-### 6.1 Deploy Overwatch
-
-General information find [here](https://github.com/DoktorShift/Overwatch)
-
-Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT.md)
-
-Option 2: Easier Deployment with Netlify [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT_Netlify.md)
-
-### 6.2 LiveTicker
+### 6.1 Live⚡Ticker
 
 Naughtify can also provide a simple public website that displays the data and transactions of a wallet. This function is called “LiveTicker”. Examples of this would be a donation page or a crowdfunding page. Anyone can view the page, send funds directly, leave a comment (if desired) and shortly afterwards see that their contribution with the comment has been received, which can be particularly necessary for crowdfunding projects and ensures absolute transparency.
+
+<img src="./assets/liveticker_example.jpg" width="700"> 
+
+#### Installation
 
 To use the LiveTicker, you need another subdomain via which the website can later be accessed. At the hosting provider, the A (and AAAA) entry for e.g. “liveticker.yourdomomain.com” must point to the server on which Naughtify is installed. The .env file must then be adapted accordingly and the entry added to Caddy.
 
@@ -324,6 +323,8 @@ Adjust the following values in the `LiveTicker Configuration` area:
 DONATIONS_URL=YourLiveTickerPageURL <- liveticker.yourdomomain.com
 LNURLP_ID=YourLNURPID <- The ID (6 letters) of the Pay Link instance
 ```
+
+__Note:__ For more help on the LNURLP_ID, see point 3.3 of [prerequisites_help.md](./prerequisites_help.md).
 
 __Extend the caddy file:__
 
@@ -374,6 +375,24 @@ sudo systemctl reload caddy
 ```
 
 If you now call up your domain `liveticker.yourdomain.com`, you should see your LiveTicker website. 📺
+
+#### Personalize page
+
+The structure of the Live⚡Ticker page is fixed. However, you can customize the content. The template for this is a simple html file that can be called up with the following command: `nano ~/naughtify/templates/donations.html`. You can find the template [here](https://github.com/DoktorShift/naughtify/blob/main/templates/donations.html). With a little searching and comparing you will find the appropriate places where you can adjust the files from the text or the link path. Once the changes have been made, simply restart the server once `sudo systemctl start naughtify` and call up the website again.
+
+#### Good etiquette care
+
+Some comments may not be appropriate or someone may have inadvertently revealed something that they regret afterwards. There needs to be a way to clean this up. Therefore the list `forbidden_words.txt` and the command `/ticker_ban` was introduced. The list contains all words that you do not want to see on the screen. With the command `/ticker_ban` you can add words to this list from the Telegram bot. The words are then marked with asterisks.
+
+<img src="./assets/ban.jpg" width="800"> 
+
+### 6.2 Deploy Overwatch
+
+General information find [here](https://github.com/DoktorShift/Overwatch)
+
+Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT.md)
+
+Option 2: Easier Deployment with Netlify [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT_Netlify.md)
 
 ---
 
