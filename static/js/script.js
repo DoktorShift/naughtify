@@ -87,19 +87,8 @@ function updateDonations(data) {
     totalDonations = data.total_donations;
     document.getElementById('totalDonations').textContent = `${totalDonations} Sats`;
 
-    // Update latest donation
-    if (data.donations.length > 0) {
-        const latestDonation = data.donations[data.donations.length - 1];
-        document.getElementById('donationHistory').textContent = `Latest Patron: ${latestDonation.amount} Sats - "${latestDonation.memo}"`;
-    } else {
-        document.getElementById('donationHistory').textContent = 'Latest Patron: None yet.';
-    }
-
-    // Update transactions data
+    // Update donations data
     transactionsData = data.donations;
-
-    // Update Lightning Address and LNURL
-    updateLightningAddress(data.lightning_address, data.lnurl);
 
     // Update Highlight Threshold
     if (data.highlight_threshold) {
@@ -114,41 +103,18 @@ function updateDonations(data) {
     // Play sound if sounds are enabled and there is a new update
     if (soundsEnabled && lastUpdate && new Date(data.last_update) > lastUpdate) {
         // Determine if the latest donation is a big payment
-        const latestPayment = data.donations[data.donations.length - 1];
-        if (latestPayment.amount >= highlightThreshold) {
+        const latestDonation = data.donations[data.donations.length - 1];
+        if (latestDonation.amount >= highlightThreshold) {
             bigPaymentSound.play();
+            showToast('🎉 Big Donation Received!');
         } else {
             normalPaymentSound.play();
+            showToast('🔔 New Donation Received!');
         }
     }
 
     // Update lastUpdate
     lastUpdate = new Date(data.last_update);
-}
-
-// Function to update the Lightning Address and LNURL in the DOM
-function updateLightningAddress(lightningAddress, lnurl) {
-    const copyField = document.querySelector('.lightning-address-container');
-    const addressSpan = document.querySelector('.address');
-
-    if (copyField && addressSpan) {
-        if (lightningAddress && lightningAddress !== 'Unavailable') {
-            copyField.setAttribute('data-address', lightningAddress);
-            addressSpan.textContent = lightningAddress;
-        } else {
-            copyField.setAttribute('data-address', 'Unknown Lightning Address');
-            addressSpan.textContent = 'Unknown Lightning Address';
-        }
-
-        if (lnurl && lnurl !== 'Unavailable') {
-            copyField.setAttribute('data-lnurl', lnurl);
-            // Optionally, you can update an element to show the LNURL
-        } else {
-            copyField.setAttribute('data-lnurl', '');
-        }
-    } else {
-        console.error('Lightning Address elements not found in the DOM.');
-    }
 }
 
 // Function to render the donation table
@@ -313,78 +279,46 @@ async function voteDonation(donationId, voteType) {
     }
 }
 
-// Function to toggle Dark Mode
-function toggleDarkMode(isDark) {
-    if (isDark) {
-        document.body.classList.add('dark-mode');
-        localStorage.setItem('darkMode', 'enabled');
+// Function to toggle Sound on/off
+function toggleSound() {
+    const soundIcon = document.getElementById('soundToggleIcon');
+    soundsEnabled = !soundsEnabled;
+    localStorage.setItem('soundsEnabled', soundsEnabled ? 'enabled' : 'disabled');
+
+    if (soundsEnabled) {
+        soundIcon.classList.add('active');
+        soundIcon.textContent = 'volume_up';
+        showToast('Sound Enabled');
     } else {
-        document.body.classList.remove('dark-mode');
-        localStorage.setItem('darkMode', 'disabled');
+        soundIcon.classList.remove('active');
+        soundIcon.textContent = 'volume_off';
+        showToast('Sound Disabled');
     }
 }
 
-// Function to initialize Dark Mode based on user preference
-function initializeDarkMode() {
-    const darkModeToggle = document.getElementById('darkModeToggle');
-    const darkModeSetting = localStorage.getItem('darkMode');
+// Function to initialize Sound Settings based on user preference
+function initializeSoundSettings() {
+    const soundIcon = document.getElementById('soundToggleIcon');
+    const soundSetting = localStorage.getItem('soundsEnabled');
 
-    if (darkModeSetting === 'enabled') {
-        darkModeToggle.checked = true;
-        document.body.classList.add('dark-mode');
+    if (soundSetting === 'disabled') {
+        soundsEnabled = false;
+        soundIcon.classList.remove('active');
+        soundIcon.textContent = 'volume_off';
     } else {
-        darkModeToggle.checked = false;
-        document.body.classList.remove('dark-mode');
+        soundsEnabled = true;
+        soundIcon.classList.add('active');
+        soundIcon.textContent = 'volume_up';
     }
 
-    // Add event listener for the toggle
-    darkModeToggle.addEventListener('change', (e) => {
-        toggleDarkMode(e.target.checked);
-    });
-}
-
-// Modal Functionality (If Needed)
-function openInfoModal(event) {
-    event.stopPropagation(); // Prevent triggering other click events
-    const modal = document.getElementById('infoModal');
-    if (modal) {
-        modal.style.display = 'block';
-    }
-}
-
-function closeInfoModal() {
-    const modal = document.getElementById('infoModal');
-    if (modal) {
-        modal.style.display = 'none';
-    }
-}
-
-// Close the modal when clicking outside the modal content
-window.onclick = function(event) {
-    const modal = document.getElementById('infoModal');
-    if (modal && event.target == modal) {
-        modal.style.display = 'none';
-    }
+    // Add event listener for the icon
+    soundIcon.addEventListener('click', toggleSound);
 }
 
 // Initialize on page load
 document.addEventListener("DOMContentLoaded", function() {
-    // Initialize Dark Mode
-    initializeDarkMode();
-    
-    // Initialize Sound Controls
-    const soundToggle = document.getElementById('soundToggle');
-    if (soundToggle) {
-        soundToggle.addEventListener('change', (e) => {
-            soundsEnabled = e.target.checked;
-            if (!soundsEnabled) {
-                normalPaymentSound.pause();
-                normalPaymentSound.currentTime = 0;
-                bigPaymentSound.pause();
-                bigPaymentSound.currentTime = 0;
-            }
-        });
-    }
+    // Initialize Sound Settings
+    initializeSoundSettings();
 
     // Fetch initial donations data
     fetchInitialDonations();
