@@ -1,5 +1,3 @@
-# naughtify.py
-
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -70,11 +68,6 @@ APP_PORT = int(os.getenv("APP_PORT", "5009"))  # Default: Port 5009
 PROCESSED_PAYMENTS_FILE = os.getenv("PROCESSED_PAYMENTS_FILE", "processed_payments.txt")
 CURRENT_BALANCE_FILE = os.getenv("CURRENT_BALANCE_FILE", "current-balance.txt")
 DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
-
-# Sound Files Configuration
-SOUND_FILES_FOLDER = os.path.join('static', 'sounds')
-NORMAL_PAYMENT_SOUND = os.path.join(SOUND_FILES_FOLDER, 'normal_payment.mp3')
-BIG_PAYMENT_SOUND = os.path.join(SOUND_FILES_FOLDER, 'big_payment.mp3')
 
 # Information URL Configuration
 INFORMATION_URL = os.getenv("INFORMATION_URL")  # Optional
@@ -727,8 +720,7 @@ def send_latest_payments():
             incoming_payments.append({
                 "amount": amount_sats,
                 "memo": memo,
-                "date": formatted_date,
-                "raw_amount": amount_msat  # To determine if it's a big payment
+                "date": formatted_date
             })
         elif amount_msat < 0:
             outgoing_payments.append({
@@ -817,34 +809,9 @@ def notify_transaction(payment, direction):
             # No reply_markup to exclude buttons
         )
         logger.info(f"Notification for {transaction_type} sent successfully.")
-
-        # Trigger sound notification if it's incoming
-        if direction == "incoming":
-            # Determine if it's a big payment
-            if payment.get("raw_amount", 0) >= HIGHLIGHT_THRESHOLD * 1000:  # Convert sats to msats
-                trigger_big_payment_sound()
-            else:
-                trigger_normal_payment_sound()
-
     except Exception as e:
         logger.error(f"Error sending transaction notification: {e}")
         logger.debug(traceback.format_exc())
-
-def trigger_normal_payment_sound():
-    """
-    Notify the frontend to play the normal payment sound.
-    """
-    # This can be implemented via WebSocket or other real-time communication.
-    # For simplicity, we'll store the sound trigger in a global variable or use another mechanism.
-    # Alternatively, the frontend polling can check for new payments and decide to play sound.
-    pass  # Placeholder: Implementation depends on the frontend setup
-
-def trigger_big_payment_sound():
-    """
-    Notify the frontend to play the big payment sound.
-    """
-    # Similar to trigger_normal_payment_sound
-    pass  # Placeholder
 
 def send_main_inline_keyboard():
     """
@@ -1454,9 +1421,6 @@ def donations_page():
     # Calculate total donations for this LNURLp
     total_donations_current = sum(donation['amount'] for donation in donations)
 
-    # Get top three patreons
-    top_patreons = sorted(donations, key=lambda x: x['amount'], reverse=True)[:3]
-
     # Pass the donations list and additional details to the template for displaying individual transactions
     return render_template(
         'donations.html',
@@ -1468,8 +1432,7 @@ def donations_page():
         information_url=INFORMATION_URL,  # Pass the information URL to the template
         total_donations=total_donations_current,  # Pass the total donations
         donations=donations,  # Pass the donations list
-        highlight_threshold=HIGHLIGHT_THRESHOLD,  # Pass the highlight threshold
-        top_patreons=top_patreons  # Pass the top three patreons
+        highlight_threshold=HIGHLIGHT_THRESHOLD  # Pass the highlight threshold
     )
 
 # API Endpoint to provide donation data
@@ -1478,26 +1441,26 @@ def get_donations_data():
     """
     Provides donation data as JSON for the frontend, including Lightning Address, LNURL, and Highlight Threshold.
     """
-    if not DONATIONS_URL or not LNURLP_ID:
+    if DONATIONS_URL and LNURLP_ID:
+        try:
+            donation_details = fetch_donation_details()
+            data = {
+                "total_donations": donation_details["total_donations"],
+                "donations": donation_details["donations"],
+                "lightning_address": donation_details["lightning_address"],
+                "lnurl": donation_details["lnurl"],
+                "highlight_threshold": HIGHLIGHT_THRESHOLD
+            }
+            logger.debug(f"Donation data with details provided: {data}")
+            return jsonify(data), 200
+        except Exception as e:
+            logger.error(f"Error fetching donation data: {e}")
+            logger.debug(traceback.format_exc())
+            return jsonify({"error": "Error fetching donation data"}), 500
+    else:
         return jsonify({
             "error": "Donations are not enabled."
         }), 404
-
-    try:
-        donation_details = fetch_donation_details()
-        data = {
-            "total_donations": donation_details["total_donations"],
-            "donations": donation_details["donations"],  # Each donation includes id, likes, dislikes
-            "lightning_address": donation_details["lightning_address"],
-            "lnurl": donation_details["lnurl"],
-            "highlight_threshold": HIGHLIGHT_THRESHOLD
-        }
-        logger.debug(f"Donation data with details provided: {data}")
-        return jsonify(data), 200
-    except Exception as e:
-        logger.error(f"Error fetching donation data: {e}")
-        logger.debug(traceback.format_exc())
-        return jsonify({"error": "Error fetching donation data"}), 500
 
 # API Endpoint to handle voting
 @app.route('/api/vote', methods=['POST'])
@@ -1546,56 +1509,6 @@ def vote_donation():
         logger.debug(traceback.format_exc())
         return jsonify({"error": "Internal server error."}), 500
 
-# New API Endpoint for Cinema Mode
-@app.route('/cinema')
-def cinema_page():
-    if not DONATIONS_URL or not LNURLP_ID:
-        return "Donations are not enabled.", 404
-
-    # Fetch LNURLp info
-    lnurlp_id = LNURLP_ID
-    lnurlp_info = get_lnurlp_info(lnurlp_id)
-    if lnurlp_info is None:
-        return "Error fetching LNURLP info", 500
-
-    # Extract necessary information
-    wallet_name = lnurlp_info.get('description', 'Unknown Wallet')
-    lightning_address = lnurlp_info.get('lightning_address', 'Unknown Lightning Address')  # Adjust key based on your data structure
-    lnurl = lnurlp_info.get('lnurl', '')
-
-    # Generate QR code from LNURL
-    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
-    qr.add_data(lnurl)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
-
-    # Convert PIL image to base64 string for embedding in HTML
-    img_io = io.BytesIO()
-    img.save(img_io, 'PNG')
-    img_io.seek(0)
-    img_base64 = base64.b64encode(img_io.getvalue()).decode()
-
-    # Calculate total donations for this LNURLp
-    total_donations_current = sum(donation['amount'] for donation in donations)
-
-    # Get top three patreons
-    top_patreons = sorted(donations, key=lambda x: x['amount'], reverse=True)[:3]
-
-    # Pass the donations list and additional details to the template for Cinema Mode
-    return render_template(
-        'cinema.html',
-        wallet_name=wallet_name,
-        lightning_address=lightning_address,
-        lnurl=lnurl,
-        qr_code_data=img_base64,
-        donations_url=DONATIONS_URL,  # Pass the donations URL to the template
-        information_url=INFORMATION_URL,  # Pass the information URL to the template
-        total_donations=total_donations_current,  # Pass the total donations
-        donations=donations,  # Pass the donations list
-        highlight_threshold=HIGHLIGHT_THRESHOLD,  # Pass the highlight threshold
-        top_patreons=top_patreons  # Pass the top three patreons
-    )
-
 # Endpoint for Long-Polling Updates
 @app.route('/donations_updates', methods=['GET'])
 def donations_updates():
@@ -1613,13 +1526,19 @@ def donations_updates():
         logger.debug(traceback.format_exc())
         return jsonify({"error": "Error fetching last_update"}), 500
 
+# NEW ROUTE FOR CINEMA MODE
+@app.route('/cinema')
+def cinema_page():
+    if not DONATIONS_URL or not LNURLP_ID:
+        return "Donations are not enabled for Cinema Mode.", 404
+    return render_template('cinema.html')
+
 # --------------------- Telegram Handler Setup ---------------------
 
 def main():
     """
     Main function to set up Telegram handlers and start the bot.
     """
-    # Initialize Updater and Dispatcher
     updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
 
