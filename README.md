@@ -19,7 +19,7 @@ LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monit
   - [5.1 Start Manually](#51-start-manually)
   - [5.2 Autostart Service](#52-autostart-service)
 - [6. Optional Additions](#6-optional-additions)
-  - [6.1 LiveTicker](#61-liveticker)
+  - [6.1 Live⚡Ticker](#61-liveticker)
     - [Installation](#installation)
     - [Personalize page](#personalize-page)
     - [Good etiquette care](#good-etiquette-care)
@@ -301,7 +301,7 @@ sudo journalctl -u naughtify -f --since "2 hour ago"
 
 ## 6. Optional Additions
 
-### 6.1 LiveTicker
+### 6.1 Live⚡Ticker
 
 Naughtify can also provide a simple public website that displays the data and transactions of a wallet. This function is called “LiveTicker”. Examples of this would be a donation page or a crowdfunding page. Anyone can view the page, send funds directly, leave a comment (if desired) and shortly afterwards see that their contribution with the comment has been received, which can be particularly necessary for crowdfunding projects and ensures absolute transparency.
 
