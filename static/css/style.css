@@ -299,7 +299,7 @@ input:checked + .slider:before {
 
 /* QR Code Image Styling */
 .qr-card img {
-    max-width: 100%;
+    max-width: 70%;
     border-radius: 0.75rem;
     cursor: pointer;
     transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -717,9 +717,28 @@ body.dark-mode .tooltip-text::after {
     .like-button, .dislike-button {
         gap: 0.3rem;
     }
+
+    /* Adjust Header Font Sizes for Mobile */
+    .header h1 {
+        font-size: 2.5rem;
+    }
+
+    .header h5 {
+        font-size: 1.1rem;
+    }
+
+    /* Adjust QR Code Size for Smaller Screens */
+    .qr-card img {
+        max-width: 50%;
+    }
+
+    /* Adjust Main Logo Size for Mobile */
+    .main-logo {
+        max-width: 200px;
+    }
 }
 
-/* styling for the GitHub icon to match others */
+/* Styling for the GitHub icon to match others */
 .footer-section .social-icons a i {
     font-size: 24px; /* Adjusting the icon size */
     color: var(--footer-text-color);
@@ -727,5 +746,5 @@ body.dark-mode .tooltip-text::after {
 }
 
 .footer-section .social-icons a:hover i {
-    color: #fff; /* On hover, icons get a brighter clor */
+    color: #fff; /* On hover, icons get a brighter color */
 }
