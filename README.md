@@ -28,7 +28,7 @@ LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monit
     - [How to set it up](#how-to-set-it-up)
     - [Integration](#integration)
 - [7. Appendix](#7-appendix)
-  - [7.1 Update Naughtify](#71-update-naughtify)
+    - [Update Naughtify](#update-naughtify)
 - [Contributing](#contributing)
 - [Acknowledgments](#acknowledgments)
 
@@ -455,7 +455,7 @@ You can find more information in the original [Overwatch repository](https://git
 
 ## 7. Appendix
 
-### 7.1 Update Naughtify
+#### Update Naughtify
 
 New version available? Here is the way to update Naughtify to the latest version.
 
