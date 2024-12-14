@@ -1,52 +1,112 @@
+/* CSS-Variablen für Light Mode Farben und Themen */
 :root {
-    /* Primary Colors */
-    --primary-color: #1f4b6d; /* Dark Blue */
-    --secondary-color: #3498db; /* Blue */
+    /* Primäre Farben */
+    --primary-color: #1f4b6d; /* Dunkelblau */
+    --secondary-color: #3498db; /* Blau */
 
-    /* Backgrounds */
-    --background-gradient-start: #d3e8f3; 
-    --background-gradient-end: #eef4f7;
-    --card-background-start: #ffffff; 
-    --card-background-end: #f7fbfd;
+    /* Hintergründe */
+    --background-gradient-start: #d3e8f3; /* Hellblau */
+    --background-gradient-end: #eef4f7; /* Sehr Hellblau */
+    --card-background-start: #ffffff; /* Weiß */
+    --card-background-end: #f7fbfd; /* Sehr Hellgrau */
 
-    /* Text Colors */
-    --text-color: #333; 
-    --text-color-light: #666; 
+    /* Textfarben */
+    --text-color: #333; /* Dunkelgrau */
+    --text-color-light: #666; /* Mittelgrau */
 
-    /* Highlight Colors */
-    --highlight-background: #ffe0b2; 
-    --highlight-text-color: #e65100; 
-    --highlight-border: #ff9800; 
+    /* Hervorhebungsfarben */
+    --highlight-background: #ffe0b2; /* Hellorange */
+    --highlight-text-color: #e65100; /* Dunkelorange */
+    --highlight-border: #ff9800; /* Orange */
 
-    /* Donation Amount Color */
-    --donation-amount-color: #27ae60; 
+    /* Spendenfarben */
+    --donation-amount-color: #27ae60; /* Grün */
 
-    /* Copy Field Colors */
-    --copy-field-background: #e3eff5; 
-    --copy-field-hover-background: #d0e4f1; 
+    /* Farben für Kopierfelder */
+    --copy-field-background: #e3eff5; /* Sehr Hellblau */
+    --copy-field-hover-background: #d0e4f1; /* Hellblau */
 
-    /* Footer Colors */
-    --footer-background: #1f4b6d; 
-    --footer-text-color: #fff; 
+    /* Footer-Farben */
+    --footer-background: #1f4b6d; /* Dunkelblau */
+    --footer-text-color: #fff; /* Weiß */
 
-    /* Toast Colors */
-    --toast-success-bg: #4caf50;
-    --toast-success-text: #fff; 
-    --toast-error-bg: #f44336;
-    --toast-error-text: #fff; 
+    /* Toast-Farben */
+    --toast-success-bg: #4caf50; /* Grün */
+    --toast-success-text: #fff; /* Weiß */
+    --toast-error-bg: #f44336; /* Rot */
+    --toast-error-text: #fff; /* Weiß */
 
-    /* Font Sizes (Base: 16px) */
+    /* Tooltip-Farben */
+    --tooltip-background: rgba(0, 0, 0, 0.8);
+    --tooltip-text-color: #fff;
+
+    /* Button-Farben */
+    --button-color: #888; /* Grau */
+    --button-hover-color-like: #27ae60; /* Grün */
+    --button-hover-color-dislike: #e74c3c; /* Rot */
+
+    /* Social Icons Hover Color */
+    --social-icon-hover-color: #fff; /* Weiß */
+
+    /* Schriftgrößen (Basis: 16px) */
     --base-font-size: 16px;
-    --h1-size: 2.5rem;
-    --h2-size: 1.6rem;
+    --h1-size: 3rem;
+    --h2-size: 2rem;
     --h3-size: 1.3rem;
     --p-size: 1rem;
     --small-text: 0.9rem;
 
-    /* Transitions */
+    /* Übergänge */
     --transition-speed: 0.3s;
 }
 
+/* Dark Mode Overrides */
+body.dark-mode {
+    /* Primäre Farben */
+    --primary-color: #2c3e50; /* Dunkel-Slate-Blau */
+    --secondary-color: #2980b9; /* Starkes Blau */
+
+    /* Hintergründe */
+    --background-gradient-start: #1e2a38; /* Sehr Dunkelblau */
+    --background-gradient-end: #16202c; /* Fast Schwarzes Blau */
+    --card-background-start: #2c3e50; /* Dunkel-Slate-Blau */
+    --card-background-end: #34495e; /* Dunkleres Blau-Grau */
+
+    /* Textfarben */
+    --text-color: #ecf0f1; /* Hellgrau */
+    --text-color-light: #bdc3c7; /* Mittelhellgrau */
+
+    /* Hervorhebungsfarben */
+    --highlight-background: #e67e22; /* Orange */
+    --highlight-text-color: #ffffff; /* Weiß */
+    --highlight-border: #d35400; /* Dunkelorange */
+
+    /* Spendenfarben */
+    --donation-amount-color: #2ecc71; /* Smaragdgrün */
+
+    /* Farben für Kopierfelder */
+    --copy-field-background: #34495e; /* Dunkles Blau-Grau */
+    --copy-field-hover-background: #3c5a73; /* Etwas Hellblaueres Dunkles Blau */
+
+    /* Footer-Farben */
+    --footer-background: #1e2a38; /* Sehr Dunkelblau */
+    --footer-text-color: #ecf0f1; /* Weiß */
+
+    /* Toast-Farben */
+    --toast-success-bg: #27ae60; /* Grün */
+    --toast-success-text: #ffffff; /* Weiß */
+    --toast-error-bg: #c0392b; /* Rot */
+    --toast-error-text: #ffffff; /* Weiß */
+
+    /* Tooltip-Farben */
+    --tooltip-background: rgba(44, 62, 80, 0.9);
+    --tooltip-text-color: #ecf0f1;
+
+    /* Social Icons Hover Color */
+    --social-icon-hover-color: #fff; /* Weiß */
+}
+
+/* Allgemeine Stile */
 body {
     margin: 0;
     font-family: 'Arial', sans-serif;
@@ -60,7 +120,7 @@ body {
 .dashboard {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 1.25rem;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -77,8 +137,8 @@ a {
 /* Header */
 .header {
     text-align: center;
-    margin-bottom: 40px;
-    padding: 40px 20px;
+    margin-bottom: 2.5rem;
+    padding: 2rem 1rem;
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: #fff;
     border-radius: 10px;
@@ -90,7 +150,7 @@ a {
 .header h1 {
     font-size: var(--h1-size);
     font-weight: bold;
-    margin-bottom: 10px;
+    margin-bottom: 0.5rem;
 }
 
 .header h5 {
@@ -98,7 +158,7 @@ a {
     color: #f0f0f0;
 }
 
-/* Dark Mode Toggle */
+/* Dark Mode Toggle Styles */
 .toggle-container {
     position: absolute;
     top: 20px;
@@ -119,22 +179,26 @@ a {
 }
 
 .slider {
-    position: absolute; 
+    position: absolute;
     cursor: pointer;
-    top: 0; left: 0; right: 0; bottom: 0;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     background-color: #ccc;
-    transition: background-color var(--transition-speed);
+    transition: background-color 0.4s;
     border-radius: 24px;
 }
 
 .slider:before {
-    content: "";
     position: absolute;
+    content: "";
     height: 18px;
     width: 18px;
-    left: 3px; bottom: 3px;
+    left: 3px;
+    bottom: 3px;
     background-color: white;
-    transition: transform var(--transition-speed);
+    transition: transform 0.4s;
     border-radius: 50%;
 }
 
@@ -146,11 +210,11 @@ input:checked + .slider:before {
     transform: translateX(26px);
 }
 
-/* Info Tooltip */
+/* Info Tooltip Styles */
 .info-tooltip {
     position: absolute;
     top: 20px;
-    right: 60px; 
+    right: 20px;
     display: inline-block;
     cursor: pointer;
 }
@@ -168,14 +232,14 @@ input:checked + .slider:before {
 .tooltip-text {
     visibility: hidden;
     width: 140px;
-    background-color: rgba(0, 0, 0, 0.8);
-    color: #fff;
+    background-color: var(--tooltip-background);
+    color: var(--tooltip-text-color);
     text-align: center;
     border-radius: 6px;
     padding: 8px 0;
     position: absolute;
     z-index: 1;
-    bottom: 125%; 
+    bottom: 125%; /* Position above the icon */
     left: 50%;
     transform: translateX(-50%);
     opacity: 0;
@@ -186,12 +250,12 @@ input:checked + .slider:before {
 .tooltip-text::after {
     content: "";
     position: absolute;
-    top: 100%; 
+    top: 100%; /* At the bottom of the tooltip */
     left: 50%;
     transform: translateX(-50%);
     border-width: 6px;
     border-style: solid;
-    border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+    border-color: var(--tooltip-background) transparent transparent transparent;
 }
 
 .info-tooltip:hover .tooltip-text {
@@ -199,65 +263,74 @@ input:checked + .slider:before {
     opacity: 1;
 }
 
-/* Cinema Button */
-.cinema-button {
+/* Make the entire info-tooltip clickable by overlaying the link */
+.info-link {
     position: absolute;
-    top: 20px;
-    right: 20px;
-    color: #fff;
-    font-size: 28px;
-    transition: color var(--transition-speed);
-}
-
-.cinema-button:hover {
-    color: var(--secondary-color);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    text-indent: -9999px; /* Hide text */
+    z-index: 2;
 }
 
 /* Info Section */
 .info-section {
     display: flex;
     flex-wrap: wrap;
-    gap: 20px;
+    gap: 1.25rem;
     justify-content: space-between;
-    margin-bottom: 40px;
+    margin-bottom: 2.5rem;
 }
 
-/* 
-   Additional container styling to avoid overlapping
-*/
+/* Info Container */
 .info-container {
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 30px; /* Increased gap for better spacing */
+    gap: 1.25rem;
+    flex: 1;
+    min-width: 280px;
 }
 
-/* Cards */
+/* Card Styles */
 .card {
     background: linear-gradient(135deg, var(--card-background-start), var(--card-background-end));
-    border-radius: 10px;
+    border-radius: 1rem;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    padding: 1.25rem;
     text-align: center;
-    transition: transform var(--transition-speed), box-shadow var(--transition-speed), background var(--transition-speed);
+    transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease, background var(--transition-speed) ease;
 }
 
 .card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-0.5rem);
     box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
 }
 
 .card h5 {
-    margin-bottom: 10px;
-    font-size: var(--p-size);
+    margin-bottom: 0.625rem;
+    font-size: 1.1rem;
     color: var(--text-color-light);
 }
 
+.card p {
+    margin: 0.625rem 0;
+    font-size: 1rem;
+    color: var(--text-color);
+}
+
+.card .material-icons {
+    font-size: 3.5rem;
+    margin-bottom: 0.9375rem;
+    color: var(--secondary-color);
+}
+
+/* QR Code Image Styling */
 .qr-card img {
-    max-width: 70%;
-    border-radius: 8px;
+    max-width: 100%;
+    border-radius: 0.75rem;
     cursor: pointer;
-    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
 }
 
 .qr-card img:hover {
@@ -265,23 +338,31 @@ input:checked + .slider:before {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* Lightning Address Card */
+/* Lightning Address Card Styling */
 .lightning-card .copy-field {
     background: var(--copy-field-background);
-    padding: 10px;
-    border-radius: 8px;
+    padding: 0.75rem;
+    border-radius: 0.5rem;
     word-break: break-all;
     cursor: pointer;
-    transition: background var(--transition-speed), transform var(--transition-speed);
+    transition: background var(--transition-speed) ease, transform 0.2s ease;
     display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
+    flex-direction: column; /* Für zentrierte Ausrichtung */
+    align-items: center; /* Horizontales Zentrieren */
+    justify-content: center; /* Vertikales Zentrieren */
+    gap: 0.5rem;
 }
 
 .lightning-card .copy-field:hover {
     background: var(--copy-field-hover-background);
     transform: scale(1.02);
+}
+
+.lightning-card .copy-field p:first-child {
+    margin-bottom: 0.3125rem;
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: var(--text-color);
 }
 
 .lightning-card .emoji {
@@ -290,78 +371,83 @@ input:checked + .slider:before {
 
 /* Donations Box */
 .donations-box {
-    background: linear-gradient(145deg, #e3eff5, #f4f9fc);
-    padding: 20px;
-    border-radius: 10px;
+    background: linear-gradient(145deg, var(--card-background-start), var(--card-background-end));
+    padding: 1.25rem;
+    border-radius: 1rem;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
     text-align: center;
     flex: 1;
     min-width: 280px;
     transition: background var(--transition-speed), box-shadow var(--transition-speed);
-    margin-top: 20px; /* Added space above to prevent overlapping on smaller screens */
 }
 
 .donations-box h2 {
-    font-size: var(--h2-size);
-    margin-bottom: 10px;
+    font-size: 2rem;
+    margin-bottom: 0.625rem;
     color: var(--text-color-light);
 }
 
 .donations-box .donation-amount {
-    font-size: 2.4rem;
+    font-size: 2.8rem;
     font-weight: bold;
     color: var(--donation-amount-color);
-    margin-bottom: 20px;
 }
 
 .donations-box .donation-history {
-    margin-top: 20px;
-    font-size: var(--p-size);
+    margin-top: 1.25rem;
+    font-size: 1.125rem;
     font-weight: bold;
     color: var(--text-color-light);
 }
 
+/* Logo Styling and Placement */
 .main-logo {
-    max-width: 180px;
-    margin: 20px auto 0;
+    max-width: 300px; /* Größe */
+    margin-top: 1rem;
     display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
-/* Transactions */
+.header .main-logo {
+    margin-bottom: 1rem;
+}
+
+/* Transactions Table */
 .transactions {
-    background-color: #f9fbfc;
-    border-radius: 10px;
+    background-color: var(--card-background-start);
+    border-radius: 1rem;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-    padding: 20px;
+    padding: 1.25rem;
     transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .transactions h2 {
-    font-size: var(--h2-size);
-    margin-bottom: 15px;
+    font-size: 1.6rem;
+    margin-bottom: 0.9375rem;
     color: var(--text-color-light);
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
-    font-size: var(--p-size);
 }
 
 table th, table td {
-    padding: 12px;
+    padding: 0.75rem 0.9375rem;
     text-align: left;
     border-bottom: 1px solid var(--copy-field-background);
     font-family: 'Arial', sans-serif; 
+    font-size: 1rem; 
 }
 
 table th {
-    background-color: #e9f3f7;
+    background-color: var(--card-background-end);
     color: var(--text-color); 
 }
 
 table td {
-    background-color: #f9fbfc;
+    background-color: var(--card-background-start);
     color: var(--text-color);
 }
 
@@ -373,37 +459,45 @@ table td.amount {
     color: var(--donation-amount-color);
 }
 
+/* Like and Dislike Button Styles */
+.like-button, .dislike-button { }
+
+.like-button .material-icons, .dislike-button .material-icons {
+    font-size: 1.2rem;
+}
+
+/* Like and Dislike Buttons innerhalb der Actions-Spalte */
 table td.actions {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 1rem;
 }
 
 .like-button, .dislike-button {
     cursor: pointer;
-    color: #888;
+    color: var(--button-color);
+    transition: color var(--transition-speed), transform var(--transition-speed);
     display: flex;
     align-items: center;
-    gap: 5px;
-    transition: color var(--transition-speed), transform var(--transition-speed);
+    gap: 0.2rem;
 }
 
 .like-button:hover {
-    color: #27ae60; 
-    transform: scale(1.1);
+    color: var(--button-hover-color-like); /* Grün */
+    transform: scale(1.2);
 }
 
 .dislike-button:hover {
-    color: #e74c3c; 
-    transform: scale(1.1);
+    color: var(--button-hover-color-dislike); /* Rot */
+    transform: scale(1.2);
 }
 
 .likes-count, .dislikes-count {
-    font-size: var(--small-text);
-    color: #555;
+    font-size: 0.9rem;
+    color: #555; /* Optional: Kann zu var(--text-color) geändert werden */
 }
 
-/* Highlight for large donations */
+/* Highlight Class für große Spenden */
 .highlight {
     background-color: var(--highlight-background) !important;
     color: var(--highlight-text-color) !important;
@@ -414,19 +508,20 @@ table td.actions {
 /* Pagination */
 .pagination {
     text-align: center;
-    margin-top: 20px;
+    margin-top: 1.25rem;
 }
 
 .pagination a {
     display: inline-block;
-    margin: 0 5px;
-    padding: 8px 12px;
+    margin: 0 0.3125rem;
+    padding: 0.625rem 0.9375rem;
     background-color: var(--primary-color);
     color: white;
-    border-radius: 4px;
+    border-radius: 0.3125rem;
     text-decoration: none;
     transition: background-color var(--transition-speed), transform var(--transition-speed);
-    font-size: var(--small-text);
+    font-family: 'Arial', sans-serif; 
+    font-size: 1rem;
 }
 
 .pagination a.active {
@@ -441,15 +536,16 @@ table td.actions {
 .no-data {
     text-align: center;
     color: #999;
-    padding: 20px;
+    padding: 1.25rem;
+    font-family: 'Arial', sans-serif; 
+    font-size: 1rem;
 }
 
-/* Footer */
-.footer {
+/* Modern Footer Styles */
+footer.footer {
     background-color: var(--footer-background);
     color: var(--footer-text-color);
-    padding: 40px 20px;
-    margin-top: 40px;
+    padding: 2rem 1rem;
 }
 
 .footer-content {
@@ -462,19 +558,20 @@ table td.actions {
 
 .footer-section {
     flex: 1 1 200px;
-    margin: 20px;
+    margin: 1rem;
 }
 
 .footer-section h3 {
-    margin-bottom: 20px;
+    margin-bottom: 1rem;
     font-size: 1.5rem;
     color: var(--secondary-color);
     font-family: 'Arial', sans-serif;
 }
 
 .footer-section p, .footer-section ul {
-    font-size: var(--p-size);
+    font-size: 1rem;
     line-height: 1.6;
+    font-family: 'Arial', sans-serif;
 }
 
 .footer-section ul {
@@ -483,13 +580,14 @@ table td.actions {
 }
 
 .footer-section ul li {
-    margin-bottom: 10px;
+    margin-bottom: 0.5rem;
 }
 
 .footer-section ul li a {
     color: var(--text-color-light);
     transition: color var(--transition-speed);
-    font-size: var(--p-size);
+    font-family: 'Arial', sans-serif;
+    font-size: 1rem;
 }
 
 .footer-section ul li a:hover {
@@ -498,13 +596,14 @@ table td.actions {
 
 .footer-section .social-icons {
     display: flex;
-    gap: 10px;
+    gap: 0.5rem;
 }
 
 .footer-section .social-icons a {
     background-color: var(--primary-color);
     color: var(--footer-text-color);
-    width: 40px; height: 40px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -517,7 +616,28 @@ table td.actions {
     transform: scale(1.1);
 }
 
-/* Toast */
+.footer-section .social-icons a i {
+    font-size: 24px; /* Anpassung der Symbolgröße */
+    color: var(--footer-text-color);
+    transition: color var(--transition-speed);
+}
+
+.footer-section .social-icons a:hover i {
+    color: var(--social-icon-hover-color); /* Verwendung der Variable für Hover-Farbe */
+}
+
+/* Footer Bottom */
+.footer-bottom {
+    text-align: center;
+    padding: 1rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.2);
+    margin-top: 2rem;
+    font-size: 0.9rem;
+    color: var(--text-color-light);
+    font-family: 'Arial', sans-serif;
+}
+
+/* Toast Notification Styles */
 #toast-container {
     position: fixed;
     bottom: 20px;
@@ -539,7 +659,8 @@ table td.actions {
     opacity: 0;
     transform: translateX(100%);
     animation: fadeIn 0.5s forwards, fadeOut 0.5s forwards 2.5s;
-    font-size: var(--p-size);
+    font-family: 'Arial', sans-serif;
+    font-size: 1rem;
 }
 
 .toast.error {
@@ -561,92 +682,43 @@ table td.actions {
     }
 }
 
-/* Dark Mode Overrides */
-body.dark-mode {
-    --primary-color: #2c3e50;
-    --secondary-color: #2980b9;
-    --background-gradient-start: #1e2a38;
-    --background-gradient-end: #16202c;
-    --card-background-start: #2c3e50;
-    --card-background-end: #34495e;
-    --text-color: #ecf0f1;
-    --text-color-light: #bdc3c7;
-    --copy-field-background: #34495e;
-    --copy-field-hover-background: #3c5a73;
-    --footer-background: #1e2a38;
-
-    background: linear-gradient(135deg, var(--background-gradient-start), var(--background-gradient-end));
+/* Material Icons Anpassung für Like/Dislike */
+.material-icons {
+    vertical-align: middle;
 }
 
-body.dark-mode .header {
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-}
-
-body.dark-mode .card {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-}
-
-/* Dark mode for donations-box - ensures consistency */
-body.dark-mode .donations-box {
-    background: linear-gradient(145deg, #2c3e50, #3c5a73);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-}
-
-body.dark-mode .transactions {
-    background-color: #2c3e50;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-}
-
-body.dark-mode table th {
-    background-color: #1e2a38;
-}
-
-body.dark-mode table td {
-    background-color: #2c3e50;
-    color: var(--text-color);
-}
-
-body.dark-mode table tr:hover td {
-    background-color: #3c5a73;
-}
-
-body.dark-mode .tooltip-text {
-    background-color: rgba(44, 62, 80, 0.9);
-    color: #ecf0f1;
-}
-
-body.dark-mode .tooltip-text::after {
-    border-color: rgba(44, 62, 80, 0.9) transparent transparent transparent;
-}
-
-/* Responsive Adjustments */
+/* Responsive Design */
 @media (max-width: 768px) {
     .info-section {
         flex-direction: column;
     }
 
-    /* Increase spacing on mobile between QR and lightning address to avoid overlap */
-    .info-container {
-        gap: 40px;
+    .info-container, .donations-box, .transactions {
+        flex: 1 1 100%;
+        max-width: 100%;
     }
 
     table th, table td {
-        padding: 8px;
+        padding: 0.5rem;
     }
 
-    .main-logo {
-        max-width: 150px;
+    table td.actions {
+        flex-direction: column;
+        align-items: flex-start;
     }
 
-    .header h1 {
-        font-size: 2rem;
+    .like-button, .dislike-button {
+        gap: 0.3rem;
     }
+}
 
-    .header h5 {
-        font-size: 1.1rem;
-    }
+/* Styling für das GitHub-Symbol, um es den anderen anzupassen */
+.footer-section .social-icons a i {
+    font-size: 24px; /* Anpassung der Symbolgröße */
+    color: var(--footer-text-color);
+    transition: color var(--transition-speed);
+}
 
-    .qr-card img {
-        max-width: 60%; /* Slightly reduce image size on mobile to prevent overlap */
-    }
+.footer-section .social-icons a:hover i {
+    color: var(--social-icon-hover-color); /* Verwendung der Variable für Hover-Farbe */
 }
