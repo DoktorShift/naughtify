@@ -395,9 +395,9 @@ Overwatch currently requires an account at [netlify.com](https://www.netlify.com
 Here is a guide on how to set up Overwatch:
 
 <style>
-  table td {
-    border: none !important;
-  }
+td, th {
+   border: none!important;
+}
 </style>
 <table>
  <tr>
