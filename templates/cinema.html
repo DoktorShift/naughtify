@@ -10,12 +10,28 @@
     <div class="cinema-container">
         <!-- Left Section -->
         <div class="cinema-left">
+            <!-- Explanatory Textbox -->
+            <div class="explanatory-textbox">
+                <p>
+                    Welcome to my Show! Here you can see real-time updates of patreons supporting my mission. Enjoy the show!
+                </p>
+            </div>
+
+            <!-- Headline -->
+            <h2 class="live-ticker-headline">Live⚡️Ticker</h2>
+
+            <!-- Total Donations -->
             <h1 id="cinema-total">0 Sats</h1>
+
+            <!-- QR Code and Lightning Address -->
             <div class="cinema-qr-container">
                 <img id="cinema-qr" alt="QR Code"/>
+                <div id="lightning-address" class="lightning-address">lightning_address@domain.com</div>
             </div>
+
+            <!-- Heroic Patrons -->
             <div class="heroic-patrons">
-                <h2>Heroic Patreons</h2>
+                <h2>Heroic Patrons</h2>
                 <ul id="heroic-patrons-list">
                     <!-- Top 3 patrons will be dynamically inserted here -->
                 </ul>
@@ -28,10 +44,10 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Time</th>
-                            <th>Memo</th>
-                            <th>Amount</th>
-                            <th>Likes</th>
+                            <th style="width: 20%;">Time</th>
+                            <th style="width: 40%;">Memo</th>
+                            <th style="width: 20%;">Amount</th>
+                            <th style="width: 20%;">Likes</th>
                         </tr>
                     </thead>
                     <tbody id="cinema-transactions">
