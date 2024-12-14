@@ -414,7 +414,7 @@ What you are still missing is the username and password. Since Overwatch display
 
 |              netlify.app              |               Overwatch Web App                |
 | :-----------------------------------: | :--------------------------------------------: |
-| <img src="./assets/netlify.app.png" > | <img src="./assets/overwatch.png" width="600"> |
+| <img src="./assets/netlify.app.png" > | <img src="./assets/overwatch.png" width="650"> |
 
 
 
