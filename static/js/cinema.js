@@ -1,10 +1,12 @@
-let donationsData = [];
+const donationsData = [];
 let highlightThreshold = 2100;
 let isMuted = false;
 
+// Sound files
 const normalSound = new Audio('static/sounds/normal_payment.mp3');
 const bigSound = new Audio('static/sounds/big_payment.mp3');
 
+// DOM Elements
 const totalElement = document.getElementById('cinema-total');
 const qrElement = document.getElementById('cinema-qr');
 const heroicPatronsList = document.getElementById('heroic-patrons-list');
@@ -13,6 +15,10 @@ const soundToggleBtn = document.getElementById('sound-toggle');
 const soundIcon = document.getElementById('sound-icon');
 const lightningAddressElement = document.getElementById('lightning-address'); // New element
 
+// Constant for number of rows to display
+const ROWS_TO_DISPLAY = 17;
+
+// Fetch data from API
 async function fetchData() {
     const response = await fetch('/api/donations');
     if (!response.ok) return;
@@ -39,7 +45,8 @@ function updateUI(data) {
         highlightThreshold = data.highlight_threshold;
     }
 
-    donationsData = data.donations || [];
+    donationsData.length = 0; // Clear existing data
+    donationsData.push(...data.donations || []);
     donationsData.sort((a, b) => new Date(b.date) - new Date(a.date));
 
     updateHeroicPatrons(donationsData);
@@ -70,10 +77,10 @@ function updateHeroicPatrons(donations) {
     });
 }
 
-// Update Transactions Table (up to 10 rows)
+// Update Transactions Table (up to ROWS_TO_DISPLAY rows)
 function updateTransactions(donations) {
     transactionsBody.innerHTML = '';
-    const rowsToShow = Math.min(donations.length, 10);
+    const rowsToShow = Math.min(donations.length, ROWS_TO_DISPLAY);
     const visible = donations.slice(0, rowsToShow);
 
     visible.forEach(donation => {
@@ -134,5 +141,5 @@ soundToggleBtn.addEventListener('click', () => {
 
 // Initialize
 fetchData();
-setInterval(fetchData, 10000); // update UI every 10s
-setInterval(checkNewDonations, 5000); // check for new donations every 5s
+setInterval(fetchData, 10000); // Update UI every 10 seconds
+setInterval(checkNewDonations, 8000); // Check for new donations every 8 seconds
