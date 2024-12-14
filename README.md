@@ -24,6 +24,8 @@ LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monit
     - [Personalize page](#personalize-page)
     - [Good etiquette care](#good-etiquette-care)
   - [6.2 Overwatch](#62-overwatch)
+    - [How to set up](#how-to-set-up)
+    - [Optional integration](#optional-integration)
 - [7. Appendix](#7-appendix)
   - [7.1 Update Naughtify](#71-update-naughtify)
 - [Contributing](#contributing)
@@ -392,12 +394,11 @@ Overwatch is a web app dashboard to conveniently display advanced wallet informa
 
 Overwatch currently requires an account at [netlify.com](https://www.netlify.com/) to deploy the web app. And an Overwatch repository (online or as a zip file) that has been customized for the LNbits server used is required.
 
-Here is a guide on how to set up Overwatch:
-
+#### How to set up
 
 1. fork the GitHub repository and create a new branch called “ow”.
 2. in the files `/src/layouts/MainLayout.vue`, `/src/pages/IndexPage.vue` and `/src/pages/LoginBasic.vue` search for the word combination `timecatcher.lnbits.de` and replace it with the new LNbits server domain, such as lnbits.yourdomain.com.
-3. save the changes and make sure the branch is publicly available, or export the branch as a zip file.
+3. Save the changes and make sure the branch is publicly available, or export the branch as a zip file.
 4. set up an account at netlify.com and when asked which project you want to deploy, import it from GitHub and link to your GitHub account, or import the prepared zip file. 
 5. give the page a unique name. For example similar to `overwatch0815` and check the availability.
 6. set the `Branch to deploy` to your `ow` if you have more than one.
@@ -405,18 +406,14 @@ Here is a guide on how to set up Overwatch:
 8. select `Deploy overwatch0815` to deploy the page. 
 9. after the site has been successfully deployed, go to `View site deploy`.
 10. select `Open production deploy` to open your Overwatch site.
-    
-
 
 What you are still missing is the username and password. Since Overwatch displays the data of an LNbits wallet, you must now enter the username and password of your LNbits account here. If your LNbits account does not yet have a username and password, you can assign them under 'My Account' (icon in the top right corner) and use them to log in.
-
-<img src="./assets/netlify.app.png" width="220"> <img src="./assets/overwatch.png" width="600">
 
 |              netlify.app              |               Overwatch Web App                |
 | :-----------------------------------: | :--------------------------------------------: |
 | <img src="./assets/netlify.app.png" > | <img src="./assets/overwatch.png" width="650"> |
 
-
+#### Optional integration
 
 Optionally, you can integrate the link to Overwatch into Naughtify. To do this, you must edit the .env and then restart Naughtify once.
 
