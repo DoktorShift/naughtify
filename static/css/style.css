@@ -1,98 +1,66 @@
-/* style.css */
-
-/* CSS Variables for Light Mode Colors and Themes */
 :root {
     /* Primary Colors */
     --primary-color: #1f4b6d; /* Dark Blue */
     --secondary-color: #3498db; /* Blue */
 
     /* Backgrounds */
-    --background-gradient-start: #d3e8f3; /* Light Blue */
-    --background-gradient-end: #eef4f7; /* Very Light Blue */
-    --card-background-start: #ffffff; /* White */
-    --card-background-end: #f7fbfd; /* Very Light Gray */
+    --background-gradient-start: #d3e8f3; 
+    --background-gradient-end: #eef4f7;
+    --card-background-start: #ffffff; 
+    --card-background-end: #f7fbfd;
 
     /* Text Colors */
-    --text-color: #333; /* Dark Gray */
-    --text-color-light: #666; /* Medium Gray */
+    --text-color: #333; 
+    --text-color-light: #666; 
 
     /* Highlight Colors */
-    --highlight-background: #ffe0b2; /* Light Orange */
-    --highlight-text-color: #e65100; /* Dark Orange */
-    --highlight-border: #ff9800; /* Orange */
+    --highlight-background: #ffe0b2; 
+    --highlight-text-color: #e65100; 
+    --highlight-border: #ff9800; 
 
-    /* Donation Colors */
-    --donation-amount-color: #27ae60; /* Green */
-
-    /* Copy Field Colors */
-    --copy-field-background: #e3eff5; /* Very Light Blue */
-    --copy-field-hover-background: #d0e4f1; /* Light Blue */
-
-    /* Footer Colors */
-    --footer-background: #1f4b6d; /* Dark Blue */
-    --footer-text-color: #fff; /* White */
-
-    /* Toast Colors */
-    --toast-success-bg: #4caf50; /* Green */
-    --toast-success-text: #fff; /* White */
-    --toast-error-bg: #f44336; /* Red */
-    --toast-error-text: #fff; /* White */
-    --toast-transition: opacity 0.5s ease, transform 0.5s ease;
-}
-
-/* Dark Mode Overrides */
-body.dark-mode {
-    /* Primary Colors */
-    --primary-color: #2c3e50; /* Dark Slate Blue */
-    --secondary-color: #2980b9; /* Strong Blue */
-
-    /* Backgrounds */
-    --background-gradient-start: #1e2a38; /* Very Dark Blue */
-    --background-gradient-end: #16202c; /* Almost Black Blue */
-    --card-background-start: #2c3e50; /* Dark Slate Blue */
-    --card-background-end: #34495e; /* Darker Blue Gray */
-
-    /* Text Colors */
-    --text-color: #ecf0f1; /* Light Gray */
-    --text-color-light: #bdc3c7; /* Medium Light Gray */
-
-    /* Highlight Colors */
-    --highlight-background: #e67e22; /* Orange */
-    --highlight-text-color: #ffffff; /* White */
-    --highlight-border: #d35400; /* Dark Orange */
-
-    /* Donation Colors */
-    --donation-amount-color: #2ecc71; /* Emerald Green */
+    /* Donation Amount Color */
+    --donation-amount-color: #27ae60; 
 
     /* Copy Field Colors */
-    --copy-field-background: #34495e; /* Dark Blue Gray */
-    --copy-field-hover-background: #3c5a73; /* Slightly Lighter Dark Blue */
+    --copy-field-background: #e3eff5; 
+    --copy-field-hover-background: #d0e4f1; 
 
     /* Footer Colors */
-    --footer-background: #1e2a38; /* Very Dark Blue */
-    --footer-text-color: #ecf0f1; /* White */
+    --footer-background: #1f4b6d; 
+    --footer-text-color: #fff; 
 
     /* Toast Colors */
-    --toast-success-bg: #27ae60; /* Green */
-    --toast-success-text: #ffffff; /* White */
-    --toast-error-bg: #c0392b; /* Red */
-    --toast-error-text: #ffffff; /* White */
+    --toast-success-bg: #4caf50;
+    --toast-success-text: #fff; 
+    --toast-error-bg: #f44336;
+    --toast-error-text: #fff; 
+
+    /* Font Sizes (Base: 16px) */
+    --base-font-size: 16px;
+    --h1-size: 2.5rem;
+    --h2-size: 1.6rem;
+    --h3-size: 1.3rem;
+    --p-size: 1rem;
+    --small-text: 0.9rem;
+
+    /* Transitions */
+    --transition-speed: 0.3s;
 }
 
-/* General Styles */
 body {
     margin: 0;
     font-family: 'Arial', sans-serif;
     background: linear-gradient(135deg, var(--background-gradient-start), var(--background-gradient-end));
     color: var(--text-color);
     overflow-x: hidden;
-    transition: background 0.3s, color 0.3s;
+    transition: background var(--transition-speed), color var(--transition-speed);
+    font-size: var(--base-font-size);
 }
 
-.dashboard, .cinema-dashboard {
+.dashboard {
     max-width: 1200px;
     margin: 0 auto;
-    padding: 1.25rem;
+    padding: 20px;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -109,28 +77,28 @@ a {
 /* Header */
 .header {
     text-align: center;
-    margin-bottom: 2.5rem;
-    padding: 2rem 1rem;
+    margin-bottom: 40px;
+    padding: 40px 20px;
     background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     color: #fff;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     position: relative;
-    transition: background 0.3s, box-shadow 0.3s;
+    transition: background var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .header h1 {
-    font-size: 3rem;
+    font-size: var(--h1-size);
     font-weight: bold;
-    margin-bottom: 0.5rem;
+    margin-bottom: 10px;
 }
 
 .header h5 {
-    font-size: 1.3rem;
+    font-size: var(--h3-size);
     color: #f0f0f0;
 }
 
-/* Dark Mode Toggle Styles */
+/* Dark Mode Toggle */
 .toggle-container {
     position: absolute;
     top: 20px;
@@ -151,26 +119,22 @@ a {
 }
 
 .slider {
-    position: absolute;
+    position: absolute; 
     cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background-color: #ccc;
-    transition: background-color 0.4s;
+    transition: background-color var(--transition-speed);
     border-radius: 24px;
 }
 
 .slider:before {
-    position: absolute;
     content: "";
+    position: absolute;
     height: 18px;
     width: 18px;
-    left: 3px;
-    bottom: 3px;
+    left: 3px; bottom: 3px;
     background-color: white;
-    transition: transform 0.4s;
+    transition: transform var(--transition-speed);
     border-radius: 50%;
 }
 
@@ -182,11 +146,11 @@ input:checked + .slider:before {
     transform: translateX(26px);
 }
 
-/* Info Tooltip Styles */
+/* Info Tooltip */
 .info-tooltip {
     position: absolute;
     top: 20px;
-    right: 20px;
+    right: 60px; 
     display: inline-block;
     cursor: pointer;
 }
@@ -194,7 +158,7 @@ input:checked + .slider:before {
 .info-icon {
     font-size: 28px;
     color: #fff;
-    transition: color 0.3s;
+    transition: color var(--transition-speed);
 }
 
 .info-icon:hover {
@@ -211,18 +175,18 @@ input:checked + .slider:before {
     padding: 8px 0;
     position: absolute;
     z-index: 1;
-    bottom: 125%; /* Position above the icon */
+    bottom: 125%; 
     left: 50%;
     transform: translateX(-50%);
     opacity: 0;
-    transition: opacity 0.3s;
-    font-size: 0.9rem;
+    transition: opacity var(--transition-speed);
+    font-size: var(--small-text);
 }
 
 .tooltip-text::after {
     content: "";
     position: absolute;
-    top: 100%; /* At the bottom of the tooltip */
+    top: 100%; 
     left: 50%;
     transform: translateX(-50%);
     border-width: 6px;
@@ -235,173 +199,149 @@ input:checked + .slider:before {
     opacity: 1;
 }
 
-/* Make the entire info-tooltip clickable by overlaying the link */
-.info-link {
+/* Cinema Button */
+.cinema-button {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    text-indent: -9999px; /* Hide text */
-    z-index: 2;
+    top: 20px;
+    right: 20px;
+    color: #fff;
+    font-size: 28px;
+    transition: color var(--transition-speed);
 }
 
-/* Info Section */
-.info-section, .cinema-content {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.25rem;
-    justify-content: space-between;
-    margin-bottom: 2.5rem;
-}
-
-/* Card Styles */
-.card, .cinema-section {
-    background: linear-gradient(135deg, var(--card-background-start), var(--card-background-end));
-    border-radius: 1rem;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-    padding: 1.25rem;
-    text-align: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s;
-}
-
-.card:hover, .cinema-section:hover {
-    transform: translateY(-0.5rem);
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
-}
-
-.card h5, .cinema-section h2 {
-    margin-bottom: 0.625rem;
-    font-size: 1.1rem;
-    color: var(--text-color-light);
-}
-
-.card p {
-    margin: 0.625rem 0;
-    font-size: 1rem;
-    color: #555;
-}
-
-.card .material-icons, .cinema-section .material-icons {
-    font-size: 3.5rem;
-    margin-bottom: 0.9375rem;
+.cinema-button:hover {
     color: var(--secondary-color);
 }
 
-/* QR Code Image Styling */
-.qr-card img, .qr-section img {
-    max-width: 70%;
-    border-radius: 0.75rem;
-    cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+/* Info Section */
+.info-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: space-between;
+    margin-bottom: 40px;
 }
 
-.qr-card img:hover, .qr-section img:hover {
+/* Cards */
+.card {
+    background: linear-gradient(135deg, var(--card-background-start), var(--card-background-end));
+    border-radius: 10px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    text-align: center;
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed), background var(--transition-speed);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.2);
+}
+
+.card h5 {
+    margin-bottom: 10px;
+    font-size: var(--p-size);
+    color: var(--text-color-light);
+}
+
+.qr-card img {
+    max-width: 70%;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.qr-card img:hover {
     transform: scale(1.05);
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* Lightning Address Card Styling */
-.lightning-card .copy-field, .qr-section .lightning-address-container {
+/* Lightning Address Card */
+.lightning-card .copy-field {
     background: var(--copy-field-background);
-    padding: 0.75rem;
-    border-radius: 0.5rem;
+    padding: 10px;
+    border-radius: 8px;
     word-break: break-all;
     cursor: pointer;
-    transition: background 0.3s ease, transform 0.2s ease;
+    transition: background var(--transition-speed), transform var(--transition-speed);
     display: flex;
-    flex-direction: column; /* For central alignment */
-    align-items: center; /* Horizontal centering */
-    justify-content: center; /* Vertical centering */
-    gap: 0.5rem;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
 }
 
-.lightning-card .copy-field:hover, .qr-section .lightning-address-container:hover {
-    background: var(--copy-field-hover_background);
+.lightning-card .copy-field:hover {
+    background: var(--copy-field-hover-background);
     transform: scale(1.02);
 }
 
-.lightning-card .copy-field p:first-child, .qr-section .lightning-address-container .address {
-    margin-bottom: 0.3125rem;
-    font-weight: bold;
-    font-size: 1.1rem;
-    color: var(--text-color);
-}
-
-.lightning-card .emoji, .qr-section .emoji {
+.lightning-card .emoji {
     font-size: 1.5rem;
 }
 
 /* Donations Box */
-.donations-box, .cinema-section.cinema-amount {
+.donations-box {
     background: linear-gradient(145deg, #e3eff5, #f4f9fc);
-    padding: 1.25rem;
-    border-radius: 1rem;
+    padding: 20px;
+    border-radius: 10px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
     text-align: center;
     flex: 1;
     min-width: 280px;
-    transition: background 0.3s, box-shadow 0.3s;
+    transition: background var(--transition-speed), box-shadow var(--transition-speed);
 }
 
-.donations-box h2, .cinema-section h2 {
-    font-size: 2rem;
-    margin-bottom: 0.625rem;
+.donations-box h2 {
+    font-size: var(--h2-size);
+    margin-bottom: 10px;
     color: var(--text-color-light);
 }
 
-.donations-box .donation-amount, .cinema-section .cinema-amount {
-    font-size: 2.8rem;
+.donations-box .donation-amount {
+    font-size: 2.4rem;
     font-weight: bold;
     color: var(--donation-amount-color);
+    margin-bottom: 20px;
 }
 
-.donations-box .donation-history, .cinema-section .donation-history {
-    margin-top: 1.25rem;
-    font-size: 1.125rem;
+.donations-box .donation-history {
+    margin-top: 20px;
+    font-size: var(--p-size);
     font-weight: bold;
     color: var(--text-color-light);
 }
 
-/* Logo Styling and Placement */
 .main-logo {
-    max-width: 300px; /* Size */
-    margin-top: 1rem;
+    max-width: 180px;
+    margin: 20px auto 0;
     display: block;
-    margin-left: auto;
-    margin-right: auto;
 }
 
-.header .main-logo {
-    margin-bottom: 1rem;
-}
-
-/* Transactions Table */
-.transactions, .donations-table-section {
+/* Transactions */
+.transactions {
     background-color: #f9fbfc;
-    border-radius: 1rem;
+    border-radius: 10px;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-    padding: 1.25rem;
-    transition: background-color 0.3s, box-shadow 0.3s;
+    padding: 20px;
+    transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
-.transactions h2, .donations-table-section h2 {
-    font-size: 1.6rem;
-    margin-bottom: 0.9375rem;
+.transactions h2 {
+    font-size: var(--h2-size);
+    margin-bottom: 15px;
     color: var(--text-color-light);
 }
 
 table {
     width: 100%;
     border-collapse: collapse;
+    font-size: var(--p-size);
 }
 
 table th, table td {
-    padding: 0.75rem 0.9375rem;
+    padding: 12px;
     text-align: left;
-    border-bottom: 1px solid var(--copy-field_background);
+    border-bottom: 1px solid var(--copy-field-background);
     font-family: 'Arial', sans-serif; 
-    font-size: 1rem; 
 }
 
 table th {
@@ -422,45 +362,37 @@ table td.amount {
     color: var(--donation-amount-color);
 }
 
-/* Like and Dislike Button Styles */
-.like-button, .dislike-button { }
-
-.like-button .material-icons, .dislike-button .material-icons {
-    font-size: 1.2rem;
-}
-
-/* Like and Dislike Buttons within Actions Column */
 table td.actions {
     display: flex;
     align-items: center;
-    gap: 1rem;
+    gap: 10px;
 }
 
 .like-button, .dislike-button {
     cursor: pointer;
     color: #888;
-    transition: color 0.3s, transform 0.3s;
     display: flex;
     align-items: center;
-    gap: 0.2rem;
+    gap: 5px;
+    transition: color var(--transition-speed), transform var(--transition-speed);
 }
 
 .like-button:hover {
-    color: #27ae60; /* Green */
-    transform: scale(1.2);
+    color: #27ae60; 
+    transform: scale(1.1);
 }
 
 .dislike-button:hover {
-    color: #e74c3c; /* Red */
-    transform: scale(1.2);
+    color: #e74c3c; 
+    transform: scale(1.1);
 }
 
 .likes-count, .dislikes-count {
-    font-size: 0.9rem;
+    font-size: var(--small-text);
     color: #555;
 }
 
-/* Highlight Class for Large Donations */
+/* Highlight for large donations */
 .highlight {
     background-color: var(--highlight-background) !important;
     color: var(--highlight-text-color) !important;
@@ -471,20 +403,19 @@ table td.actions {
 /* Pagination */
 .pagination {
     text-align: center;
-    margin-top: 1.25rem;
+    margin-top: 20px;
 }
 
 .pagination a {
     display: inline-block;
-    margin: 0 0.3125rem;
-    padding: 0.625rem 0.9375rem;
+    margin: 0 5px;
+    padding: 8px 12px;
     background-color: var(--primary-color);
     color: white;
-    border-radius: 0.3125rem;
+    border-radius: 4px;
     text-decoration: none;
-    transition: background-color 0.3s, transform 0.3s;
-    font-family: 'Arial', sans-serif; 
-    font-size: 1rem;
+    transition: background-color var(--transition-speed), transform var(--transition-speed);
+    font-size: var(--small-text);
 }
 
 .pagination a.active {
@@ -499,16 +430,15 @@ table td.actions {
 .no-data {
     text-align: center;
     color: #999;
-    padding: 1.25rem;
-    font-family: 'Arial', sans-serif; 
-    font-size: 1rem;
+    padding: 20px;
 }
 
-/* Modern Footer Styles */
-footer.footer {
+/* Footer */
+.footer {
     background-color: var(--footer-background);
     color: var(--footer-text-color);
-    padding: 2rem 1rem;
+    padding: 40px 20px;
+    margin-top: 40px;
 }
 
 .footer-content {
@@ -521,20 +451,19 @@ footer.footer {
 
 .footer-section {
     flex: 1 1 200px;
-    margin: 1rem;
+    margin: 20px;
 }
 
 .footer-section h3 {
-    margin-bottom: 1rem;
+    margin-bottom: 20px;
     font-size: 1.5rem;
     color: var(--secondary-color);
     font-family: 'Arial', sans-serif;
 }
 
 .footer-section p, .footer-section ul {
-    font-size: 1rem;
+    font-size: var(--p-size);
     line-height: 1.6;
-    font-family: 'Arial', sans-serif;
 }
 
 .footer-section ul {
@@ -543,14 +472,13 @@ footer.footer {
 }
 
 .footer-section ul li {
-    margin-bottom: 0.5rem;
+    margin-bottom: 10px;
 }
 
 .footer-section ul li a {
     color: var(--text-color-light);
-    transition: color 0.3s;
-    font-family: 'Arial', sans-serif;
-    font-size: 1rem;
+    transition: color var(--transition-speed);
+    font-size: var(--p-size);
 }
 
 .footer-section ul li a:hover {
@@ -559,19 +487,18 @@ footer.footer {
 
 .footer-section .social-icons {
     display: flex;
-    gap: 0.5rem;
+    gap: 10px;
 }
 
 .footer-section .social-icons a {
     background-color: var(--primary-color);
     color: var(--footer-text-color);
-    width: 40px;
-    height: 40px;
+    width: 40px; height: 40px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.3s, transform 0.3s;
+    transition: background-color var(--transition-speed), transform var(--transition-speed);
 }
 
 .footer-section .social-icons a:hover {
@@ -579,17 +506,7 @@ footer.footer {
     transform: scale(1.1);
 }
 
-.footer-bottom {
-    text-align: center;
-    padding: 1rem 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    margin-top: 2rem;
-    font-size: 0.9rem;
-    color: var(--text-color-light);
-    font-family: 'Arial', sans-serif;
-}
-
-/* Toast Notification Styles */
+/* Toast */
 #toast-container {
     position: fixed;
     bottom: 20px;
@@ -611,8 +528,7 @@ footer.footer {
     opacity: 0;
     transform: translateX(100%);
     animation: fadeIn 0.5s forwards, fadeOut 0.5s forwards 2.5s;
-    font-family: 'Arial', sans-serif;
-    font-size: 1rem;
+    font-size: var(--p-size);
 }
 
 .toast.error {
@@ -634,9 +550,24 @@ footer.footer {
     }
 }
 
-/* Dark Mode Specific Styles */
+/* Dark Mode Overrides */
+body.dark-mode {
+    --primary-color: #2c3e50;
+    --secondary-color: #2980b9;
+    --background-gradient-start: #1e2a38;
+    --background-gradient-end: #16202c;
+    --card-background-start: #2c3e50;
+    --card-background-end: #34495e;
+    --text-color: #ecf0f1;
+    --text-color-light: #bdc3c7;
+    --copy-field-background: #34495e;
+    --copy-field-hover-background: #3c5a73;
+    --footer-background: #1e2a38;
+
+    background: linear-gradient(135deg, var(--background-gradient-start), var(--background-gradient-end));
+}
+
 body.dark-mode .header {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
@@ -644,19 +575,17 @@ body.dark-mode .card {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
 }
 
-body.dark-mode .donations-box, .cinema-section.cinema-amount {
-    background: linear-gradient(145deg, #2c3e50, #34495e);
+body.dark-mode .donations-box {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
 }
 
-body.dark-mode .transactions, .donations-table-section {
+body.dark-mode .transactions {
     background-color: #2c3e50;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
 }
 
 body.dark-mode table th {
     background-color: #1e2a38;
-    color: var(--text-color);
 }
 
 body.dark-mode table td {
@@ -668,10 +597,6 @@ body.dark-mode table tr:hover td {
     background-color: #3c5a73;
 }
 
-body.dark-mode footer.footer {
-    background-color: var(--footer-background);
-}
-
 body.dark-mode .tooltip-text {
     background-color: rgba(44, 62, 80, 0.9);
     color: #ecf0f1;
@@ -681,825 +606,29 @@ body.dark-mode .tooltip-text::after {
     border-color: rgba(44, 62, 80, 0.9) transparent transparent transparent;
 }
 
-/* Material Icons Adjustment for Like/Dislike */
-.material-icons {
-    vertical-align: middle;
-}
-
-/* Responsive Design for Cinema Mode */
+/* Responsive Adjustments */
 @media (max-width: 768px) {
-    .cinema-dashboard {
-        padding: 1rem;
+    .info-section {
+        flex-direction: column;
     }
 
-    .cinema-content {
-        gap: 1.5rem;
+    table th, table td {
+        padding: 8px;
     }
 
-    .cinema-section h2 {
-        font-size: 1.5rem;
-    }
-
-    .cinema-amount {
-        font-size: 2rem;
-    }
-
-    .qr-section img {
+    .main-logo {
         max-width: 150px;
     }
 
-    .lightning-address-container {
-        padding: 0.5rem;
-    }
-
-    .patron-amount {
-        font-size: 1rem;
-    }
-
-    .patron-memo {
-        font-size: 0.9rem;
-    }
-
-    .donations-table-section table th, .donations-table-section table td {
-        padding: 0.5rem 0.7rem;
-    }
-
-    .sound-controls .slider-container {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-}
-
-/* Like and Dislike Button Styles */
-.like-button, .dislike-button { }
-
-/* Like and Dislike Buttons within Actions Column */
-table td.actions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.like-button, .dislike-button {
-    cursor: pointer;
-    color: #888;
-    transition: color 0.3s, transform 0.3s;
-    display: flex;
-    align-items: center;
-    gap: 0.2rem;
-}
-
-.like-button:hover {
-    color: #27ae60; /* Green */
-    transform: scale(1.2);
-}
-
-.dislike-button:hover {
-    color: #e74c3c; /* Red */
-    transform: scale(1.2);
-}
-
-.likes-count, .dislikes-count {
-    font-size: 0.9rem;
-    color: #555;
-}
-
-/* Highlight Class for Large Donations */
-.highlight {
-    background-color: var(--highlight-background) !important;
-    color: var(--highlight-text-color) !important;
-    font-weight: bold;
-    border-left: 5px solid var(--highlight-border);
-}
-
-/* Pagination */
-.pagination {
-    text-align: center;
-    margin-top: 1.25rem;
-}
-
-.pagination a {
-    display: inline-block;
-    margin: 0 0.3125rem;
-    padding: 0.625rem 0.9375rem;
-    background-color: var(--primary-color);
-    color: white;
-    border-radius: 0.3125rem;
-    text-decoration: none;
-    transition: background-color 0.3s, transform 0.3s;
-    font-family: 'Arial', sans-serif; 
-    font-size: 1rem;
-}
-
-.pagination a.active {
-    background-color: var(--secondary-color);
-}
-
-.pagination a:hover {
-    background-color: var(--secondary-color);
-    transform: translateY(-2px);
-}
-
-.no-data {
-    text-align: center;
-    color: #999;
-    padding: 1.25rem;
-    font-family: 'Arial', sans-serif; 
-    font-size: 1rem;
-}
-
-/* Modern Footer Styles */
-footer.footer {
-    background-color: var(--footer-background);
-    color: var(--footer-text-color);
-    padding: 2rem 1rem;
-}
-
-.footer-content {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.footer-section {
-    flex: 1 1 200px;
-    margin: 1rem;
-}
-
-.footer-section h3 {
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-    color: var(--secondary-color);
-    font-family: 'Arial', sans-serif;
-}
-
-.footer-section p, .footer-section ul {
-    font-size: 1rem;
-    line-height: 1.6;
-    font-family: 'Arial', sans-serif;
-}
-
-.footer-section ul {
-    list-style: none;
-    padding: 0;
-}
-
-.footer-section ul li {
-    margin-bottom: 0.5rem;
-}
-
-.footer-section ul li a {
-    color: var(--text-color-light);
-    transition: color 0.3s;
-    font-family: 'Arial', sans-serif;
-    font-size: 1rem;
-}
-
-.footer-section ul li a:hover {
-    color: var(--secondary-color);
-}
-
-.footer-section .social-icons {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.footer-section .social-icons a {
-    background-color: var(--primary-color);
-    color: var(--footer-text-color);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.3s, transform 0.3s;
-}
-
-.footer-section .social-icons a:hover {
-    background-color: var(--secondary-color);
-    transform: scale(1.1);
-}
-
-.footer-bottom {
-    text-align: center;
-    padding: 1rem 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    margin-top: 2rem;
-    font-size: 0.9rem;
-    color: var(--text-color-light);
-    font-family: 'Arial', sans-serif;
-}
-
-/* Toast Notification Styles */
-#toast-container {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 9999;
-}
-
-.toast {
-    display: flex;
-    align-items: center;
-    min-width: 250px;
-    max-width: 350px;
-    margin-top: 10px;
-    padding: 15px 20px;
-    border-radius: 5px;
-    color: var(--toast-success-text);
-    background-color: var(--toast-success-bg);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    opacity: 0;
-    transform: translateX(100%);
-    animation: fadeIn 0.5s forwards, fadeOut 0.5s forwards 2.5s;
-    font-family: 'Arial', sans-serif;
-    font-size: 1rem;
-}
-
-.toast.error {
-    background-color: var(--toast-error-bg);
-    color: var(--toast-error-text);
-}
-
-@keyframes fadeIn {
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes fadeOut {
-    to {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-}
-
-/* Dark Mode Specific Styles */
-body.dark-mode .header {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-}
-
-body.dark-mode .card {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-}
-
-body.dark-mode .donations-box, .cinema-section.cinema-amount {
-    background: linear-gradient(145deg, #2c3e50, #34495e);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-}
-
-body.dark-mode .transactions, .donations-table-section {
-    background-color: #2c3e50;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-}
-
-body.dark-mode table th {
-    background-color: #1e2a38;
-    color: var(--text-color);
-}
-
-body.dark-mode table td {
-    background-color: #2c3e50;
-    color: var(--text-color);
-}
-
-body.dark-mode table tr:hover td {
-    background-color: #3c5a73;
-}
-
-body.dark-mode footer.footer {
-    background-color: var(--footer-background);
-}
-
-body.dark-mode .tooltip-text {
-    background-color: rgba(44, 62, 80, 0.9);
-    color: #ecf0f1;
-}
-
-body.dark-mode .tooltip-text::after {
-    border-color: rgba(44, 62, 80, 0.9) transparent transparent transparent;
-}
-
-/* Material Icons Adjustment for Like/Dislike */
-.material-icons {
-    vertical-align: middle;
-}
-
-/* Responsive Design for Cinema Mode */
-@media (max-width: 768px) {
-    .cinema-dashboard {
-        padding: 1rem;
-    }
-
-    .cinema-content {
-        gap: 1.5rem;
-    }
-
-    .cinema-section h2 {
-        font-size: 1.5rem;
-    }
-
-    .cinema-amount {
+    .header h1 {
         font-size: 2rem;
     }
 
-    .qr-section img {
-        max-width: 150px;
+    .header h5 {
+        font-size: 1.1rem;
     }
 
-    .lightning-address-container {
-        padding: 0.5rem;
+    .qr-card img {
+        max-width: 50%;
     }
-
-    .patron-amount {
-        font-size: 1rem;
-    }
-
-    .patron-memo {
-        font-size: 0.9rem;
-    }
-
-    .donations-table-section table th, .donations-table-section table td {
-        padding: 0.5rem 0.7rem;
-    }
-
-    .sound-controls .slider-container {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-}
-
-/* Like and Dislike Button Styles */
-.like-button, .dislike-button { }
-
-/* Like and Dislike Buttons within Actions Column */
-table td.actions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.like-button, .dislike-button {
-    cursor: pointer;
-    color: #888;
-    transition: color 0.3s, transform 0.3s;
-    display: flex;
-    align-items: center;
-    gap: 0.2rem;
-}
-
-.like-button:hover {
-    color: #27ae60; /* Green */
-    transform: scale(1.2);
-}
-
-.dislike-button:hover {
-    color: #e74c3c; /* Red */
-    transform: scale(1.2);
-}
-
-.likes-count, .dislikes-count {
-    font-size: 0.9rem;
-    color: #555;
-}
-
-/* Highlight Class for Large Donations */
-.highlight {
-    background-color: var(--highlight-background) !important;
-    color: var(--highlight-text-color) !important;
-    font-weight: bold;
-    border-left: 5px solid var(--highlight-border);
-}
-
-/* Pagination */
-.pagination {
-    text-align: center;
-    margin-top: 1.25rem;
-}
-
-.pagination a {
-    display: inline-block;
-    margin: 0 0.3125rem;
-    padding: 0.625rem 0.9375rem;
-    background-color: var(--primary-color);
-    color: white;
-    border-radius: 0.3125rem;
-    text-decoration: none;
-    transition: background-color 0.3s, transform 0.3s;
-    font-family: 'Arial', sans-serif; 
-    font-size: 1rem;
-}
-
-.pagination a.active {
-    background-color: var(--secondary-color);
-}
-
-.pagination a:hover {
-    background-color: var(--secondary-color);
-    transform: translateY(-2px);
-}
-
-.no-data {
-    text-align: center;
-    color: #999;
-    padding: 1.25rem;
-    font-family: 'Arial', sans-serif; 
-    font-size: 1rem;
-}
-
-/* Modern Footer Styles */
-footer.footer {
-    background-color: var(--footer-background);
-    color: var(--footer-text-color);
-    padding: 2rem 1rem;
-}
-
-.footer-content {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.footer-section {
-    flex: 1 1 200px;
-    margin: 1rem;
-}
-
-.footer-section h3 {
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-    color: var(--secondary-color);
-    font-family: 'Arial', sans-serif;
-}
-
-.footer-section p, .footer-section ul {
-    font-size: 1rem;
-    line-height: 1.6;
-    font-family: 'Arial', sans-serif;
-}
-
-.footer-section ul {
-    list-style: none;
-    padding: 0;
-}
-
-.footer-section ul li {
-    margin-bottom: 0.5rem;
-}
-
-.footer-section ul li a {
-    color: var(--text-color-light);
-    transition: color 0.3s;
-    font-family: 'Arial', sans-serif;
-    font-size: 1rem;
-}
-
-.footer-section ul li a:hover {
-    color: var(--secondary-color);
-}
-
-.footer-section .social-icons {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.footer-section .social-icons a {
-    background-color: var(--primary-color);
-    color: var(--footer-text-color);
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.3s, transform 0.3s;
-}
-
-.footer-section .social-icons a:hover {
-    background-color: var(--secondary-color);
-    transform: scale(1.1);
-}
-
-.footer-bottom {
-    text-align: center;
-    padding: 1rem 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.2);
-    margin-top: 2rem;
-    font-size: 0.9rem;
-    color: var(--text-color-light);
-    font-family: 'Arial', sans-serif;
-}
-
-/* Toast Notification Styles */
-#toast-container {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    z-index: 9999;
-}
-
-.toast {
-    display: flex;
-    align-items: center;
-    min-width: 250px;
-    max-width: 350px;
-    margin-top: 10px;
-    padding: 15px 20px;
-    border-radius: 5px;
-    color: var(--toast-success-text);
-    background-color: var(--toast-success-bg);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    opacity: 0;
-    transform: translateX(100%);
-    animation: fadeIn 0.5s forwards, fadeOut 0.5s forwards 2.5s;
-    font-family: 'Arial', sans-serif;
-    font-size: 1rem;
-}
-
-.toast.error {
-    background-color: var(--toast-error-bg);
-    color: var(--toast-error-text);
-}
-
-@keyframes fadeIn {
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-@keyframes fadeOut {
-    to {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-}
-
-/* Cinema Mode Styles */
-.cinema-dashboard {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.25rem;
-}
-
-.cinema-content {
-    display: flex;
-    flex-direction: column;
-    gap: 2rem;
-}
-
-.cinema-section {
-    background: linear-gradient(145deg, #e3eff5, #f4f9fc);
-    padding: 1.5rem;
-    border-radius: 1rem;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
-    transition: background 0.3s, box-shadow 0.3s;
-}
-
-.cinema-section h2 {
-    font-size: 1.8rem;
-    margin-bottom: 1rem;
-    color: var(--text-color-light);
-}
-
-.cinema-amount {
-    font-size: 2.5rem;
-    font-weight: bold;
-    color: var(--donation-amount-color);
-    text-align: center;
-}
-
-.qr-section img {
-    max-width: 200px;
-    border-radius: 0.75rem;
-    cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-    display: block;
-    margin: 0 auto;
-}
-
-.qr-section .lightning-address-container {
-    background: var(--copy-field-background);
-    padding: 0.75rem;
-    border-radius: 0.5rem;
-    word-break: break-all;
-    cursor: pointer;
-    transition: background 0.3s ease, transform 0.2s ease;
-    display: flex;
-    flex-direction: column; /* For central alignment */
-    align-items: center; /* Horizontal centering */
-    justify-content: center; /* Vertical centering */
-    gap: 0.5rem;
-    margin-top: 1rem;
-}
-
-.qr-section .lightning-address-container:hover {
-    background: var(--copy-field-hover_background);
-    transform: scale(1.02);
-}
-
-.patreons-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-}
-
-.patron {
-    background: #ffffff;
-    padding: 1rem;
-    border-radius: 0.5rem;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.patron:hover {
-    transform: translateY(-0.3rem);
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
-}
-
-.patron-amount {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: var(--donation-amount-color);
-}
-
-.patron-memo {
-    font-size: 1rem;
-    color: var(--text-color-light);
-    margin-top: 0.5rem;
-}
-
-.donations-table-section table {
-    width: 100%;
-    border-collapse: collapse;
-}
-
-.donations-table-section table th, .donations-table-section table td {
-    padding: 0.75rem 0.9375rem;
-    text-align: left;
-    border-bottom: 1px solid var(--copy-field_background);
-    font-family: 'Arial', sans-serif; 
-    font-size: 1rem; 
-}
-
-.donations-table-section table th {
-    background-color: #e9f3f7;
-    color: var(--text-color); 
-}
-
-.donations-table-section table td {
-    background-color: #f9fbfc;
-    color: var(--text-color);
-}
-
-.donations-table-section table tr:hover td {
-    background-color: var(--copy-field-background);
-}
-
-.donations-table-section table td.amount {
-    color: var(--donation-amount-color);
-}
-
-/* Sound Controls */
-.sound-controls .slider-container {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    justify-content: center;
-}
-
-.sound-controls label {
-    font-size: 1rem;
-    color: var(--text-color-light);
-}
-
-.sound-controls input[type="checkbox"] {
-    width: 50px;
-    height: 24px;
-    -webkit-appearance: none;
-    appearance: none;
-    background: #ccc;
-    outline: none;
-    border-radius: 12px;
-    position: relative;
-    cursor: pointer;
-    transition: background 0.3s;
-}
-
-.sound-controls input[type="checkbox"]:checked {
-    background: var(--secondary-color);
-}
-
-.sound-controls input[type="checkbox"]::before {
-    content: "";
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    top: 2px;
-    left: 2px;
-    background: #fff;
-    transition: transform 0.3s;
-}
-
-.sound-controls input[type="checkbox"]:checked::before {
-    transform: translateX(26px);
-}
-
-/* Responsive Design for Cinema Mode */
-@media (max-width: 768px) {
-    .cinema-dashboard {
-        padding: 1rem;
-    }
-
-    .cinema-content {
-        gap: 1.5rem;
-    }
-
-    .cinema-section h2 {
-        font-size: 1.5rem;
-    }
-
-    .cinema-amount {
-        font-size: 2rem;
-    }
-
-    .qr-section img {
-        max-width: 150px;
-    }
-
-    .lightning-address-container {
-        padding: 0.5rem;
-    }
-
-    .patron-amount {
-        font-size: 1rem;
-    }
-
-    .patron-memo {
-        font-size: 0.9rem;
-    }
-
-    .donations-table-section table th, .donations-table-section table td {
-        padding: 0.5rem 0.7rem;
-    }
-
-    .sound-controls .slider-container {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-}
-
-/* Material Icons Adjustment for Like/Dislike */
-.material-icons {
-    vertical-align: middle;
-}
-
-/* Like and Dislike Button Styles */
-.like-button, .dislike-button { }
-
-/* Like and Dislike Buttons within Actions Column */
-table td.actions {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.like-button, .dislike-button {
-    cursor: pointer;
-    color: #888;
-    transition: color 0.3s, transform 0.3s;
-    display: flex;
-    align-items: center;
-    gap: 0.2rem;
-}
-
-.like-button:hover {
-    color: #27ae60; /* Green */
-    transform: scale(1.2);
-}
-
-.dislike-button:hover {
-    color: #e74c3c; /* Red */
-    transform: scale(1.2);
-}
-
-.likes-count, .dislikes-count {
-    font-size: 0.9rem;
-    color: #555;
-}
-
-/* Highlight Class for Large Donations */
-.highlight {
-    background-color: var(--highlight-background) !important;
-    color: var(--highlight-text-color) !important;
-    font-weight: bold;
-    border-left: 5px solid var(--highlight-border);
 }
