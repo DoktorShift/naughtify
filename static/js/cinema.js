@@ -16,7 +16,7 @@ const soundIcon = document.getElementById('sound-icon');
 const lightningAddressElement = document.getElementById('lightning-address'); // New element
 
 // Constant for number of rows to display
-const ROWS_TO_DISPLAY = 17;
+const ROWS_TO_DISPLAY = 15;
 
 // Fetch data from API
 async function fetchData() {
