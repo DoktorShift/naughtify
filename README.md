@@ -410,7 +410,7 @@ Here is a guide on how to set up Overwatch:
 
 What you are still missing is the username and password. Since Overwatch displays the data of an LNbits wallet, you must now enter the username and password of your LNbits account here. If your LNbits account does not yet have a username and password, you can assign them under 'My Account' (icon in the top right corner) and use them to log in.
 
-<img src="./assets/netlify.app.png" width="300"> <img src="./assets/overwatch.png" width="600"> 
+<img src="./assets/netlify.app.png" width="250"> <img src="./assets/overwatch.png" width="600"> 
 
 
 Optionally, you can integrate the link to Overwatch into Naughtify. To do this, you must edit the .env and then restart Naughtify once.
