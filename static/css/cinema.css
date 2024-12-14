@@ -39,7 +39,7 @@ html, body {
     padding: 15px;
     background: #1a1d22;
     border-radius: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     box-shadow: 0 4px 10px rgba(0,0,0,0.3);
 }
 
@@ -54,7 +54,7 @@ html, body {
 .live-ticker-headline {
     font-size: 2.5vw;
     color: #fff;
-    margin-bottom: 20px;
+    margin-bottom: 15px;
     font-weight: 600;
     text-shadow: 0 0 5px rgba(255,255,255,0.2);
 }
@@ -63,7 +63,7 @@ html, body {
 .cinema-left h1 {
     font-size: 4vw;
     color: #00ff88;
-    margin-bottom: 40px;
+    margin-bottom: 10px;
     font-weight: 700;
     text-shadow: 0 0 10px rgba(0,255,136,0.5);
 }
@@ -73,7 +73,8 @@ html, body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 40px;
+    margin-bottom: 20px; /* Optional: verringere den Abstand zum nächsten Block */
+    gap: 5px; /* Präziser Abstand zwischen Lightning Address und Total Amount */
 }
 
 .cinema-qr-container img {
@@ -92,19 +93,27 @@ html, body {
 
 /* Lightning Address */
 .lightning-address {
-    font-size: 1.2vw;
+    font-size: 1.625vw;
     color: #00ff88;
     word-break: break-all;
     text-align: center;
-    margin-top: 10px;
+    margin-top: 5px; /* Verringere den Abstand zur Lightning-Adresse */
+}
+
+/* Total Donations */
+#cinema-total {
+    font-size: 2.5vw; /* Passe die Schriftgröße nach Bedarf an */
+    color: #00ff88;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
 }
 
 /* Heroic Patrons */
 .heroic-patrons h2 {
     font-size: 2vw;
     color: #fff;
-    margin-bottom: 20px;
-    font-weight: 600;
+    margin-bottom: 15px;
+    font-weight: 500;
     text-align: center;
     text-shadow: 0 0 5px rgba(255,255,255,0.2);
 }
