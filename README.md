@@ -18,14 +18,15 @@ LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monit
 - [5. Naughtify Start](#5-naughtify-start)
   - [5.1 Start Manually](#51-start-manually)
   - [5.2 Autostart Service](#52-autostart-service)
-- [6. Optional Additions](#6-optional-additions)
+- [6. Optional Extras](#6-optional-extras)
   - [6.1 Live⚡Ticker](#61-liveticker)
     - [Installation](#installation)
+    - [Extend the caddy file](#extend-the-caddy-file)
     - [Personalize page](#personalize-page)
     - [Good etiquette care](#good-etiquette-care)
   - [6.2 Overwatch](#62-overwatch)
-    - [How to set up](#how-to-set-up)
-    - [Optional integration](#optional-integration)
+    - [How to set it up](#how-to-set-it-up)
+    - [Integration](#integration)
 - [7. Appendix](#7-appendix)
   - [7.1 Update Naughtify](#71-update-naughtify)
 - [Contributing](#contributing)
@@ -301,7 +302,7 @@ sudo journalctl -u naughtify -f --since "2 hour ago"
 
 ---
 
-## 6. Optional Additions
+## 6. Optional Extras
 
 ### 6.1 Live⚡Ticker
 
@@ -313,22 +314,33 @@ Naughtify can also provide a simple public website that displays the data and tr
 
 To use the LiveTicker, you need another subdomain via which the website can later be accessed. At the hosting provider, the A (and AAAA) entry for e.g. “liveticker.yourdomomain.com” must point to the server on which Naughtify is installed. The .env file must then be adapted accordingly and the entry added to Caddy.
 
-__Call the .env to edit the data:__
+Call the .env to edit the data:
 
 ```bash
 sudo nano ~/naughtify/.env
 ```
 
-Adjust the following values in the `LiveTicker Configuration` area:
+Delete the `#` and adjust the following values in the “LiveTicker configuration” area:
 
 ```plaintext
 DONATIONS_URL=YourLiveTickerPageURL <- liveticker.yourdomomain.com
 LNURLP_ID=YourLNURPID <- The ID (6 letters) of the Pay Link instance
+HIGHLIGHT_THRESHOLD=2100 <- set it to your favorit
+INFORMATION_URL=YourInformationPageURL <- e.g. yourdomain.com
+```
+
+Restart the server and check journal:
+
+```bash
+sudo systemctl restart naughtify
+sudo journalctl -u naughtify -f --since "2 hour ago"
 ```
 
 __Note:__ For more help on the LNURLP_ID, see point 3.3 of [prerequisites_help.md](./prerequisites_help.md).
 
-__Extend the caddy file:__
+#### Extend the caddy file
+
+Open the Caddy file:
 
 ```bash
 sudo nano /etc/caddy/Caddyfile
@@ -394,7 +406,7 @@ Overwatch is a web app dashboard to conveniently display advanced wallet informa
 
 Overwatch currently requires an account at [netlify.com](https://www.netlify.com/) to deploy the web app. And an Overwatch repository (online or as a zip file) that has been customized for the LNbits server used is required.
 
-#### How to set up
+#### How to set it up
 
 1. fork the GitHub repository and create a new branch called `ow`.
 2. in the files `/src/layouts/MainLayout.vue`, `/src/pages/IndexPage.vue` and `/src/pages/LoginBasic.vue` search for the word combination `timecatcher.lnbits.de` and replace it with the new LNbits server domain, such as lnbits.yourdomain.com.
@@ -413,7 +425,7 @@ What you are still missing is the username and password. Since Overwatch display
 | :-----------------------------------: | :--------------------------------------------: |
 | <img src="./assets/netlify.app.png" > | <img src="./assets/overwatch.png" width="650"> |
 
-#### Optional integration
+#### Integration
 
 Optionally, you can integrate the link to Overwatch into Naughtify. To do this, you must edit the .env and then restart Naughtify once.
 
