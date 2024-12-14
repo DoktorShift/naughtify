@@ -1,6 +1,6 @@
 let totalDonations = 0; 
 let transactionsData = [];
-const rowsPerPage = 10; 
+const rowsPerPage = 17; 
 let currentPage = 1;
 let lastUpdate = null; 
 let highlightThreshold = 2100; 
