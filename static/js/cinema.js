@@ -11,6 +11,7 @@ const heroicPatronsList = document.getElementById('heroic-patrons-list');
 const transactionsBody = document.getElementById('cinema-transactions');
 const soundToggleBtn = document.getElementById('sound-toggle');
 const soundIcon = document.getElementById('sound-icon');
+const lightningAddressElement = document.getElementById('lightning-address'); // New element
 
 async function fetchData() {
     const response = await fetch('/api/donations');
@@ -26,6 +27,11 @@ function updateUI(data) {
     // Update QR code
     if (data.lnurl) {
         updateQR(data.lnurl);
+    }
+
+    // Update lightning address
+    if (data.lightning_address) {
+        lightningAddressElement.textContent = data.lightning_address;
     }
 
     // Update highlight threshold
@@ -81,12 +87,19 @@ function updateTransactions(donations) {
 
         tr.innerHTML = `
             <td>${formattedTime}</td>
-            <td>${donation.memo}</td>
+            <td>${sanitizeHTML(donation.memo)}</td>
             <td>${donation.amount} Sats</td>
             <td>${donation.likes - donation.dislikes}</td>
         `;
         transactionsBody.appendChild(tr);
     });
+}
+
+// Sanitize HTML to prevent XSS
+function sanitizeHTML(str) {
+    const temp = document.createElement('div');
+    temp.textContent = str;
+    return temp.innerHTML;
 }
 
 // Check for new donations to play sound
@@ -119,6 +132,7 @@ soundToggleBtn.addEventListener('click', () => {
     soundIcon.textContent = isMuted ? '🔇' : '🔊';
 });
 
+// Initialize
 fetchData();
 setInterval(fetchData, 10000); // update UI every 10s
 setInterval(checkNewDonations, 5000); // check for new donations every 5s
