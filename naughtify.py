@@ -845,7 +845,7 @@ def handle_help_command(update, context):
         f"• /transactions – Show your latest transactions with pagination.\n"
         f"• /info – Display current settings and thresholds.\n"
         f"• /help – Display this help message.\n"
-        f"• /ticker_ban <words> – Add forbidden words that will be censored in the Live Ticker.\n\n"
+        f"• /ticker_ban words – Add forbidden words that will be censored in the Live Ticker.\n\n"
         f"You can also use the buttons below to quickly navigate through features!"
     )
 
