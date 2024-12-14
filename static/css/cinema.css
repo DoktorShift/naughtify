@@ -50,6 +50,32 @@ html, body {
     margin: 0;
 }
 
+/* Total Sats Box */
+.total-amount {
+    width: auto; /* Allows the box to expand based on content */
+    max-width: 90%; /* Prevents the box from exceeding the container's width */
+    padding: 10px; /* Reduced padding for a smaller box */
+    background: #1a1d22;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2); /* Subtle 3D effect */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 150px; /* Ensures a minimum width */
+}
+
+/* Total Sats Text */
+.total-amount p {
+    font-size: 1.5vw; /* Slightly larger font size for visibility */
+    color: #00ff88;
+    font-weight: 700;
+    text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+    text-align: center;
+    margin: 0;
+    white-space: nowrap; /* Prevents text from wrapping */
+}
+
 /* Live Ticker Headline */
 .live-ticker-headline {
     font-size: 2.5vw;
@@ -73,14 +99,13 @@ html, body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    margin-bottom: 20px; /* Optional: verringere den Abstand zum nächsten Block */
-    gap: 5px; /* Präziser Abstand zwischen Lightning Address und Total Amount */
+    margin-bottom: 20px; /* Consistent spacing to next block */
+    gap: 10px; /* Increased gap for better spacing */
 }
 
 .cinema-qr-container img {
     width: 30vw;
     max-width: 300px;
-    margin-bottom: 10px;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0,255,136,0.2);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -97,15 +122,7 @@ html, body {
     color: #00ff88;
     word-break: break-all;
     text-align: center;
-    margin-top: 5px; /* Verringere den Abstand zur Lightning-Adresse */
-}
-
-/* Total Donations */
-#cinema-total {
-    font-size: 2.5vw; /* Passe die Schriftgröße nach Bedarf an */
-    color: #00ff88;
-    font-weight: 700;
-    text-shadow: 0 0 10px rgba(0, 255, 136, 0.5);
+    margin-top: 5px; /* Reduced spacing above */
 }
 
 /* Heroic Patrons */
@@ -260,5 +277,9 @@ tr:nth-child(even) {
 
     .lightning-address {
         font-size: 3vw;
+    }
+
+    .total-amount p {
+        font-size: 3vw; /* Adjusted for responsiveness */
     }
 }
