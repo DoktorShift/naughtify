@@ -394,31 +394,23 @@ Overwatch currently requires an account at [netlify.com](https://www.netlify.com
 
 Here is a guide on how to set up Overwatch:
 
-<style>
-td, th {
-   border: none!important;
-}
-</style>
-<table>
- <tr>
-    <td>
-1. fork the GitHub repository and create a new branch called “ow”.<br>
-2. in the files `/src/layouts/MainLayout.vue`, `/src/pages/IndexPage.vue` and `/src/pages/LoginBasic.vue` search for the word combination `timecatcher.lnbits.de` and replace it with the new LNbits server domain, such as lnbits.yourdomain.com.<br>
-3. save the changes and make sure the branch is publicly available, or export the branch as a zip file.<br>
-4. set up an account at netlify.com and when asked which project you want to deploy, import it from GitHub and link to your GitHub account, or import the prepared zip file. <br>
-5. give the page a unique name. For example similar to `overwatch0815` and check the availability.<br>
-6. set the `Branch to deploy` to your `ow` if you have more than one.<br>
-7. fill the field `Build command` with `quasar build` and the field `Publish Directory` with `dist/spa`.<br>
-8. select `Deploy overwatch0815` to deploy the page. <br>
-9. after the site has been successfully deployed, go to `View site deploy`.<br>
-10. select `Open production deploy` to open your Overwatch site.</td>
-    <td><img src="./assets/netlify.app.png" width="300"> </td>
- </tr>
-</table>
+
+1. fork the GitHub repository and create a new branch called “ow”.
+2. in the files `/src/layouts/MainLayout.vue`, `/src/pages/IndexPage.vue` and `/src/pages/LoginBasic.vue` search for the word combination `timecatcher.lnbits.de` and replace it with the new LNbits server domain, such as lnbits.yourdomain.com.
+3. save the changes and make sure the branch is publicly available, or export the branch as a zip file.
+4. set up an account at netlify.com and when asked which project you want to deploy, import it from GitHub and link to your GitHub account, or import the prepared zip file. 
+5. give the page a unique name. For example similar to `overwatch0815` and check the availability.
+6. set the `Branch to deploy` to your `ow` if you have more than one.
+7. fill the field `Build command` with `quasar build` and the field `Publish Directory` with `dist/spa`.
+8. select `Deploy overwatch0815` to deploy the page. 
+9. after the site has been successfully deployed, go to `View site deploy`.
+10. select `Open production deploy` to open your Overwatch site.
+    
+
 
 What you are still missing is the username and password. Since Overwatch displays the data of an LNbits wallet, you must now enter the username and password of your LNbits account here. If your LNbits account does not yet have a username and password, you can assign them under 'My Account' (icon in the top right corner) and use them to log in.
 
-<img src="./assets/overwatch.png" width="800"> 
+<img src="./assets/netlify.app.png" width="300"> <img src="./assets/overwatch.png" width="700"> 
 
 
 Optionally, you can integrate the link to Overwatch into Naughtify. To do this, you must edit the .env and then restart Naughtify once.
