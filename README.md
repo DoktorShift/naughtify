@@ -23,7 +23,8 @@ LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monit
     - [Installation](#installation)
     - [Personalize page](#personalize-page)
     - [Good etiquette care](#good-etiquette-care)
-  - [6.2 Deploy Overwatch](#62-deploy-overwatch)
+  - [6.2 Overwatch](#62-overwatch)
+    - [Prerequisites](#prerequisites)
 - [7. Appendix](#7-appendix)
   - [7.1 Update Naughtify](#71-update-naughtify)
 - [Contributing](#contributing)
@@ -386,9 +387,52 @@ Some comments may not be appropriate or someone may have inadvertently revealed 
 
 <img src="./assets/ban.jpg" width="800"> 
 
-### 6.2 Deploy Overwatch
+### 6.2 Overwatch
 
-General information find [here](https://github.com/DoktorShift/Overwatch)
+Overwatch is a web app dashboard to conveniently display advanced wallet information and it also has a few additional features. It was primarily developed to keep track of and control wallets that are connected to Point of Sale terminals (TPoS). The boss app you could say. Several employees have a TPoS and the boss monitors the finances with Overwatch. Overwatch is an extension for Naughtify, but it also works as a stand-alone software application.
+
+#### Prerequisites
+
+Overwatch currently requires an account at [netlify.com](https://www.netlify.com/) to deploy the web app. And an Overwatch repository (online or as a zip file) that has been customized for the LNbits server used is required.
+
+Here is a guide on how to set up Overwatch:
+
+1. fork the GitHub repository and create a new branch called “ow”.
+2. in the files `/src/layouts/MainLayout.vue`, `/src/pages/IndexPage.vue` and `/src/pages/LoginBasic.vue` search for the word combination `timecatcher.lnbits.de` and replace it with the new LNbits server domain, such as lnbits.yourdomain.com.
+3. save the changes and make sure the branch is publicly available, or export the branch as a zip file.
+4. set up an account at netlify.com and when asked which project you want to deploy, import it from GitHub and link to your GitHub account, or import the prepared zip file. 
+5. give the page a unique name. For example similar to `overwatch0815` and check the availability.
+6. set the `Branch to deploy` to your `ow` if you have more than one.
+7. fill the field `Build command` with `quasar build` and the field `Publish Directory` with `dist/spa`.
+8. select `Deploy overwatch0815` to deploy the page. 
+9. after the site has been successfully deployed, go to `View site deploy`.
+10. select `Open production deploy` to open your Overwatch site.
+    
+What you are still missing is the username and password. Since Overwatch displays the data of an LNbits wallet, you must now enter the username and password of your LNbits account here. If your LNbits account does not yet have a username and password, you can assign them under 'My Account' (icon in the top right corner) and use them to log in.
+
+Open .env to edit
+
+```bash
+sudo nano ~/naughtify/.env
+```
+
+Search for `# OVERWATCH_URL=YourOverwatchURL`. Remove `#` and customize it for yourself:
+
+```plaintext
+OVERWATCH_URL=https://lnbits.yourdomain.com
+```
+
+Restart Server:
+
+```bash
+sudo systemctl restart naughtify
+```
+
+From now on, the Overwatch link should also be stored in the Naughtify Telegram bot. Since the call is now made on your smartphone with your own browser, you will probably also have to log in with your username and password.
+
+
+
+Further information find [here](https://github.com/DoktorShift/Overwatch)
 
 Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT.md)
 
