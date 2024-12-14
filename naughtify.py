@@ -840,13 +840,13 @@ def handle_help_command(update, context):
     logger.info(f"Handling /help command for chat_id: {chat_id}")
     help_message = (
         f"ℹ️ *{INSTANCE_NAME}* - *Help*\n\n"
-        f"Hello! Here's what I can do for you:\n\n"
-        f"• /balance – Show your current LNbits wallet balance.\n"
-        f"• /transactions – Show your latest transactions with pagination.\n"
-        f"• /info – Display current settings and thresholds.\n"
-        f"• /help – Display this help message.\n"
-        f"• /ticker_ban words – Add forbidden words that will be censored in the Live Ticker.\n\n"
-        f"You can also use the buttons below to quickly navigate through features!"
+        "Hello! Here is what I can do for you:\n\n"
+        "- /balance - Show your current LNbits wallet balance.\n"
+        "- /transactions - Show your latest transactions with pagination.\n"
+        "- /info - Display current settings and thresholds.\n"
+        "- /help - Display this help message.\n"
+        "- /ticker_ban words - Add forbidden words that will be censored in the Live Ticker.\n\n"
+        "You can also use the buttons below to quickly navigate through features!"
     )
 
     try:
