@@ -18,14 +18,17 @@ LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monit
 - [5. Naughtify Start](#5-naughtify-start)
   - [5.1 Start Manually](#51-start-manually)
   - [5.2 Autostart Service](#52-autostart-service)
-- [6. Optional Additions](#6-optional-additions)
+- [6. Optional Extras](#6-optional-extras)
   - [6.1 Live⚡Ticker](#61-liveticker)
     - [Installation](#installation)
+    - [Extend the caddy file](#extend-the-caddy-file)
     - [Personalize page](#personalize-page)
     - [Good etiquette care](#good-etiquette-care)
-  - [6.2 Deploy Overwatch](#62-deploy-overwatch)
+  - [6.2 Overwatch](#62-overwatch)
+    - [How to set it up](#how-to-set-it-up)
+    - [Integration](#integration)
 - [7. Appendix](#7-appendix)
-  - [7.1 Update Naughtify](#71-update-naughtify)
+    - [Update Naughtify](#update-naughtify)
 - [Contributing](#contributing)
 - [Acknowledgments](#acknowledgments)
 
@@ -299,34 +302,45 @@ sudo journalctl -u naughtify -f --since "2 hour ago"
 
 ---
 
-## 6. Optional Additions
+## 6. Optional Extras
 
 ### 6.1 Live⚡Ticker
 
 Naughtify can also provide a simple public website that displays the data and transactions of a wallet. This function is called “LiveTicker”. Examples of this would be a donation page or a crowdfunding page. Anyone can view the page, send funds directly, leave a comment (if desired) and shortly afterwards see that their contribution with the comment has been received, which can be particularly necessary for crowdfunding projects and ensures absolute transparency.
 
-<img src="./assets/liveticker_example.jpg" width="700"> 
+<img src="./assets/liveticker_example.jpg" width="800"> 
 
 #### Installation
 
 To use the LiveTicker, you need another subdomain via which the website can later be accessed. At the hosting provider, the A (and AAAA) entry for e.g. “liveticker.yourdomomain.com” must point to the server on which Naughtify is installed. The .env file must then be adapted accordingly and the entry added to Caddy.
 
-__Call the .env to edit the data:__
+Call the .env to edit the data:
 
 ```bash
 sudo nano ~/naughtify/.env
 ```
 
-Adjust the following values in the `LiveTicker Configuration` area:
+Delete the `#` and adjust the following values in the “LiveTicker configuration” area:
 
 ```plaintext
 DONATIONS_URL=YourLiveTickerPageURL <- liveticker.yourdomomain.com
 LNURLP_ID=YourLNURPID <- The ID (6 letters) of the Pay Link instance
+HIGHLIGHT_THRESHOLD=2100 <- set it to your favorit
+INFORMATION_URL=YourInformationPageURL <- e.g. yourdomain.com
+```
+
+Restart the server and check journal:
+
+```bash
+sudo systemctl restart naughtify
+sudo journalctl -u naughtify -f --since "2 hour ago"
 ```
 
 __Note:__ For more help on the LNURLP_ID, see point 3.3 of [prerequisites_help.md](./prerequisites_help.md).
 
-__Extend the caddy file:__
+#### Extend the caddy file
+
+Open the Caddy file:
 
 ```bash
 sudo nano /etc/caddy/Caddyfile
@@ -386,19 +400,62 @@ Some comments may not be appropriate or someone may have inadvertently revealed 
 
 <img src="./assets/ban.jpg" width="800"> 
 
-### 6.2 Deploy Overwatch
+### 6.2 Overwatch
 
-General information find [here](https://github.com/DoktorShift/Overwatch)
+Overwatch is a web app dashboard to conveniently display advanced wallet information and it also has a few additional features. It was primarily developed to keep track of and control wallets that are connected to Point of Sale terminals (TPoS). The boss app you could say. Several employees have a TPoS and the boss monitors the finances with Overwatch. Overwatch is an extension for Naughtify, but it also works as a stand-alone software application.
 
-Option 1: Self Deployment (Vue/Quasar) [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT.md)
+Overwatch currently requires an account at [netlify.com](https://www.netlify.com/) to deploy the web app. And an Overwatch repository (online or as a zip file) that has been customized for the LNbits server used is required.
 
-Option 2: Easier Deployment with Netlify [here](https://github.com/DoktorShift/Overwatch/blob/main/DEPLOYMENT_Netlify.md)
+#### How to set it up
+
+1. fork the GitHub repository and create a new branch called `ow`.
+2. in the files `/src/layouts/MainLayout.vue`, `/src/pages/IndexPage.vue` and `/src/pages/LoginBasic.vue` search for the word combination `timecatcher.lnbits.de` and replace it with the new LNbits server domain, such as lnbits.yourdomain.com.
+3. Save the changes and make sure the branch is publicly available, or export the branch as a zip file.
+4. set up an account at netlify.com and when asked which project you want to deploy, import it from GitHub and link to your GitHub account, or import the prepared zip file. 
+5. give the page a unique name. For example similar to `overwatch0815` and check the availability.
+6. set the "Branch to deploy" to your `ow` branch if you have more than one.
+7. fill the field "Build command" with `quasar build` and the field "Publish Directory" with `dist/spa`.
+8. select "Deploy overwatch0815" to deploy the page. 
+9. after the site has been successfully deployed, go to "View site deploy".
+10. select "Open production deploy" to open your Overwatch site.
+
+What you are still missing is the username and password. Since Overwatch displays the data of an LNbits wallet, you must now enter the username and password of your LNbits account here. If your LNbits account does not yet have a username and password, you can assign them under 'My Account' (icon in the top right corner) and use them to log in.
+
+|              netlify.app              |               Overwatch Web App                |
+| :-----------------------------------: | :--------------------------------------------: |
+| <img src="./assets/netlify.app.png" > | <img src="./assets/overwatch.png" width="650"> |
+
+#### Integration
+
+Optionally, you can integrate the link to Overwatch into Naughtify. To do this, you must edit the .env and then restart Naughtify once.
+
+Open .env to edit
+
+```bash
+sudo nano ~/naughtify/.env
+```
+
+Search for `# OVERWATCH_URL=YourOverwatchURL`. Remove `#` and customize it for yourself:
+
+```plaintext
+OVERWATCH_URL=https://lnbits.yourdomain.com
+```
+
+Restart Server:
+
+```bash
+sudo systemctl restart naughtify
+```
+
+From now on, the Overwatch link should also be stored in the Naughtify Telegram bot. Since the call is now made on your smartphone with your own browser, you will probably also have to log in with your username and password.
+
+You can find more information in the original [Overwatch repository](https://github.com/DoktorShift/Overwatch).
 
 ---
 
 ## 7. Appendix
 
-### 7.1 Update Naughtify
+#### Update Naughtify
 
 New version available? Here is the way to update Naughtify to the latest version.
 
