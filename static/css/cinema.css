@@ -35,7 +35,7 @@ html, body {
 
 /* Explanatory Textbox */
 .explanatory-textbox {
-    width: 100%;
+    width: 90%;
     padding: 15px;
     background: #1a1d22;
     border-radius: 8px;
