@@ -30,6 +30,33 @@ html, body {
     align-items: center;
     justify-content: flex-start;
     border-right: 1px solid #222;
+    position: relative;
+}
+
+/* Explanatory Textbox */
+.explanatory-textbox {
+    width: 100%;
+    padding: 15px;
+    background: #1a1d22;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.explanatory-textbox p {
+    font-size: 1.2vw;
+    color: #ccc;
+    text-align: center;
+    margin: 0;
+}
+
+/* Live Ticker Headline */
+.live-ticker-headline {
+    font-size: 2.5vw;
+    color: #fff;
+    margin-bottom: 20px;
+    font-weight: 600;
+    text-shadow: 0 0 5px rgba(255,255,255,0.2);
 }
 
 /* Modernized Headline */
@@ -42,10 +69,17 @@ html, body {
 }
 
 /* QR Container */
+.cinema-qr-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
 .cinema-qr-container img {
     width: 30vw;
     max-width: 300px;
-    margin-bottom: 40px;
+    margin-bottom: 10px;
     border-radius: 8px;
     box-shadow: 0 4px 20px rgba(0,255,136,0.2);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
@@ -54,6 +88,15 @@ html, body {
 .cinema-qr-container img:hover {
     transform: scale(1.05);
     box-shadow: 0 8px 30px rgba(0,255,136,0.4);
+}
+
+/* Lightning Address */
+.lightning-address {
+    font-size: 1.2vw;
+    color: #00ff88;
+    word-break: break-all;
+    text-align: center;
+    margin-top: 10px;
 }
 
 /* Heroic Patrons */
@@ -119,6 +162,11 @@ thead {
 th, td {
     padding: 10px;
     border-bottom: 1px solid #333;
+    text-align: left;
+}
+
+th {
+    font-weight: 600;
 }
 
 tr:nth-child(even) {
@@ -191,5 +239,17 @@ tr:nth-child(even) {
 
     table {
         font-size: 2.5vw;
+    }
+
+    .explanatory-textbox p {
+        font-size: 4vw;
+    }
+
+    .live-ticker-headline {
+        font-size: 5vw;
+    }
+
+    .lightning-address {
+        font-size: 3vw;
     }
 }
