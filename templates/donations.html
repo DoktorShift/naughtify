@@ -38,7 +38,7 @@
                 <a href="{{ information_url }}" target="_blank" class="info-link" aria-label="More about"></a>
             </div>
             
-            <!-- NEW Cinema Mode Launch Button -->
+            <!-- Cinema Mode Launch Button -->
             <a href="{{ url_for('cinema_page') }}" class="cinema-button" title="Open Cinema Mode" target="_blank">
                 <i class="material-icons">theaters</i>
             </a>
@@ -116,18 +116,20 @@
             <div class="footer-section social">
                 <h3>Connect with Us</h3>
                 <div class="social-icons">
-                    <a href="#"><i class="material-icons">home</i></a>
-                    <a href="#"><i class="material-icons">email</i></a>
-                    <a href="https://github.com/DoktorShift/naughtify" target="_blank" aria-label="github">
+                    <a href="#" aria-label="Home"><i class="material-icons">home</i></a>
+                    <a href="#" aria-label="Email"><i class="material-icons">email</i></a>
+                    <a href="https://github.com/DoktorShift/naughtify" target="_blank" aria-label="GitHub">
                         <i class="fab fa-github"></i>
                     </a>
-                    <!-- Login Section im Footer -->
-                    <a href="{{ url_for('login') }}" class="btn btn-primary" title="Login">Login</a>
+                    <!-- Login Button in Footer -->
+                    <a href="{{ url_for('login') }}" class="login-button" title="Login" aria-label="Login">
+                        <i class="material-icons">key</i>
+                    </a>
                 </div>
             </div>
         </div>
         <div class="footer-bottom">
-            &copy; 2024 Naughtify. Alle Rechte vorbehalten.
+            &copy; 2024 Naughtify. LICENSED under MIT.
         </div>
     </footer>
 
