@@ -252,6 +252,9 @@ To enable inline commands (like `/balance`, `/transactions`, `/info`, `/help`), 
 ```bash
 python naughtify.py
 ```
+
+__Note:__ You must be in the virtual environment to start Naughtify manually. In the `naughtify` directory, use `source venv/bin/activate`.
+
 Output:
 ```plaintext
 [2024-11-28 15:14:32,759] [INFO] 🚀 Starting LNbits Balance Monitor.
