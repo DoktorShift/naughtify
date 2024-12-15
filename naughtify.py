@@ -1,13 +1,14 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
+from flask import Flask, jsonify, request, render_template, send_from_directory, make_response
+from flask_cors import CORS
 from telegram import Bot, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
 from dotenv import load_dotenv
 import requests
 import traceback
 from apscheduler.schedulers.background import BackgroundScheduler
-from flask import Flask, jsonify, request, render_template, make_response
 from datetime import datetime, timedelta
 import threading
 import qrcode
@@ -107,10 +108,6 @@ logger.addHandler(console_handler)
 # Reduce verbosity for specific modules (e.g., apscheduler)
 logging.getLogger('apscheduler').setLevel(logging.WARNING)  # Only WARNING and above
 
-# If you have other modules that are too verbose, adjust their logging levels similarly
-# Example:
-# logging.getLogger('some_module').setLevel(logging.ERROR)
-
 # --------------------- Helper Functions ---------------------
 
 def get_main_inline_keyboard():
@@ -125,6 +122,7 @@ def get_main_inline_keyboard():
         [latest_transactions_button, live_ticker_button],
         [overwatch_button, lnbits_button]
     ]
+    logger.debug("Main inline keyboard created.")
     return InlineKeyboardMarkup(inline_keyboard)
 
 def get_main_keyboard():
@@ -138,6 +136,7 @@ def get_main_keyboard():
         main_options_row_2
     ]
 
+    logger.debug("Main reply keyboard created.")
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
 
 def load_forbidden_words(file_path):
@@ -160,13 +159,16 @@ FORBIDDEN_WORDS = load_forbidden_words(FORBIDDEN_WORDS_FILE)
 
 def sanitize_memo(memo):
     if not memo:
+        logger.debug("No memo provided to sanitize.")
         return "No memo provided."
 
     def replace_match(match):
         word = match.group()
+        logger.debug(f"Sanitizing word: {word}")
         return '*' * len(word)
 
     if not FORBIDDEN_WORDS:
+        logger.debug("No forbidden words to sanitize.")
         return memo
     pattern = re.compile(r'\b(' + '|'.join(map(re.escape, FORBIDDEN_WORDS)) + r')\b', re.IGNORECASE)
     sanitized_memo = pattern.sub(replace_match, memo)
@@ -184,6 +186,8 @@ def load_processed_payments():
         except Exception as e:
             logger.error(f"Error loading processed payments: {e}")
             logger.debug(traceback.format_exc())
+    else:
+        logger.info("Processed payments file does not exist. Starting fresh.")
     return processed
 
 def add_processed_payment(payment_hash):
@@ -239,6 +243,8 @@ def load_donations():
         except Exception as e:
             logger.error(f"Error loading donations: {e}")
             logger.debug(traceback.format_exc())
+    else:
+        logger.info("Donations file does not exist or donations not enabled.")
 
 def save_donations():
     if DONATIONS_URL and LNURLP_ID:
@@ -255,6 +261,7 @@ def save_donations():
 
 processed_payments = load_processed_payments()
 app = Flask(__name__)
+CORS(app)  # Enable CORS
 
 latest_balance = {
     "balance_sats": None,
@@ -283,11 +290,13 @@ def handle_ticker_ban(update, context):
     chat_id = update.effective_chat.id
     if len(context.args) == 0:
         bot.send_message(chat_id, text="❌ Please provide at least one word to ban. Example: /ticker_ban badword")
+        logger.debug("Ticker ban command received without arguments.")
         return
 
     words_to_ban = [word.strip() for word in context.args if word.strip()]
     if not words_to_ban:
         bot.send_message(chat_id, text="❌ No valid words provided.")
+        logger.debug("Ticker ban command received with no valid words.")
         return
 
     added_words = []
@@ -302,6 +311,7 @@ def handle_ticker_ban(update, context):
                     f.write(word + '\n')
                     FORBIDDEN_WORDS.add(word)
                     added_words.append(word)
+        logger.debug(f"Words to ban processed: Added {added_words}, Duplicates {duplicate_words}.")
 
         # After banning, sanitize existing donations
         sanitize_donations()
@@ -315,6 +325,7 @@ def handle_ticker_ban(update, context):
                 words_formatted = "', '".join(added_words)
                 success_message = f"✅ Great! I've added these words to the banned list: '{words_formatted}'. The Live Ticker will update shortly!"
             bot.send_message(chat_id, text=success_message)
+            logger.info(f"Added forbidden words: {added_words}")
         if duplicate_words:
             if len(duplicate_words) == 1:
                 duplicate_message = f"⚠️ The word '{duplicate_words[0]}' was already banned."
@@ -322,9 +333,11 @@ def handle_ticker_ban(update, context):
                 words_formatted = "', '".join(duplicate_words)
                 duplicate_message = f"⚠️ The following words were already banned: '{words_formatted}'."
             bot.send_message(chat_id, text=duplicate_message)
+            logger.info(f"Duplicate forbidden words attempted to add: {duplicate_words}")
     except Exception as e:
         logger.error(f"Error adding words to forbidden list: {e}")
         bot.send_message(chat_id, text="❌ An error occurred while banning words. Please try again.")
+        logger.debug(traceback.format_exc())
 
 def fetch_api(endpoint):
     url = f"{LNBITS_URL}/api/v1/{endpoint}"
@@ -404,6 +417,7 @@ def fetch_donation_details():
     lightning_address = f"{username}@{LNBITS_DOMAIN}"
     lnurl = lnurlp_info.get('lnurl', '')
 
+    logger.debug(f"Donation details fetched: Lightning Address: {lightning_address}, LNURL: {lnurl}")
     return {
         "total_donations": total_donations,
         "donations": donations,
@@ -417,6 +431,7 @@ def update_donations_with_details(data):
         "lightning_address": donation_details.get("lightning_address"),
         "lnurl": donation_details.get("lnurl")
     })
+    logger.debug("Donation details updated with additional information.")
     return data
 
 def updateDonations(data):
@@ -458,6 +473,7 @@ def send_latest_payments():
     logger.info("Fetching latest payments...")
     payments = fetch_api("payments")
     if payments is None:
+        logger.warning("No payments fetched.")
         return
     if not isinstance(payments, list):
         logger.error("Unexpected data format for payments.")
@@ -477,6 +493,7 @@ def send_latest_payments():
     for payment in latest:
         payment_hash = payment.get("payment_hash")
         if payment_hash in processed_payments:
+            logger.debug(f"Payment {payment_hash} already processed. Skipping.")
             continue
         amount_msat = payment.get("amount", 0)
         memo = sanitize_memo(payment.get("memo", "No memo provided."))
@@ -488,8 +505,10 @@ def send_latest_payments():
             amount_sats = int(abs(amount_msat) / 1000)
         except ValueError:
             amount_sats = 0
+            logger.warning(f"Invalid amount_msat value: {amount_msat}")
 
         if status.lower() == "pending":
+            logger.debug(f"Payment {payment_hash} is pending. Skipping.")
             continue
 
         if amount_msat > 0:
@@ -507,6 +526,7 @@ def send_latest_payments():
                     donation_amount_sats = donation_amount_msat / 1000
                 except (ValueError, TypeError):
                     donation_amount_sats = amount_sats
+                    logger.warning(f"Invalid donation amount_msat: {extra_data.get('extra', 0)}. Using amount_sats: {amount_sats}")
                 donation = {
                     "id": str(uuid.uuid4()),
                     "date": formatted_date,
@@ -524,6 +544,7 @@ def send_latest_payments():
         processed_payments.add(payment_hash)
         new_processed_hashes.append(payment_hash)
         add_processed_payment(payment_hash)
+        logger.debug(f"Payment {payment_hash} processed and added to processed payments.")
 
     for payment in incoming_payments:
         notify_transaction(payment, "incoming")
@@ -538,20 +559,23 @@ def parse_time(time_input):
     if isinstance(time_input, str):
         try:
             date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%S.%fZ")
+            logger.debug(f"Parsed time string: {time_input} -> {date}")
         except ValueError:
             try:
                 date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%SZ")
+                logger.debug(f"Parsed time string: {time_input} -> {date}")
             except ValueError:
-                logger.error(f"Unable to parse time string: {time_input}")
+                logger.error(f"Unable to parse time string: {time_input}. Using current time.")
                 date = datetime.utcnow()
     elif isinstance(time_input, (int, float)):
         try:
             date = datetime.fromtimestamp(time_input)
+            logger.debug(f"Parsed timestamp: {time_input} -> {date}")
         except Exception as e:
-            logger.error(f"Unable to parse timestamp: {time_input}, error: {e}")
+            logger.error(f"Unable to parse timestamp: {time_input}, error: {e}. Using current time.")
             date = datetime.utcnow()
     else:
-        logger.error(f"Unsupported time format: {time_input}")
+        logger.error(f"Unsupported time format: {time_input}. Using current time.")
         date = datetime.utcnow()
     return date
 
@@ -560,6 +584,7 @@ def send_balance_message(chat_id):
     wallet_info = fetch_api("wallet")
     if wallet_info is None:
         bot.send_message(chat_id, text="❌ Unable to fetch balance at the moment. Please try again.")
+        logger.error("Failed to fetch wallet balance.")
         return
     current_balance_msat = wallet_info.get("balance", 0)
     current_balance_sats = current_balance_msat / 1000
@@ -581,6 +606,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
     payments = fetch_api("payments")
     if payments is None:
         bot.send_message(chat_id, text="❌ Unable to fetch transactions right now.")
+        logger.error("Failed to fetch transactions.")
         return
 
     filtered_payments = [p for p in payments if p.get("status", "").lower() != "pending"]
@@ -592,6 +618,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
         total_pages = 1
     if page < 1 or page > total_pages:
         bot.send_message(chat_id, text="❌ Invalid page number.")
+        logger.warning(f"Invalid page number requested: {page}")
         return
 
     start_index = (page - 1) * transactions_per_page
@@ -599,6 +626,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
     page_transactions = sorted_payments[start_index:end_index]
     if not page_transactions:
         bot.send_message(chat_id, text="❌ No transactions found on this page.")
+        logger.info(f"No transactions found on page {page}.")
         return
 
     message_lines = [f"📜 *Latest Transactions - Page {page}/{total_pages}* 📜\n"]
@@ -612,6 +640,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
             amount_sats = int(abs(amount_msat) / 1000)
         except ValueError:
             amount_sats = 0
+            logger.warning(f"Invalid amount_msat value in transaction: {amount_msat}")
         sign = "+" if amount_msat > 0 else "-"
         emoji = "🟢" if amount_msat > 0 else "🔴"
         message_lines.append(f"{emoji} {formatted_date} {sign}{amount_sats} sat")
@@ -648,12 +677,13 @@ def send_transactions_message(chat_id, page=1, message_id=None):
             )
             logger.info(f"Transactions page {page} sent to chat_id: {chat_id}")
     except Exception as telegram_error:
-        logger.error(f"Error sending/ editing transactions: {telegram_error}")
+        logger.error(f"Error sending/editing transactions: {telegram_error}")
         logger.debug(traceback.format_exc())
 
 def handle_prev_page(update, context):
     query = update.callback_query
     if not query:
+        logger.warning("Callback query not found for previous page.")
         return
     chat_id = query.message.chat.id
     message_id = query.message.message_id
@@ -665,11 +695,13 @@ def handle_prev_page(update, context):
         if new_page < 1:
             new_page = 1
         send_transactions_message(chat_id, page=new_page, message_id=message_id)
+        logger.debug(f"Navigating to previous page: {new_page}")
     query.answer()
 
 def handle_next_page(update, context):
     query = update.callback_query
     if not query:
+        logger.warning("Callback query not found for next page.")
         return
     chat_id = query.message.chat.id
     message_id = query.message.message_id
@@ -679,12 +711,14 @@ def handle_next_page(update, context):
         current_page = int(match.group(1))
         new_page = current_page + 1
         send_transactions_message(chat_id, page=new_page, message_id=message_id)
+        logger.debug(f"Navigating to next page: {new_page}")
     query.answer()
 
 def handle_balance_callback(query):
     try:
         chat_id = query.message.chat.id
         send_balance_message(chat_id)
+        logger.debug("Handled balance callback.")
     except Exception as e:
         logger.error(f"Error handling balance callback: {e}")
         logger.debug(traceback.format_exc())
@@ -693,6 +727,7 @@ def handle_transactions_inline_callback(query):
     try:
         chat_id = query.message.chat.id
         send_transactions_message(chat_id, page=1, message_id=query.message.message_id)
+        logger.debug("Handled transactions_inline callback.")
     except Exception as e:
         logger.error(f"Error handling transactions_inline callback: {e}")
         logger.debug(traceback.format_exc())
@@ -709,6 +744,7 @@ def handle_donations_inline_callback(query):
                     [InlineKeyboardButton("🔗 Open Overwatch", url=OVERWATCH_URL)]
                 ])
             )
+            logger.debug("Handled overwatch_inline callback.")
         elif data == 'liveticker_inline' and DONATIONS_URL:
             bot.send_message(
                 chat_id=query.message.chat.id,
@@ -718,6 +754,7 @@ def handle_donations_inline_callback(query):
                     [InlineKeyboardButton("🔗 Open Live Ticker", url=DONATIONS_URL)]
                 ])
             )
+            logger.debug("Handled liveticker_inline callback.")
         elif data == 'lnbits_inline' and LNBITS_URL:
             bot.send_message(
                 chat_id=query.message.chat.id,
@@ -727,17 +764,20 @@ def handle_donations_inline_callback(query):
                     [InlineKeyboardButton("🔗 Open LNBits", url=LNBITS_URL)]
                 ])
             )
+            logger.debug("Handled lnbits_inline callback.")
         else:
             bot.send_message(
                 chat_id=query.message.chat.id,
                 text="❌ No URL configured."
             )
+            logger.warning("No URL configured for the callback data received.")
     except Exception as e:
         logger.error(f"Error handling donations_inline callback: {e}")
         logger.debug(traceback.format_exc())
 
 def handle_other_inline_callbacks(data, query):
     bot.answer_callback_query(callback_query_id=query.id, text="❓ Unknown action.")
+    logger.warning(f"Unknown callback data received: {data}")
 
 def handle_transactions_callback(update, context):
     query = update.callback_query
@@ -756,10 +796,12 @@ def handle_transactions_callback(update, context):
             current_page = int(data.split('_')[1])
             new_page = current_page + 1
         send_transactions_message(query.message.chat.id, page=new_page, message_id=query.message.message_id)
+        logger.debug(f"Handled pagination callback. New page: {new_page}")
     elif data in ['overwatch_inline', 'liveticker_inline', 'lnbits_inline']:
         handle_donations_inline_callback(query)
     else:
         handle_other_inline_callbacks(data, query)
+        logger.warning(f"Unhandled callback data: {data}")
 
     query.answer()
 
@@ -819,10 +861,12 @@ def handle_help_command(update, context):
 
 def handle_balance(update, context):
     chat_id = update.effective_chat.id
+    logger.debug(f"Handling balance request for chat_id: {chat_id}")
     send_balance_message(chat_id)
 
 def handle_latest_transactions(update, context):
     chat_id = update.effective_chat.id
+    logger.debug(f"Handling latest transactions request for chat_id: {chat_id}")
     send_transactions_message(chat_id, page=1)
 
 def handle_live_ticker(update, context):
@@ -843,6 +887,7 @@ def handle_live_ticker(update, context):
             logger.debug(traceback.format_exc())
     else:
         bot.send_message(chat_id=chat_id, text="❌ Live Ticker URL not configured.")
+        logger.warning("Live Ticker URL not configured.")
 
 def handle_overwatch(update, context):
     chat_id = update.effective_chat.id
@@ -862,6 +907,7 @@ def handle_overwatch(update, context):
             logger.debug(traceback.format_exc())
     else:
         bot.send_message(chat_id=chat_id, text="❌ Overwatch URL not configured.")
+        logger.warning("Overwatch URL not configured.")
 
 def handle_lnbits(update, context):
     chat_id = update.effective_chat.id
@@ -881,6 +927,7 @@ def handle_lnbits(update, context):
             logger.debug(traceback.format_exc())
     else:
         bot.send_message(chat_id=chat_id, text="❌ LNBits URL not configured.")
+        logger.warning("LNBits URL not configured.")
 
 def process_update(update):
     try:
@@ -888,26 +935,34 @@ def process_update(update):
             message = update['message']
             chat_id = message['chat']['id']
             text = message.get('text', '').strip()
+            logger.debug(f"Received message from chat_id {chat_id}: {text}")
 
             # Only handle specific buttons/text; other inputs are handled by CommandHandlers
             if text == "💰 Balance":
                 handle_balance(None, None)
+                logger.debug("Handled 💰 Balance button press.")
             elif text == "📜 Latest Transactions":
                 handle_latest_transactions(None, None)
+                logger.debug("Handled 📜 Latest Transactions button press.")
             elif text == "📡 Live Ticker":
                 handle_live_ticker(None, None)
+                logger.debug("Handled 📡 Live Ticker button press.")
             elif text == "📊 Overwatch":
                 handle_overwatch(None, None)
+                logger.debug("Handled 📊 Overwatch button press.")
             elif text == "⚡ LNBits":
                 handle_lnbits(None, None)
+                logger.debug("Handled ⚡ LNBits button press.")
             else:
                 # Unknown input
                 bot.send_message(
                     chat_id=chat_id,
                     text="❓ I didn't recognize that command. Use /help to see what I can do."
                 )
+                logger.warning(f"Unknown message received from chat_id {chat_id}: {text}")
         elif 'callback_query' in update:
             # Handled by CallbackQueryHandler
+            logger.debug("Received callback_query in update.")
             pass
         else:
             logger.info("No message or callback in update.")
@@ -925,7 +980,7 @@ def start_scheduler():
             id='latest_payments_fetch',
             next_run_time=datetime.utcnow() + timedelta(seconds=1)
         )
-        logger.info(f"Latest Payments Fetch every {PAYMENTS_FETCH_INTERVAL / 60:.1f} minutes.")
+        logger.info(f"Latest Payments Fetch scheduled every {PAYMENTS_FETCH_INTERVAL / 60:.1f} minutes.")
     else:
         logger.info("Latest Payments Fetch disabled.")
     scheduler.start()
@@ -935,11 +990,13 @@ def start_scheduler():
 
 @app.route('/')
 def home():
+    logger.debug("Home route accessed.")
     return "🔍 LNbits Monitor is running."
 
 @app.route('/status', methods=['GET'])
 def status():
     donation_details = fetch_donation_details()
+    logger.debug("Status route accessed.")
     return jsonify({
         "latest_balance": latest_balance,
         "latest_payments": latest_payments,
@@ -954,35 +1011,43 @@ def status():
 def webhook():
     update = request.get_json()
     if not update:
-        logger.warning("Empty update.")
+        logger.warning("Empty update received in webhook.")
         return "No update", 400
 
-    logger.debug(f"Update received: {update}")
+    logger.debug(f"Update received in webhook: {update}")
     threading.Thread(target=process_update, args=(update,)).start()
     return "OK", 200
 
 @app.route('/donations')
 def donations_page():
     if not DONATIONS_URL or not LNURLP_ID:
+        logger.warning("Donations not enabled or LNURLP_ID not set.")
         return "Donations not enabled.", 404
     lnurlp_id = LNURLP_ID
     lnurlp_info = get_lnurlp_info(lnurlp_id)
     if lnurlp_info is None:
+        logger.error("Error fetching LNURLP info in donations_page.")
         return "Error fetching LNURLP info", 500
 
     wallet_name = lnurlp_info.get('description', 'Unknown Wallet')
     lightning_address = lnurlp_info.get('lightning_address', 'Unknown Lightning Address')
     lnurl = lnurlp_info.get('lnurl', '')
 
-    qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
-    qr.add_data(lnurl)
-    qr.make(fit=True)
-    img = qr.make_image(fill_color="black", back_color="white")
+    try:
+        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
+        qr.add_data(lnurl)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
 
-    img_io = io.BytesIO()
-    img.save(img_io, 'PNG')
-    img_io.seek(0)
-    img_base64 = base64.b64encode(img_io.getvalue()).decode()
+        img_io = io.BytesIO()
+        img.save(img_io, 'PNG')
+        img_io.seek(0)
+        img_base64 = base64.b64encode(img_io.getvalue()).decode()
+        logger.debug("QR code generated successfully.")
+    except Exception as e:
+        logger.error(f"Error generating QR code: {e}")
+        logger.debug(traceback.format_exc())
+        return "Error generating QR code.", 500
 
     total_donations_current = sum(donation['amount'] for donation in donations)
 
@@ -1002,6 +1067,7 @@ def donations_page():
 @app.route('/api/donations', methods=['GET'])
 def get_donations_data():
     if not DONATIONS_URL or not LNURLP_ID:
+        logger.warning("Donations not enabled.")
         return jsonify({"error": "Donations not enabled."}), 404
     try:
         donation_details = fetch_donation_details()
@@ -1012,6 +1078,7 @@ def get_donations_data():
             "lnurl": donation_details["lnurl"],
             "highlight_threshold": HIGHLIGHT_THRESHOLD
         }
+        logger.debug("Donations data fetched successfully via API.")
         return jsonify(data), 200
     except Exception as e:
         logger.error(f"Error fetching donation data: {e}")
@@ -1026,23 +1093,28 @@ def vote_donation():
         vote_type = data.get('vote_type')
 
         if not donation_id or not vote_type:
+            logger.warning("vote_donation called without donation_id or vote_type.")
             return jsonify({"error": "donation_id and vote_type required."}), 400
         if vote_type not in ['like', 'dislike']:
+            logger.warning(f"Invalid vote_type received: {vote_type}")
             return jsonify({"error": "vote_type must be 'like' or 'dislike'."}), 400
 
         voted_donations = request.cookies.get('voted_donations', '')
         voted_set = set(voted_donations.split(',')) if voted_donations else set()
         if donation_id in voted_set:
+            logger.info(f"Donation {donation_id} already voted by user.")
             return jsonify({"error": "Already voted on this donation."}), 403
 
         result, status_code = handle_vote_command(donation_id, vote_type)
         if status_code != 200:
+            logger.warning(f"Vote command failed for donation_id {donation_id}: {result}")
             return jsonify(result), status_code
 
         response = make_response(jsonify(result), 200)
         voted_set.add(donation_id)
         new_voted_donations = ','.join(voted_set)
         response.set_cookie('voted_donations', new_voted_donations, max_age=60*60*24*365)
+        logger.info(f"User voted on donation {donation_id}: {vote_type}")
         return response
     except Exception as e:
         logger.error(f"Error processing vote: {e}")
@@ -1053,8 +1125,10 @@ def vote_donation():
 def donations_updates():
     global last_update
     if not DONATIONS_URL or not LNURLP_ID:
+        logger.warning("Donations not enabled.")
         return jsonify({"error": "Donations not enabled."}), 404
     try:
+        logger.debug("Fetching last_update timestamp.")
         return jsonify({"last_update": last_update.isoformat()}), 200
     except Exception as e:
         logger.error(f"Error fetching last_update: {e}")
@@ -1064,7 +1138,9 @@ def donations_updates():
 @app.route('/cinema')
 def cinema_page():
     if not DONATIONS_URL or not LNURLP_ID:
+        logger.warning("Donations are not enabled for Cinema Mode.")
         return "Donations are not enabled for Cinema Mode.", 404
+    logger.debug("Cinema page accessed.")
     return render_template('cinema.html')
 
 # --------------------- Core Functionality ---------------------
@@ -1078,9 +1154,12 @@ def handle_vote_command(donation_id, vote_type):
                 elif vote_type == 'dislike':
                     donation["dislikes"] += 1
                 else:
+                    logger.warning(f"Invalid vote_type received: {vote_type}")
                     return {"error": "Invalid vote type."}, 400
                 save_donations()
+                logger.info(f"Donation {donation_id} voted: {vote_type}. Total likes: {donation['likes']}, dislikes: {donation['dislikes']}")
                 return {"success": True, "likes": donation["likes"], "dislikes": donation["dislikes"]}, 200
+        logger.warning(f"Donation {donation_id} not found.")
         return {"error": "Donation not found."}, 404
     except Exception as e:
         logger.error(f"Error handling vote: {e}")
@@ -1126,8 +1205,6 @@ def send_start_message(update, context):
         logger.error(f"Error sending the start message: {e}")
         logger.debug(traceback.format_exc())
 
-# --------------------- Initialization to Prevent Old Notifications ---------------------
-
 def initialize_processed_payments():
     """
     Fetch all existing payments and mark them as processed to prevent sending Telegram messages
@@ -1144,17 +1221,26 @@ def initialize_processed_payments():
         if payment_hash and payment_hash not in processed_payments:
             processed_payments.add(payment_hash)
             add_processed_payment(payment_hash)
+            logger.debug(f"Payment {payment_hash} marked as processed during initialization.")
     logger.info("Initialization of processed payments completed.")
 
 # --------------------- Main Function ---------------------
 
 def main():
+    # Initialize Telegram Bot
+    from telegram import Bot, ParseMode
+    from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
+
+    bot = Bot(token=TELEGRAM_BOT_TOKEN)
+    logger.debug("Telegram Bot initialized.")
+
     # Initialize processed payments to prevent old notifications
     initialize_processed_payments()
 
     # Start the scheduler in a separate thread
     scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
     scheduler_thread.start()
+    logger.debug("Scheduler thread started.")
 
     # Start the Flask app in a separate thread
     flask_thread = threading.Thread(target=lambda: app.run(host=APP_HOST, port=APP_PORT), daemon=True)
