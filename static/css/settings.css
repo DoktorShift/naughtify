@@ -1,0 +1,80 @@
+/* static/css/settings.css */
+
+/* Allgemeine Stile für die Einstellungsseite */
+body {
+    background: linear-gradient(135deg, #d3e8f3, #eef4f7);
+    color: #333;
+    font-family: 'Arial', sans-serif;
+    transition: background 0.3s, color 0.3s;
+}
+
+.dashboard {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 1.5rem;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.header h1 {
+    color: #1f4b6d;
+    margin-bottom: 0.5rem;
+}
+
+.header h5 {
+    color: #666;
+    margin-bottom: 1.5rem;
+}
+
+.settings-form .form-group {
+    margin-bottom: 1.5rem;
+}
+
+.settings-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.settings-form input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.settings-form button {
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.settings-form .btn-success {
+    background-color: #27ae60;
+    color: #fff;
+}
+
+.settings-form .btn-success:hover {
+    background-color: #2ecc71;
+}
+
+.settings-form .btn-danger {
+    background-color: #e74c3c;
+    color: #fff;
+    margin-left: 1rem;
+}
+
+.settings-form .btn-danger:hover {
+    background-color: #c0392b;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .dashboard {
+        margin: 1rem;
+        padding: 1rem;
+    }
+}
