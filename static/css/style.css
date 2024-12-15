@@ -1,92 +1,120 @@
-/* style.css */
-
-/* CSS Variables for Light Mode Colors and Themes */
+/* CSS-Variablen für Light Mode Farben und Themen */
 :root {
-    /* Primary Colors */
-    --primary-color: #1f4b6d; /* Dark Blue */
-    --secondary-color: #3498db; /* Blue */
+    /* Primäre Farben */
+    --primary-color: #1f4b6d; /* Dunkelblau */
+    --secondary-color: #3498db; /* Blau */
 
-    /* Backgrounds */
-    --background-gradient-start: #d3e8f3; /* Light Blue */
-    --background-gradient-end: #eef4f7; /* Very Light Blue */
-    --card-background-start: #ffffff; /* White */
-    --card-background-end: #f7fbfd; /* Very Light Gray */
+    /* Hintergründe */
+    --background-gradient-start: #d3e8f3; /* Hellblau */
+    --background-gradient-end: #eef4f7; /* Sehr Hellblau */
+    --card-background-start: #ffffff; /* Weiß */
+    --card-background-end: #f7fbfd; /* Sehr Hellgrau */
 
-    /* Text Colors */
-    --text-color: #333; /* Dark Gray */
-    --text-color-light: #666; /* Medium Gray */
+    /* Textfarben */
+    --text-color: #333; /* Dunkelgrau */
+    --text-color-light: #666; /* Mittelgrau */
 
-    /* Highlight Colors */
-    --highlight-background: #ffe0b2; /* Light Orange */
-    --highlight-text-color: #e65100; /* Dark Orange */
+    /* Hervorhebungsfarben */
+    --highlight-background: #ffe0b2; /* Hellorange */
+    --highlight-text-color: #e65100; /* Dunkelorange */
     --highlight-border: #ff9800; /* Orange */
 
-    /* Donation Colors */
-    --donation-amount-color: #27ae60; /* Green */
+    /* Spendenfarben */
+    --donation-amount-color: #27ae60; /* Grün */
 
-    /* Copy Field Colors */
-    --copy-field-background: #e3eff5; /* Very Light Blue */
-    --copy-field-hover-background: #d0e4f1; /* Light Blue */
+    /* Farben für Kopierfelder */
+    --copy-field-background: #e3eff5; /* Sehr Hellblau */
+    --copy-field-hover-background: #d0e4f1; /* Hellblau */
 
-    /* Footer Colors */
-    --footer-background: #1f4b6d; /* Dark Blue */
-    --footer-text-color: #fff; /* White */
+    /* Footer-Farben */
+    --footer-background: #1f4b6d; /* Dunkelblau */
+    --footer-text-color: #fff; /* Weiß */
 
-    /* Toast Colors */
-    --toast-success-bg: #4caf50; /* Green */
-    --toast-success-text: #fff; /* White */
-    --toast-error-bg: #f44336; /* Red */
-    --toast-error-text: #fff; /* White */
-    --toast-transition: opacity 0.5s ease, transform 0.5s ease;
+    /* Toast-Farben */
+    --toast-success-bg: #4caf50; /* Grün */
+    --toast-success-text: #fff; /* Weiß */
+    --toast-error-bg: #f44336; /* Rot */
+    --toast-error-text: #fff; /* Weiß */
+
+    /* Tooltip-Farben */
+    --tooltip-background: rgba(0, 0, 0, 0.8);
+    --tooltip-text-color: #fff;
+
+    /* Button-Farben */
+    --button-color: #888; /* Grau */
+    --button-hover-color-like: #27ae60; /* Grün */
+    --button-hover-color-dislike: #e74c3c; /* Rot */
+
+    /* Social Icons Hover Color */
+    --social-icon-hover-color: #fff; /* Weiß */
+
+    /* Schriftgrößen (Basis: 16px) */
+    --base-font-size: 16px;
+    --h1-size: 3rem;
+    --h2-size: 2rem;
+    --h3-size: 1.3rem;
+    --p-size: 1rem;
+    --small-text: 0.9rem;
+
+    /* Übergänge */
+    --transition-speed: 0.3s;
 }
 
 /* Dark Mode Overrides */
 body.dark-mode {
-    /* Primary Colors */
-    --primary-color: #2c3e50; /* Dark Slate Blue */
-    --secondary-color: #2980b9; /* Strong Blue */
+    /* Primäre Farben */
+    --primary-color: #2c3e50; /* Dunkel-Slate-Blau */
+    --secondary-color: #2980b9; /* Starkes Blau */
 
-    /* Backgrounds */
-    --background-gradient-start: #1e2a38; /* Very Dark Blue */
-    --background-gradient-end: #16202c; /* Almost Black Blue */
-    --card-background-start: #2c3e50; /* Dark Slate Blue */
-    --card-background-end: #34495e; /* Darker Blue Gray */
+    /* Hintergründe */
+    --background-gradient-start: #1e2a38; /* Sehr Dunkelblau */
+    --background-gradient-end: #16202c; /* Fast Schwarzes Blau */
+    --card-background-start: #2c3e50; /* Dunkel-Slate-Blau */
+    --card-background-end: #34495e; /* Dunkleres Blau-Grau */
 
-    /* Text Colors */
-    --text-color: #ecf0f1; /* Light Gray */
-    --text-color-light: #bdc3c7; /* Medium Light Gray */
+    /* Textfarben */
+    --text-color: #ecf0f1; /* Hellgrau */
+    --text-color-light: #bdc3c7; /* Mittelhellgrau */
 
-    /* Highlight Colors */
+    /* Hervorhebungsfarben */
     --highlight-background: #e67e22; /* Orange */
-    --highlight-text-color: #ffffff; /* White */
-    --highlight-border: #d35400; /* Dark Orange */
+    --highlight-text-color: #ffffff; /* Weiß */
+    --highlight-border: #d35400; /* Dunkelorange */
 
-    /* Donation Colors */
-    --donation-amount-color: #2ecc71; /* Emerald Green */
+    /* Spendenfarben */
+    --donation-amount-color: #2ecc71; /* Smaragdgrün */
 
-    /* Copy Field Colors */
-    --copy-field-background: #34495e; /* Dark Blue Gray */
-    --copy-field-hover-background: #3c5a73; /* Slightly Lighter Dark Blue */
+    /* Farben für Kopierfelder */
+    --copy-field-background: #34495e; /* Dunkles Blau-Grau */
+    --copy-field-hover-background: #3c5a73; /* Etwas Hellblaueres Dunkles Blau */
 
-    /* Footer Colors */
-    --footer-background: #1e2a38; /* Very Dark Blue */
-    --footer-text-color: #ecf0f1; /* White */
+    /* Footer-Farben */
+    --footer-background: #1e2a38; /* Sehr Dunkelblau */
+    --footer-text-color: #ecf0f1; /* Weiß */
 
-    /* Toast Colors */
-    --toast-success-bg: #27ae60; /* Green */
-    --toast-success-text: #ffffff; /* White */
-    --toast-error-bg: #c0392b; /* Red */
-    --toast-error-text: #ffffff; /* White */
+    /* Toast-Farben */
+    --toast-success-bg: #27ae60; /* Grün */
+    --toast-success-text: #ffffff; /* Weiß */
+    --toast-error-bg: #c0392b; /* Rot */
+    --toast-error-text: #ffffff; /* Weiß */
+
+    /* Tooltip-Farben */
+    --tooltip-background: rgba(44, 62, 80, 0.9);
+    --tooltip-text-color: #ecf0f1;
+
+    /* Social Icons Hover Color */
+    --social-icon-hover-color: #fff; /* Weiß */
 }
 
-/* General Styles */
+/* Allgemeine Stile */
 body {
     margin: 0;
     font-family: 'Arial', sans-serif;
     background: linear-gradient(135deg, var(--background-gradient-start), var(--background-gradient-end));
     color: var(--text-color);
     overflow-x: hidden;
-    transition: background 0.3s, color 0.3s;
+    transition: background var(--transition-speed), color var(--transition-speed);
+    font-size: var(--base-font-size);
 }
 
 .dashboard {
@@ -116,17 +144,17 @@ a {
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     position: relative;
-    transition: background 0.3s, box-shadow 0.3s;
+    transition: background var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .header h1 {
-    font-size: 3rem;
+    font-size: var(--h1-size);
     font-weight: bold;
     margin-bottom: 0.5rem;
 }
 
 .header h5 {
-    font-size: 1.3rem;
+    font-size: var(--h3-size);
     color: #f0f0f0;
 }
 
@@ -194,7 +222,7 @@ input:checked + .slider:before {
 .info-icon {
     font-size: 28px;
     color: #fff;
-    transition: color 0.3s;
+    transition: color var(--transition-speed);
 }
 
 .info-icon:hover {
@@ -204,8 +232,8 @@ input:checked + .slider:before {
 .tooltip-text {
     visibility: hidden;
     width: 140px;
-    background-color: rgba(0, 0, 0, 0.8);
-    color: #fff;
+    background-color: var(--tooltip-background);
+    color: var(--tooltip-text-color);
     text-align: center;
     border-radius: 6px;
     padding: 8px 0;
@@ -215,8 +243,8 @@ input:checked + .slider:before {
     left: 50%;
     transform: translateX(-50%);
     opacity: 0;
-    transition: opacity 0.3s;
-    font-size: 0.9rem;
+    transition: opacity var(--transition-speed);
+    font-size: var(--small-text);
 }
 
 .tooltip-text::after {
@@ -227,7 +255,7 @@ input:checked + .slider:before {
     transform: translateX(-50%);
     border-width: 6px;
     border-style: solid;
-    border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+    border-color: var(--tooltip-background) transparent transparent transparent;
 }
 
 .info-tooltip:hover .tooltip-text {
@@ -271,7 +299,7 @@ input:checked + .slider:before {
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
     padding: 1.25rem;
     text-align: center;
-    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s;
+    transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease, background var(--transition-speed) ease;
 }
 
 .card:hover {
@@ -288,7 +316,7 @@ input:checked + .slider:before {
 .card p {
     margin: 0.625rem 0;
     font-size: 1rem;
-    color: #555;
+    color: var(--text-color);
 }
 
 .card .material-icons {
@@ -302,7 +330,7 @@ input:checked + .slider:before {
     max-width: 100%;
     border-radius: 0.75rem;
     cursor: pointer;
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transition: transform var(--transition-speed) ease, box-shadow var(--transition-speed) ease;
 }
 
 .qr-card img:hover {
@@ -317,11 +345,11 @@ input:checked + .slider:before {
     border-radius: 0.5rem;
     word-break: break-all;
     cursor: pointer;
-    transition: background 0.3s ease, transform 0.2s ease;
+    transition: background var(--transition-speed) ease, transform 0.2s ease;
     display: flex;
-    flex-direction: column; /* For central alignment */
-    align-items: center; /* Horizontal centering */
-    justify-content: center; /* Vertical centering */
+    flex-direction: column; /* Für zentrierte Ausrichtung */
+    align-items: center; /* Horizontales Zentrieren */
+    justify-content: center; /* Vertikales Zentrieren */
     gap: 0.5rem;
 }
 
@@ -343,14 +371,14 @@ input:checked + .slider:before {
 
 /* Donations Box */
 .donations-box {
-    background: linear-gradient(145deg, #e3eff5, #f4f9fc);
+    background: linear-gradient(145deg, var(--card-background-start), var(--card-background-end));
     padding: 1.25rem;
     border-radius: 1rem;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
     text-align: center;
     flex: 1;
     min-width: 280px;
-    transition: background 0.3s, box-shadow 0.3s;
+    transition: background var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .donations-box h2 {
@@ -374,7 +402,7 @@ input:checked + .slider:before {
 
 /* Logo Styling and Placement */
 .main-logo {
-    max-width: 300px; /* Size */
+    max-width: 300px; /* Größe */
     margin-top: 1rem;
     display: block;
     margin-left: auto;
@@ -387,11 +415,11 @@ input:checked + .slider:before {
 
 /* Transactions Table */
 .transactions {
-    background-color: #f9fbfc;
+    background-color: var(--card-background-start);
     border-radius: 1rem;
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
     padding: 1.25rem;
-    transition: background-color 0.3s, box-shadow 0.3s;
+    transition: background-color var(--transition-speed), box-shadow var(--transition-speed);
 }
 
 .transactions h2 {
@@ -414,12 +442,12 @@ table th, table td {
 }
 
 table th {
-    background-color: #e9f3f7;
+    background-color: var(--card-background-end);
     color: var(--text-color); 
 }
 
 table td {
-    background-color: #f9fbfc;
+    background-color: var(--card-background-start);
     color: var(--text-color);
 }
 
@@ -438,7 +466,7 @@ table td.amount {
     font-size: 1.2rem;
 }
 
-/* Like and Dislike Buttons within Actions Column */
+/* Like and Dislike Buttons innerhalb der Actions-Spalte */
 table td.actions {
     display: flex;
     align-items: center;
@@ -447,29 +475,29 @@ table td.actions {
 
 .like-button, .dislike-button {
     cursor: pointer;
-    color: #888;
-    transition: color 0.3s, transform 0.3s;
+    color: var(--button-color);
+    transition: color var(--transition-speed), transform var(--transition-speed);
     display: flex;
     align-items: center;
     gap: 0.2rem;
 }
 
 .like-button:hover {
-    color: #27ae60; /* Green */
+    color: var(--button-hover-color-like); /* Grün */
     transform: scale(1.2);
 }
 
 .dislike-button:hover {
-    color: #e74c3c; /* Red */
+    color: var(--button-hover-color-dislike); /* Rot */
     transform: scale(1.2);
 }
 
 .likes-count, .dislikes-count {
     font-size: 0.9rem;
-    color: #555;
+    color: #555; /* Optional: Kann zu var(--text-color) geändert werden */
 }
 
-/* Highlight Class for Large Donations */
+/* Highlight Class für große Spenden */
 .highlight {
     background-color: var(--highlight-background) !important;
     color: var(--highlight-text-color) !important;
@@ -491,7 +519,7 @@ table td.actions {
     color: white;
     border-radius: 0.3125rem;
     text-decoration: none;
-    transition: background-color 0.3s, transform 0.3s;
+    transition: background-color var(--transition-speed), transform var(--transition-speed);
     font-family: 'Arial', sans-serif; 
     font-size: 1rem;
 }
@@ -557,7 +585,7 @@ footer.footer {
 
 .footer-section ul li a {
     color: var(--text-color-light);
-    transition: color 0.3s;
+    transition: color var(--transition-speed);
     font-family: 'Arial', sans-serif;
     font-size: 1rem;
 }
@@ -580,7 +608,7 @@ footer.footer {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.3s, transform 0.3s;
+    transition: background-color var(--transition-speed), transform var(--transition-speed);
 }
 
 .footer-section .social-icons a:hover {
@@ -588,6 +616,17 @@ footer.footer {
     transform: scale(1.1);
 }
 
+.footer-section .social-icons a i {
+    font-size: 24px; /* Anpassung der Symbolgröße */
+    color: var(--footer-text-color);
+    transition: color var(--transition-speed);
+}
+
+.footer-section .social-icons a:hover i {
+    color: var(--social-icon-hover-color); /* Verwendung der Variable für Hover-Farbe */
+}
+
+/* Footer Bottom */
 .footer-bottom {
     text-align: center;
     padding: 1rem 0;
@@ -643,54 +682,7 @@ footer.footer {
     }
 }
 
-/* Dark Mode Specific Styles */
-body.dark-mode .header {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-}
-
-body.dark-mode .card {
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-}
-
-body.dark-mode .donations-box {
-    background: linear-gradient(145deg, #2c3e50, #34495e);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-}
-
-body.dark-mode .transactions {
-    background-color: #2c3e50;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
-}
-
-body.dark-mode table th {
-    background-color: #1e2a38;
-    color: var(--text-color);
-}
-
-body.dark-mode table td {
-    background-color: #2c3e50;
-    color: var(--text-color);
-}
-
-body.dark-mode table tr:hover td {
-    background-color: #3c5a73;
-}
-
-body.dark-mode footer.footer {
-    background-color: var(--footer-background);
-}
-
-body.dark-mode .tooltip-text {
-    background-color: rgba(44, 62, 80, 0.9);
-    color: #ecf0f1;
-}
-
-body.dark-mode .tooltip-text::after {
-    border-color: rgba(44, 62, 80, 0.9) transparent transparent transparent;
-}
-
-/* Material Icons Adjustment for Like/Dislike */
+/* Material Icons Anpassung für Like/Dislike */
 .material-icons {
     vertical-align: middle;
 }
@@ -701,12 +693,13 @@ body.dark-mode .tooltip-text::after {
         flex-direction: column;
     }
 
-    table th, table td {
-        padding: 0.5rem;
+    .info-container, .donations-box, .transactions {
+        flex: 1 1 100%;
+        max-width: 100%;
     }
 
-    .donations-box, .info-container, .transactions {
-        min-width: 100%;
+    table th, table td {
+        padding: 0.5rem;
     }
 
     table td.actions {
@@ -719,13 +712,13 @@ body.dark-mode .tooltip-text::after {
     }
 }
 
-/* styling for the GitHub icon to match others */
+/* Styling für das GitHub-Symbol, um es den anderen anzupassen */
 .footer-section .social-icons a i {
-    font-size: 24px; /* Adjusting the icon size */
+    font-size: 24px; /* Anpassung der Symbolgröße */
     color: var(--footer-text-color);
-    transition: color 0.3s;
+    transition: color var(--transition-speed);
 }
 
 .footer-section .social-icons a:hover i {
-    color: #fff; /* On hover, icons get a brighter clor */
+    color: var(--social-icon-hover-color); /* Verwendung der Variable für Hover-Farbe */
 }

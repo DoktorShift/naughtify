@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Cinema Mode</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/cinema.css') }}">
+</head>
+<body>
+    <div class="cinema-container">
+        <!-- Left Section -->
+        <div class="cinema-left">
+            <!-- Explanatory Textbox -->
+            <div class="explanatory-textbox">
+                <p>
+                    Welcome to my Show! Here you can see real-time updates of patrons supporting my mission. Enjoy the show!
+                </p>
+            </div>
+
+            <!-- Live Ticker Headline -->
+            <h2 class="live-ticker-headline">Live⚡️Ticker</h2>
+
+            <!-- QR Code and Lightning Address -->
+            <div class="cinema-qr-container">
+                <img id="cinema-qr" alt="QR Code"/>
+                <div id="lightning-address" class="lightning-address">lightning_address@domain.com</div>
+            </div>
+            
+            <!-- Total Sats -->
+            <div class="explanatory-textbox total-amount">
+                <p id="cinema-total">0 Sats</p>
+            </div>
+
+            <!-- Heroic Patrons -->
+            <div class="heroic-patrons">
+                <h2>Heroic Patrons</h2>
+                <ul id="heroic-patrons-list">
+                    <!-- Top 3 patrons will be dynamically inserted here -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- Right Section -->
+        <div class="cinema-right">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">Time</th>
+                            <th style="width: 40%;">Memo</th>
+                            <th style="width: 20%;">Amount</th>
+                            <th style="width: 20%;">Likes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cinema-transactions">
+                        <!-- Recent donations inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sound Control -->
+    <div class="sound-control">
+        <button id="sound-toggle" title="Mute/Unmute"><span id="sound-icon">🔊</span></button>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/cinema.js') }}"></script>
+</body>
+</html>

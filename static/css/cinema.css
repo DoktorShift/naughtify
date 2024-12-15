@@ -1,0 +1,285 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    background: #0d0f14; /* Deep dark background */
+    color: #dcdcdc;
+    font-family: 'Arial', sans-serif;
+    overflow: hidden;
+}
+
+/* Container */
+.cinema-container {
+    display: flex;
+    width: 100vw;
+    height: 100vh;
+    background: #0d0f14;
+}
+
+/* Left & Right Sections */
+.cinema-left, .cinema-right {
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Left Panel */
+.cinema-left {
+    background: #000000;
+    flex: 0 0 40%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    border-right: 1px solid #222;
+    position: relative;
+}
+
+/* Explanatory Textbox */
+.explanatory-textbox {
+    width: 90%;
+    padding: 15px;
+    background: #1a1d22;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.explanatory-textbox p {
+    font-size: 1.2vw;
+    color: #ccc;
+    text-align: center;
+    margin: 0;
+}
+
+/* Total Sats Box */
+.total-amount {
+    width: auto; /* Allows the box to expand based on content */
+    max-width: 90%; /* Prevents the box from exceeding the container's width */
+    padding: 10px; /* Reduced padding for a smaller box */
+    background: #1a1d22;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2); /* Subtle 3D effect */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 150px; /* Ensures a minimum width */
+}
+
+/* Total Sats Text */
+.total-amount p {
+    font-size: 1.5vw; /* Slightly larger font size for visibility */
+    color: #00ff88;
+    font-weight: 700;
+    text-shadow: 0 0 5px rgba(0, 255, 136, 0.5);
+    text-align: center;
+    margin: 0;
+    white-space: nowrap; /* Prevents text from wrapping */
+}
+
+/* Live Ticker Headline */
+.live-ticker-headline {
+    font-size: 2.5vw;
+    color: #fff;
+    margin-bottom: 15px;
+    font-weight: 600;
+    text-shadow: 0 0 5px rgba(255,255,255,0.2);
+}
+
+/* Modernized Headline */
+.cinema-left h1 {
+    font-size: 4vw;
+    color: #00ff88;
+    margin-bottom: 10px;
+    font-weight: 700;
+    text-shadow: 0 0 10px rgba(0,255,136,0.5);
+}
+
+/* QR Container */
+.cinema-qr-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px; /* Consistent spacing to next block */
+    gap: 10px; /* Increased gap for better spacing */
+}
+
+.cinema-qr-container img {
+    width: 30vw;
+    max-width: 300px;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0,255,136,0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.cinema-qr-container img:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 30px rgba(0,255,136,0.4);
+}
+
+/* Lightning Address */
+.lightning-address {
+    font-size: 1.625vw;
+    color: #00ff88;
+    word-break: break-all;
+    text-align: center;
+    margin-top: 5px; /* Reduced spacing above */
+}
+
+/* Heroic Patrons */
+.heroic-patrons h2 {
+    font-size: 2vw;
+    color: #fff;
+    margin-bottom: 15px;
+    font-weight: 500;
+    text-align: center;
+    text-shadow: 0 0 5px rgba(255,255,255,0.2);
+}
+
+.heroic-patrons ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    text-align: center;
+}
+
+.heroic-patrons li {
+    font-size: 1.4vw;
+    margin: 10px 0;
+    color: #ccc;
+    font-weight: 400;
+}
+
+/* Right Panel */
+.cinema-right {
+    flex: 1;
+    background: #0d0f14;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Table Container */
+.table-container {
+    width: 90%;
+    height: 90%;
+    overflow: auto;
+    background: #111318;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* Table Styles */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 1.2vw;
+    color: #ddd;
+    margin-top: 10px;
+}
+
+thead {
+    background: #22252b;
+}
+
+th, td {
+    padding: 10px;
+    border-bottom: 1px solid #333;
+    text-align: left;
+}
+
+th {
+    font-weight: 600;
+}
+
+tr:nth-child(even) {
+    background: #1a1d22;
+}
+
+.highlight {
+    background: #0f3d25 !important;
+    color: #e1ffd5 !important;
+    font-weight: bold;
+    border-left: 5px solid #00ff88;
+}
+
+/* Sound Control Button */
+.sound-control {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+#sound-toggle {
+    background: #222;
+    color: #eee;
+    border: 1px solid #444;
+    border-radius: 5px;
+    padding: 10px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.3s ease;
+}
+
+#sound-toggle:hover {
+    background: #333;
+    transform: scale(1.05);
+}
+
+/* Hover and Focus States for Table Rows */
+.table-container table tr:hover {
+    background: #2a2f37;
+}
+
+/* Scrollbar Styling */
+.table-container::-webkit-scrollbar {
+    width: 10px;
+}
+.table-container::-webkit-scrollbar-track {
+    background: #111;
+}
+.table-container::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 5px;
+}
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+    .cinema-left h1 {
+        font-size: 7vw;
+    }
+
+    .heroic-patrons h2 {
+        font-size: 4vw;
+    }
+
+    .heroic-patrons li {
+        font-size: 2.5vw;
+    }
+
+    table {
+        font-size: 2.5vw;
+    }
+
+    .explanatory-textbox p {
+        font-size: 4vw;
+    }
+
+    .live-ticker-headline {
+        font-size: 5vw;
+    }
+
+    .lightning-address {
+        font-size: 3vw;
+    }
+
+    .total-amount p {
+        font-size: 3vw; /* Adjusted for responsiveness */
+    }
+}
