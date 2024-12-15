@@ -1,29 +1,43 @@
 <!-- templates/settings.html -->
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Einstellungen - Naughtify</title>
+    <title>Settings - Naughtify</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
-    <!-- Bootstrap CSS (optional, für einfachere Gestaltung) -->
+    <!-- Bootstrap CSS (optional, for easier styling) -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Font Awesome for icons (if used) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
     <!-- Header -->
-    <div class="header">
-        <h1>Naughtify Einstellungen</h1>
-        <h5>Verwalte deine Konfigurationen sicher und einfach</h5>
-        <!-- Dark Mode Toggle (optional) -->
-        <div class="toggle-container">
-            <label class="switch">
-                <input type="checkbox" id="darkModeToggle">
-                <span class="slider"></span>
-            </label>
+    <header class="header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <!-- Title Section -->
+            <div class="header-title">
+                <h1>Naughtify Settings</h1>
+                <p>Manage your configurations securely and easily</p>
+            </div>
+            <!-- Actions Section -->
+            <div class="header-actions d-flex align-items-center">
+                <!-- Dark Mode Toggle -->
+                <div class="toggle-container mr-3">
+                    <label class="switch">
+                        <input type="checkbox" id="darkModeToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <!-- Logout Button -->
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
         </div>
-    </div>
+    </header>
 
-    <!-- Hauptinhalt -->
-    <div class="dashboard">
+    <!-- Main Content -->
+    <main class="container my-4">
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -37,161 +51,133 @@
           {% endif %}
         {% endwith %}
 
-        <form method="POST" class="settings-form">
-            <div class="form-group">
-                <label for="TELEGRAM_BOT_TOKEN">Telegram Bot Token</label>
-                <input type="text" class="form-control" id="TELEGRAM_BOT_TOKEN" name="TELEGRAM_BOT_TOKEN" value="{{ env_vars.TELEGRAM_BOT_TOKEN }}" required>
-            </div>
-            <div class="form-group">
-                <label for="CHAT_ID">Chat ID</label>
-                <input type="number" class="form-control" id="CHAT_ID" name="CHAT_ID" value="{{ env_vars.CHAT_ID }}" required>
-            </div>
-            <div class="form-group">
-                <label for="LNBITS_READONLY_API_KEY">LNbits Readonly API Key</label>
-                <input type="text" class="form-control" id="LNBITS_READONLY_API_KEY" name="LNBITS_READONLY_API_KEY" value="{{ env_vars.LNBITS_READONLY_API_KEY }}" required>
-            </div>
-            <div class="form-group">
-                <label for="LNBITS_URL">LNbits URL</label>
-                <input type="url" class="form-control" id="LNBITS_URL" name="LNBITS_URL" value="{{ env_vars.LNBITS_URL }}" required>
-            </div>
-            <div class="form-group">
-                <label for="INSTANCE_NAME">Instance Name</label>
-                <input type="text" class="form-control" id="INSTANCE_NAME" name="INSTANCE_NAME" value="{{ env_vars.INSTANCE_NAME }}" required>
-            </div>
-            <div class="form-group">
-                <label for="BALANCE_CHANGE_THRESHOLD">Balance Change Threshold (sats)</label>
-                <input type="number" class="form-control" id="BALANCE_CHANGE_THRESHOLD" name="BALANCE_CHANGE_THRESHOLD" value="{{ env_vars.BALANCE_CHANGE_THRESHOLD }}" required>
-            </div>
-            <div class="form-group">
-                <label for="LATEST_TRANSACTIONS_COUNT">Latest Transactions Count</label>
-                <input type="number" class="form-control" id="LATEST_TRANSACTIONS_COUNT" name="LATEST_TRANSACTIONS_COUNT" value="{{ env_vars.LATEST_TRANSACTIONS_COUNT }}" required>
-            </div>
-            <div class="form-group">
-                <label for="PAYMENTS_FETCH_INTERVAL">Payments Fetch Interval (Sekunden)</label>
-                <input type="number" class="form-control" id="PAYMENTS_FETCH_INTERVAL" name="PAYMENTS_FETCH_INTERVAL" value="{{ env_vars.PAYMENTS_FETCH_INTERVAL }}" required>
-            </div>
-            <div class="form-group">
-                <label for="OVERWATCH_URL">Overwatch URL</label>
-                <input type="url" class="form-control" id="OVERWATCH_URL" name="OVERWATCH_URL" value="{{ env_vars.OVERWATCH_URL }}">
-            </div>
-            <div class="form-group">
-                <label for="DONATIONS_URL">Donations URL</label>
-                <input type="url" class="form-control" id="DONATIONS_URL" name="DONATIONS_URL" value="{{ env_vars.DONATIONS_URL }}">
-            </div>
-            <div class="form-group">
-                <label for="LNURLP_ID">LNURLp ID</label>
-                <input type="text" class="form-control" id="LNURLP_ID" name="LNURLP_ID" value="{{ env_vars.LNURLP_ID }}">
-            </div>
-            <div class="form-group">
-                <label for="HIGHLIGHT_THRESHOLD">Highlight Threshold (sats)</label>
-                <input type="number" class="form-control" id="HIGHLIGHT_THRESHOLD" name="HIGHLIGHT_THRESHOLD" value="{{ env_vars.HIGHLIGHT_THRESHOLD }}" required>
-            </div>
-            <div class="form-group">
-                <label for="INFORMATION_URL">Information URL</label>
-                <input type="url" class="form-control" id="INFORMATION_URL" name="INFORMATION_URL" value="{{ env_vars.INFORMATION_URL }}">
-            </div>
-            <div class="form-group">
-                <label for="APP_HOST">Flask Server Host</label>
-                <input type="text" class="form-control" id="APP_HOST" name="APP_HOST" value="{{ env_vars.APP_HOST }}" required>
-            </div>
-            <div class="form-group">
-                <label for="APP_PORT">Flask Server Port</label>
-                <input type="number" class="form-control" id="APP_PORT" name="APP_PORT" value="{{ env_vars.APP_PORT }}" required>
-            </div>
-            <div class="form-group">
-                <label for="PROCESSED_PAYMENTS_FILE">Processed Payments File</label>
-                <input type="text" class="form-control" id="PROCESSED_PAYMENTS_FILE" name="PROCESSED_PAYMENTS_FILE" value="{{ env_vars.PROCESSED_PAYMENTS_FILE }}" required>
-            </div>
-            <div class="form-group">
-                <label for="CURRENT_BALANCE_FILE">Current Balance File</label>
-                <input type="text" class="form-control" id="CURRENT_BALANCE_FILE" name="CURRENT_BALANCE_FILE" value="{{ env_vars.CURRENT_BALANCE_FILE }}" required>
-            </div>
-            <div class="form-group">
-                <label for="DONATIONS_FILE">Donations File</label>
-                <input type="text" class="form-control" id="DONATIONS_FILE" name="DONATIONS_FILE" value="{{ env_vars.DONATIONS_FILE }}" required>
-            </div>
-            <div class="form-group">
-                <label for="FORBIDDEN_WORDS_FILE">Forbidden Words File</label>
-                <input type="text" class="form-control" id="FORBIDDEN_WORDS_FILE" name="FORBIDDEN_WORDS_FILE" value="{{ env_vars.FORBIDDEN_WORDS_FILE }}" required>
-            </div>
-            <div class="form-group text-center">
-                <button type="submit" class="btn btn-success">Einstellungen speichern</button>
-                <button type="button" class="btn btn-danger" onclick="restartServer()">Server neu starten</button>
-            </div>
-        </form>
-    </div>
+        <div class="dashboard p-4 rounded shadow-sm">
+            <form method="POST" class="settings-form">
+                <!-- Telegram Settings -->
+                <fieldset class="form-group">
+                    <legend>Telegram Settings</legend>
+                    <div class="form-group">
+                        <label for="TELEGRAM_BOT_TOKEN">Telegram Bot Token</label>
+                        <input type="text" class="form-control" id="TELEGRAM_BOT_TOKEN" name="TELEGRAM_BOT_TOKEN" value="{{ env_vars.TELEGRAM_BOT_TOKEN }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="CHAT_ID">Chat ID</label>
+                        <input type="number" class="form-control" id="CHAT_ID" name="CHAT_ID" value="{{ env_vars.CHAT_ID }}" required>
+                    </div>
+                </fieldset>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-section about">
-                <h3>Über Naughtify</h3>
-                <p>Verwalte deine LNbits Konfigurationen einfach und sicher über diese Seite.</p>
-            </div>
-            <div class="footer-section links">
-                <h3>Quick Links</h3>
-                <ul>
-                    <li><a href="{{ information_url }}" target="_blank">Unsere Mission</a></li>
-                </ul>
-            </div>
-            <div class="footer-section social">
-                <h3>Verbinde dich mit uns</h3>
-                <div class="social-icons">
-                    <a href="#"><i class="material-icons">home</i></a>
-                    <a href="#"><i class="material-icons">email</i></a>
-                    <a href="https://github.com/DoktorShift/naughtify" target="_blank" aria-label="github">
-                        <i class="fab fa-github"></i>
-                    </a>
-                    <a href="{{ url_for('logout') }}" class="btn btn-secondary" title="Logout">Logout</a>
+                <!-- LNbits Settings -->
+                <fieldset class="form-group">
+                    <legend>LNbits Settings</legend>
+                    <div class="form-group">
+                        <label for="LNBITS_READONLY_API_KEY">LNbits Readonly API Key</label>
+                        <input type="text" class="form-control" id="LNBITS_READONLY_API_KEY" name="LNBITS_READONLY_API_KEY" value="{{ env_vars.LNBITS_READONLY_API_KEY }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="LNBITS_URL">LNbits URL</label>
+                        <input type="url" class="form-control" id="LNBITS_URL" name="LNBITS_URL" value="{{ env_vars.LNBITS_URL }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="LNURLP_ID">LNURLp ID</label>
+                        <input type="text" class="form-control" id="LNURLP_ID" name="LNURLP_ID" value="{{ env_vars.LNURLP_ID }}">
+                    </div>
+                </fieldset>
+
+                <!-- Instance Settings -->
+                <fieldset class="form-group">
+                    <legend>Instance Settings</legend>
+                    <div class="form-group">
+                        <label for="INSTANCE_NAME">Instance Name</label>
+                        <input type="text" class="form-control" id="INSTANCE_NAME" name="INSTANCE_NAME" value="{{ env_vars.INSTANCE_NAME }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="APP_HOST">Flask Server Host</label>
+                        <input type="text" class="form-control" id="APP_HOST" name="APP_HOST" value="{{ env_vars.APP_HOST }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="APP_PORT">Flask Server Port</label>
+                        <input type="number" class="form-control" id="APP_PORT" name="APP_PORT" value="{{ env_vars.APP_PORT }}" required>
+                    </div>
+                </fieldset>
+
+                <!-- Thresholds -->
+                <fieldset class="form-group">
+                    <legend>Thresholds</legend>
+                    <div class="form-group">
+                        <label for="BALANCE_CHANGE_THRESHOLD">Balance Change Threshold (sats)</label>
+                        <input type="number" class="form-control" id="BALANCE_CHANGE_THRESHOLD" name="BALANCE_CHANGE_THRESHOLD" value="{{ env_vars.BALANCE_CHANGE_THRESHOLD }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="HIGHLIGHT_THRESHOLD">Highlight Threshold (sats)</label>
+                        <input type="number" class="form-control" id="HIGHLIGHT_THRESHOLD" name="HIGHLIGHT_THRESHOLD" value="{{ env_vars.HIGHLIGHT_THRESHOLD }}" required>
+                    </div>
+                </fieldset>
+
+                <!-- Transaction Settings -->
+                <fieldset class="form-group">
+                    <legend>Transaction Settings</legend>
+                    <div class="form-group">
+                        <label for="LATEST_TRANSACTIONS_COUNT">Latest Transactions Count</label>
+                        <input type="number" class="form-control" id="LATEST_TRANSACTIONS_COUNT" name="LATEST_TRANSACTIONS_COUNT" value="{{ env_vars.LATEST_TRANSACTIONS_COUNT }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="PAYMENTS_FETCH_INTERVAL">Payments Fetch Interval (seconds)</label>
+                        <input type="number" class="form-control" id="PAYMENTS_FETCH_INTERVAL" name="PAYMENTS_FETCH_INTERVAL" value="{{ env_vars.PAYMENTS_FETCH_INTERVAL }}" required>
+                    </div>
+                </fieldset>
+
+                <!-- URLs -->
+                <fieldset class="form-group">
+                    <legend>URLs</legend>
+                    <div class="form-group">
+                        <label for="OVERWATCH_URL">Overwatch URL</label>
+                        <input type="url" class="form-control" id="OVERWATCH_URL" name="OVERWATCH_URL" value="{{ env_vars.OVERWATCH_URL }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="DONATIONS_URL">Donations URL</label>
+                        <input type="url" class="form-control" id="DONATIONS_URL" name="DONATIONS_URL" value="{{ env_vars.DONATIONS_URL }}">
+                    </div>
+                    <div class="form-group">
+                        <label for="INFORMATION_URL">Information URL</label>
+                        <input type="url" class="form-control" id="INFORMATION_URL" name="INFORMATION_URL" value="{{ env_vars.INFORMATION_URL }}">
+                    </div>
+                </fieldset>
+
+                <!-- Files -->
+                <fieldset class="form-group">
+                    <legend>Files</legend>
+                    <div class="form-group">
+                        <label for="PROCESSED_PAYMENTS_FILE">Processed Payments File</label>
+                        <input type="text" class="form-control" id="PROCESSED_PAYMENTS_FILE" name="PROCESSED_PAYMENTS_FILE" value="{{ env_vars.PROCESSED_PAYMENTS_FILE }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="CURRENT_BALANCE_FILE">Current Balance File</label>
+                        <input type="text" class="form-control" id="CURRENT_BALANCE_FILE" name="CURRENT_BALANCE_FILE" value="{{ env_vars.CURRENT_BALANCE_FILE }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="DONATIONS_FILE">Donations File</label>
+                        <input type="text" class="form-control" id="DONATIONS_FILE" name="DONATIONS_FILE" value="{{ env_vars.DONATIONS_FILE }}" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="FORBIDDEN_WORDS_FILE">Forbidden Words File</label>
+                        <input type="text" class="form-control" id="FORBIDDEN_WORDS_FILE" name="FORBIDDEN_WORDS_FILE" value="{{ env_vars.FORBIDDEN_WORDS_FILE }}" required>
+                    </div>
+                </fieldset>
+
+                <!-- Action Buttons -->
+                <div class="form-group text-center">
+                    <button type="submit" class="btn btn-success">Save Settings</button>
+                    <button type="button" class="btn btn-danger ml-2" onclick="restartServer()">Restart Server</button>
                 </div>
-            </div>
+            </form>
         </div>
-    </footer>
+    </main>
 
-    <!-- Bootstrap JS und Abhängigkeiten -->
+    <!-- Bootstrap JS and dependencies -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-
-    <!-- Neustart-Funktion -->
-    <script>
-        function restartServer() {
-            if (confirm("Möchtest du den Server wirklich neu starten?")) {
-                fetch('/restart', {
-                    method: 'POST'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    // Handle response if needed
-                })
-                .catch(error => {
-                    console.error('Error restarting server:', error);
-                    alert('Fehler beim Neustarten des Servers.');
-                });
-            }
-        }
-
-        // Optional: Dark Mode Toggle Script
-        const toggle = document.getElementById('darkModeToggle');
-        const body = document.body;
-
-        toggle.addEventListener('change', () => {
-            body.classList.toggle('dark-mode');
-        });
-
-        // Optional: Persist Dark Mode State
-        if (localStorage.getItem('darkMode') === 'enabled') {
-            body.classList.add('dark-mode');
-            toggle.checked = true;
-        }
-
-        toggle.addEventListener('change', () => {
-            if (body.classList.contains('dark-mode')) {
-                localStorage.setItem('darkMode', 'enabled');
-            } else {
-                localStorage.setItem('darkMode', 'disabled');
-            }
-        });
-    </script>
+    <!-- Settings JavaScript -->
+    <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 </body>
 </html>
