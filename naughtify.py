@@ -1,11 +1,11 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from flask import Flask, jsonify, request, render_template, send_from_directory, make_response
+from flask import Flask, jsonify, request, render_template, send_from_directory, make_response, redirect, url_for, session, flash
 from flask_cors import CORS
 from telegram import Bot, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key, dotenv_values
 import requests
 import traceback
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -18,6 +18,8 @@ import json
 from urllib.parse import urlparse
 import re
 import uuid
+from werkzeug.security import check_password_hash, generate_password_hash
+import subprocess
 
 # --------------------- Configuration and Setup ---------------------
 
@@ -59,6 +61,8 @@ CURRENT_BALANCE_FILE = os.getenv("CURRENT_BALANCE_FILE", "current-balance.txt")
 DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
 
 INFORMATION_URL = os.getenv("INFORMATION_URL")  # Optional
+
+ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH")  # Gehashtes Passwort
 
 required_vars = {
     "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
@@ -261,6 +265,7 @@ def save_donations():
 
 processed_payments = load_processed_payments()
 app = Flask(__name__)
+app.secret_key = os.urandom(24)  # Sicherer Secret-Key für Sessions
 CORS(app)  # Enable CORS
 
 latest_balance = {
@@ -624,9 +629,9 @@ def send_transactions_message(chat_id, page=1, message_id=None):
     start_index = (page - 1) * transactions_per_page
     end_index = start_index + transactions_per_page
     page_transactions = sorted_payments[start_index:end_index]
+
     if not page_transactions:
-        bot.send_message(chat_id, text="❌ No transactions found on this page.")
-        logger.info(f"No transactions found on page {page}.")
+        logger.info("No payments found.")
         return
 
     message_lines = [f"📜 *Latest Transactions - Page {page}/{total_pages}* 📜\n"]
@@ -640,7 +645,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
             amount_sats = int(abs(amount_msat) / 1000)
         except ValueError:
             amount_sats = 0
-            logger.warning(f"Invalid amount_msat value in transaction: {amount_msat}")
+            logger.warning(f"Invalid amount_msat value: {amount_msat}")
         sign = "+" if amount_msat > 0 else "-"
         emoji = "🟢" if amount_msat > 0 else "🔴"
         message_lines.append(f"{emoji} {formatted_date} {sign}{amount_sats} sat")
@@ -1142,6 +1147,204 @@ def cinema_page():
         return "Donations are not enabled for Cinema Mode.", 404
     logger.debug("Cinema page accessed.")
     return render_template('cinema.html')
+
+# --------------------- Core Functionality ---------------------
+
+def handle_vote_command(donation_id, vote_type):
+    try:
+        for donation in donations:
+            if donation.get("id") == donation_id:
+                if vote_type == 'like':
+                    donation["likes"] += 1
+                elif vote_type == 'dislike':
+                    donation["dislikes"] += 1
+                else:
+                    logger.warning(f"Invalid vote_type received: {vote_type}")
+                    return {"error": "Invalid vote type."}, 400
+                save_donations()
+                logger.info(f"Donation {donation_id} voted: {vote_type}. Total likes: {donation['likes']}, dislikes: {donation['dislikes']}")
+                return {"success": True, "likes": donation["likes"], "dislikes": donation["dislikes"]}, 200
+        logger.warning(f"Donation {donation_id} not found.")
+        return {"error": "Donation not found."}, 404
+    except Exception as e:
+        logger.error(f"Error handling vote: {e}")
+        logger.debug(traceback.format_exc())
+        return {"error": "Internal server error."}, 500
+
+def send_main_inline_keyboard():
+    inline_reply_markup = get_main_inline_keyboard()
+    try:
+        welcome_message = (
+            "😶‍🌫️ Here we go!\n\n"
+            "I'm ready to assist you with monitoring your LNbits transactions.\n\n"
+            "Use the buttons below to explore the features."
+        )
+        bot.send_message(
+            chat_id=CHAT_ID,
+            text=welcome_message,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=inline_reply_markup
+        )
+        logger.info("Main inline keyboard successfully sent.")
+    except Exception as telegram_error:
+        logger.error(f"Error sending the main inline keyboard: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+def send_start_message(update, context):
+    chat_id = update.effective_chat.id
+    welcome_message = (
+        "👋 Welcome to Naughtify your LNBits Wallet Monitor!\n\n"
+        "Use the buttons below for quick access to various features."
+    )
+    reply_markup = get_main_keyboard()
+    
+    try:
+        bot.send_message(
+            chat_id=chat_id,
+            text=welcome_message,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        logger.info(f"Start message sent to chat_id {chat_id}.")
+    except Exception as e:
+        logger.error(f"Error sending the start message: {e}")
+        logger.debug(traceback.format_exc())
+
+def initialize_processed_payments():
+    """
+    Fetch all existing payments and mark them as processed to prevent sending Telegram messages
+    for old donations when the server starts.
+    """
+    logger.info("Initializing processed payments to prevent old notifications.")
+    payments = fetch_api("payments")
+    if payments is None:
+        logger.error("Failed to initialize processed payments: Unable to fetch payments.")
+        return
+
+    for payment in payments:
+        payment_hash = payment.get("payment_hash")
+        if payment_hash and payment_hash not in processed_payments:
+            processed_payments.add(payment_hash)
+            add_processed_payment(payment_hash)
+            logger.debug(f"Payment {payment_hash} marked as processed during initialization.")
+    logger.info("Initialization of processed payments completed.")
+
+# --------------------- Authentication Routes ---------------------
+
+# Route für das Login
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'logged_in' in session:
+        return redirect(url_for('settings'))
+    
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if not ADMIN_PASSWORD_HASH:
+            flash('Admin password not set. Please set ADMIN_PASSWORD_HASH in your .env file.', 'danger')
+            return render_template('login.html')
+        if check_password_hash(ADMIN_PASSWORD_HASH, password):
+            session['logged_in'] = True
+            flash('Erfolgreich angemeldet!', 'success')
+            return redirect(url_for('settings'))
+        else:
+            flash('Falsches Passwort. Bitte versuche es erneut.', 'danger')
+    
+    return render_template('login.html')
+
+# Route für das Logout
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    flash('Erfolgreich abgemeldet.', 'success')
+    return redirect(url_for('login'))
+
+# Decorator zum Schutz von Routen
+def login_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'logged_in' not in session:
+            flash('Bitte melde dich zuerst an.', 'danger')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# Route für die Einstellungen
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    if request.method == 'POST':
+        # Liste der zu aktualisierenden Variablen
+        env_vars = [
+            'TELEGRAM_BOT_TOKEN',
+            'CHAT_ID',
+            'LNBITS_READONLY_API_KEY',
+            'LNBITS_URL',
+            'INSTANCE_NAME',
+            'BALANCE_CHANGE_THRESHOLD',
+            'LATEST_TRANSACTIONS_COUNT',
+            'PAYMENTS_FETCH_INTERVAL',
+            'OVERWATCH_URL',
+            'DONATIONS_URL',
+            'LNURLP_ID',
+            'HIGHLIGHT_THRESHOLD',
+            'INFORMATION_URL',
+            'APP_HOST',
+            'APP_PORT',
+            'PROCESSED_PAYMENTS_FILE',
+            'CURRENT_BALANCE_FILE',
+            'DONATIONS_FILE',
+            'FORBIDDEN_WORDS_FILE'
+        ]
+        try:
+            for var in env_vars:
+                value = request.form.get(var)
+                if value is not None:
+                    set_key('.env', var, value)
+                    os.environ[var] = value  # Aktualisiere die aktuelle Umgebung
+            flash('Einstellungen wurden erfolgreich aktualisiert.', 'success')
+            return redirect(url_for('settings'))
+        except Exception as e:
+            flash(f'Fehler beim Aktualisieren der Einstellungen: {e}', 'danger')
+    
+    # GET-Methode: Zeige die aktuellen Werte
+    env_vars = {
+        'TELEGRAM_BOT_TOKEN': os.getenv('TELEGRAM_BOT_TOKEN', ''),
+        'CHAT_ID': os.getenv('CHAT_ID', ''),
+        'LNBITS_READONLY_API_KEY': os.getenv('LNBITS_READONLY_API_KEY', ''),
+        'LNBITS_URL': os.getenv('LNBITS_URL', ''),
+        'INSTANCE_NAME': os.getenv('INSTANCE_NAME', ''),
+        'BALANCE_CHANGE_THRESHOLD': os.getenv('BALANCE_CHANGE_THRESHOLD', ''),
+        'LATEST_TRANSACTIONS_COUNT': os.getenv('LATEST_TRANSACTIONS_COUNT', ''),
+        'PAYMENTS_FETCH_INTERVAL': os.getenv('PAYMENTS_FETCH_INTERVAL', ''),
+        'OVERWATCH_URL': os.getenv('OVERWATCH_URL', ''),
+        'DONATIONS_URL': os.getenv('DONATIONS_URL', ''),
+        'LNURLP_ID': os.getenv('LNURLP_ID', ''),
+        'HIGHLIGHT_THRESHOLD': os.getenv('HIGHLIGHT_THRESHOLD', ''),
+        'INFORMATION_URL': os.getenv('INFORMATION_URL', ''),
+        'APP_HOST': os.getenv('APP_HOST', ''),
+        'APP_PORT': os.getenv('APP_PORT', ''),
+        'PROCESSED_PAYMENTS_FILE': os.getenv('PROCESSED_PAYMENTS_FILE', ''),
+        'CURRENT_BALANCE_FILE': os.getenv('CURRENT_BALANCE_FILE', ''),
+        'DONATIONS_FILE': os.getenv('DONATIONS_FILE', ''),
+        'FORBIDDEN_WORDS_FILE': os.getenv('FORBIDDEN_WORDS_FILE', '')
+    }
+
+    return render_template('settings.html', env_vars=env_vars)
+
+# Route zum Neustarten des Servers
+@app.route('/restart', methods=['POST'])
+@login_required
+def restart_server():
+    try:
+        # Hier muss der Name der systemd-Anwendung ersetzt werden
+        subprocess.run(['systemctl', 'restart', 'naughtify'], check=True)
+        flash('Server wurde erfolgreich neu gestartet.', 'success')
+    except subprocess.CalledProcessError as e:
+        flash(f'Fehler beim Neustarten des Servers: {e}', 'danger')
+        logger.error(f"Error restarting server: {e}")
+        logger.debug(traceback.format_exc())
+    return redirect(url_for('settings'))
 
 # --------------------- Core Functionality ---------------------
 
