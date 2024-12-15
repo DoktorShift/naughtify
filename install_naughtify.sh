@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo "🚀 Starting Naughtify installation..."
+echo "🚀 Starting Naughtify Installation..."
 
 # Initialize an empty array to hold the ports
 PORTS=()
@@ -277,170 +277,7 @@ prompt_additional_instances() {
                 read -p "Enter a unique name for the additional instance (e.g., naughtify2): " ADDITIONAL_NAME
                 if [[ -d "$ADDITIONAL_NAME" ]]; then
                     echo "❌ Directory '$ADDITIONAL_NAME' already exists. Please choose a different name."
-                elif [[ ! "$ADDITIONAL_NAME" =~ ^naughtify[0-9]*$ ]]; then
-                    echo "❌ Invalid name. Please use a name like 'naughtify2', 'naughtify3', etc."
-                else
-                    break
-                fi
-            done
-
-            setup_additional_instance "$ADDITIONAL_NAME"
-        elif [[ "$SETUP_ADDITIONAL" == "no" ]]; then
-            echo "🛑 Skipping additional instance setup."
-            break
-        else
-            echo "❓ Please answer 'yes' or 'no'."
-        fi
-    done
-}
-
-# Function to configure firewall rules
-configure_firewall() {
-    if sudo ufw status | grep -q "Status: inactive"; then
-        echo "🛡️ UFW is inactive."
-        echo "Would you like to enable UFW and allow SSH connections? (yes/no)"
-        read ENABLE_UFW
-        if [[ "$ENABLE_UFW" == "yes" ]]; then
-            sudo ufw allow OpenSSH
-            sudo ufw --force enable
-            echo "✅ UFW enabled and SSH allowed."
-        else
-            echo "⚠️ UFW remains inactive. Please configure your firewall manually."
-            return
-        fi
-    fi
-
-    echo "🔐 Configuring firewall rules with UFW..."
-
-    for port in "${PORTS[@]}"; do
-        echo "🔓 Allowing port $port through UFW..."
-        sudo ufw allow "$port"
-    done
-
-    echo "🔄 Reloading UFW to apply changes..."
-    sudo ufw reload
-
-    echo "✅ Firewall configuration completed."
-}
-
-# Function to set up the initial instance
-setup_initial_instance_prompt() {
-    local dir_name="naughtify"
-    clone_repository "$dir_name"
-    setup_virtualenv "$dir_name"
-    configure_env "$dir_name"
-
-    # Prompt for initial domain
-    read -p "Enter the primary subdomain for 'naughtify' (e.g., naughtify.yourdomain.com): " NAUGHTIFY_DOMAIN
-
-    # Read port from .env
-    PORT=$(grep "^APP_PORT=" "naughtify/.env" | cut -d '=' -f2)
-
-    # Optional Live Ticker Setup for Initial Instance
-    echo "🔔 Would you like to enable the Live Ticker feature for 'naughtify'? (yes/no)"
-    read ENABLE_LIVE_TICKER
-
-    if [[ "$ENABLE_LIVE_TICKER" == "yes" ]]; then
-        read -p "Enter Live Ticker subdomain for 'naughtify' (e.g., liveticker.yourdomain.com): " LIVE_TICKER_DOMAIN
-        read -p "Enter LNURLP ID for 'naughtify' (6-letter Pay Link ID): " LNURLP_ID
-        read -p "Enter Highlight Threshold for 'naughtify' (default: 2100 sats): " HIGHLIGHT_THRESHOLD
-        read -p "Enter Information Page URL for 'naughtify' (optional, press Enter to skip): " INFORMATION_URL
-
-        # Update the .env file with Live Ticker configurations
-        sed -i "s|DONATIONS_URL=.*|DONATIONS_URL=$LIVE_TICKER_DOMAIN|g" "naughtify/.env"
-        sed -i "s|LNURLP_ID=.*|LNURLP_ID=$LNURLP_ID|g" "naughtify/.env"
-        sed -i "s|HIGHLIGHT_THRESHOLD=.*|HIGHLIGHT_THRESHOLD=${HIGHLIGHT_THRESHOLD:-2100}|g" "naughtify/.env"
-        if [[ -n "$INFORMATION_URL" ]]; then
-            sed -i "s|INFORMATION_URL=.*|INFORMATION_URL=$INFORMATION_URL|g" "naughtify/.env"
-        fi
-
-        # Configure Caddy for Live Ticker
-        configure_caddy "$LIVE_TICKER_DOMAIN" "$PORT"
-
-        echo "🔗 Live Ticker enabled and configured for 'naughtify'."
-    fi
-
-    # Configure Caddy for the initial instance
-    configure_caddy "$NAUGHTIFY_DOMAIN" "$PORT"
-
-    # Configure Telegram webhook for the initial instance
-    configure_telegram_webhook "$NAUGHTIFY_DOMAIN" "$TELEGRAM_TOKEN"
-
-    # Create systemd service for the initial instance
-    create_systemd_service "/home/$USER/naughtify" "$USER"
-}
-
-# Function to set up an additional instance
-setup_additional_instance() {
-    local clone_dir=$1
-    clone_repository "$clone_dir"
-    setup_virtualenv "$clone_dir"
-    configure_env "$clone_dir"
-
-    # Prompt for domain and port
-    read -p "Enter the primary subdomain for '$clone_dir' (e.g., naughtify2.yourdomain.com): " NEW_DOMAIN
-    read -p "Enter the port to run '$clone_dir' on (default: 5010): " NEW_PORT
-    NEW_PORT=${NEW_PORT:-5010}
-
-    # Update the .env file with new configurations
-    sed -i "s|APP_PORT=.*|APP_PORT=$NEW_PORT|g" "$clone_dir/.env"
-
-    # Add the new port to the PORTS array
-    PORTS+=("$NEW_PORT")
-
-    # Optional Live Ticker Setup for Additional Instance
-    echo "🔔 Would you like to enable the Live Ticker feature for '$clone_dir'? (yes/no)"
-    read ENABLE_LIVE_TICKER_ADD
-    if [[ "$ENABLE_LIVE_TICKER_ADD" == "yes" ]]; then
-        read -p "Enter Live Ticker subdomain for '$clone_dir' (e.g., liveticker2.yourdomain.com): " NEW_LIVE_TICKER_DOMAIN
-        read -p "Enter LNURLP ID for '$clone_dir' (6-letter Pay Link ID): " NEW_LNURLP_ID
-        read -p "Enter Highlight Threshold for '$clone_dir' (default: 2100 sats): " NEW_HIGHLIGHT_THRESHOLD
-        read -p "Enter Information Page URL for '$clone_dir' (optional, press Enter to skip): " NEW_INFORMATION_URL
-
-        # Update the .env file with Live Ticker configurations
-        sed -i "s|DONATIONS_URL=.*|DONATIONS_URL=$NEW_LIVE_TICKER_DOMAIN|g" "$clone_dir/.env"
-        sed -i "s|LNURLP_ID=.*|LNURLP_ID=$NEW_LNURLP_ID|g" "$clone_dir/.env"
-        sed -i "s|HIGHLIGHT_THRESHOLD=.*|HIGHLIGHT_THRESHOLD=${NEW_HIGHLIGHT_THRESHOLD:-2100}|g" "$clone_dir/.env"
-        if [[ -n "$NEW_INFORMATION_URL" ]]; then
-            sed -i "s|INFORMATION_URL=.*|INFORMATION_URL=$NEW_INFORMATION_URL|g" "$clone_dir/.env"
-        fi
-
-        # Configure Caddy for Live Ticker
-        configure_caddy "$NEW_LIVE_TICKER_DOMAIN" "$NEW_PORT"
-
-        echo "🔗 Live Ticker enabled and configured for '$clone_dir'."
-    fi
-
-    # Configure Caddy for the additional instance
-    configure_caddy "$NEW_DOMAIN" "$NEW_PORT"
-
-    # Prompt for Telegram Bot Token for the additional instance
-    read -p "Enter your Telegram Bot Token for '$clone_dir': " NEW_TELEGRAM_TOKEN
-
-    # Update the .env file with the new Telegram Token
-    sed -i "s|TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=$NEW_TELEGRAM_TOKEN|g" "$clone_dir/.env"
-
-    # Configure Telegram webhook for the additional instance
-    configure_telegram_webhook "$NEW_DOMAIN" "$NEW_TELEGRAM_TOKEN"
-
-    # Create systemd service for the additional instance
-    create_systemd_service "/home/$USER/$clone_dir" "$USER"
-
-    echo "✅ Additional instance '$clone_dir' set up successfully."
-}
-
-# Function to prompt for additional instances
-prompt_additional_instances() {
-    while true; do
-        echo "⚙️ Would you like to set up an additional Naughtify instance? (yes/no)"
-        read SETUP_ADDITIONAL
-
-        if [[ "$SETUP_ADDITIONAL" == "yes" ]]; then
-            while true; do
-                read -p "Enter a unique name for the additional instance (e.g., naughtify2): " ADDITIONAL_NAME
-                if [[ -d "$ADDITIONAL_NAME" ]]; then
-                    echo "❌ Directory '$ADDITIONAL_NAME' already exists. Please choose a different name."
-                elif [[ ! "$ADDITIONAL_NAME" =~ ^naughtify[0-9]*$ ]]; then
+                elif [[ ! "$ADDITIONAL_NAME" =~ ^naughtify[0-9]+$ ]]; then
                     echo "❌ Invalid name. Please use a name like 'naughtify2', 'naughtify3', etc."
                 else
                     break
@@ -521,7 +358,6 @@ echo "✅ Installation complete!"
 echo "🎉 Visit your subdomains:"
 echo " - Naughtify: https://$NAUGHTIFY_DOMAIN"
 [[ "$ENABLE_LIVE_TICKER" == "yes" ]] && echo " - Live Ticker: https://$LIVE_TICKER_DOMAIN"
-[[ "$ENABLE_OVERWATCH" == "yes" ]] && echo " - Overwatch: $OVERWATCH_URL"
 echo ""
 echo "🔍 Use the following commands to check Naughtify logs:"
 echo "  - Initial Instance Logs: sudo journalctl -u naughtify_naughtify.service -f --since '2 hours ago'"
