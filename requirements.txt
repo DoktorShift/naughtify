@@ -5,6 +5,7 @@ apscheduler==3.6.3
 pytz==2023.3
 python-telegram-bot==13.15
 flask==2.3.2
+flask-cors
 python-dotenv==1.0.0
 requests==2.32.3
 qrcode==7.3.1
