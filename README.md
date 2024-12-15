@@ -82,13 +82,13 @@ The bot offers:
 
 ## 1. Prerequisites 
 
+There are a few requirements for Naughtify which are listed below. You can find help on the individual points on a separate page: __[prerequisites_help.md](prerequisites_help.md)__
+
 1. **VPS:** Virtual private server or other computer that is publicly accessible via a web domain.
 2. **Second Web Domain or Subdomain:** Required to serve the app and enable inline commands.
 3. **LNbits Wallet:** Access your LNbits API key (read-only).
 4. **Telegram Bot:** Create a Telegram bot via [BotFather](https://t.me/BotFather) and obtain your bot token.
 5. **Chat ID:** Use the [@userinfobot](https://t.me/userinfobot) on Telegram to find your User ID = chat ID.
-
-If you need help with the requirements, have a look here: __[prerequisites_help.md](prerequisites_help.md)__
 
 ---
 ## 2. Installation
