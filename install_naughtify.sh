@@ -5,7 +5,7 @@ echo "Starting Naughtify installation..."
 # Step 1: Prerequisites
 echo "Updating system and installing prerequisites..."
 sudo apt-get update
-sudo apt-get install -y python3-venv python3-pip debian-keyring debian-archive-keyring apt-transport-https curl
+sudo apt-get install -y python3-venv python3-pip debian-keyring debian-archive-keyring apt-transport-https curl git
 
 # Step 2: Clone the Repository
 echo "Cloning Naughtify repository..."
@@ -27,13 +27,27 @@ wget -q https://raw.githubusercontent.com/DoktorShift/naughtify/refs/heads/main/
 read -p "Enter your Telegram Bot Token: " TELEGRAM_TOKEN
 read -p "Enter your Telegram Chat ID (User ID): " CHAT_ID
 read -p "Enter your LNBits Read-only API Key: " LNBITS_KEY
-read -p "Enter your LNBits Server URL: " LNBITS_URL
+read -p "Enter your LNBits Server URL (e.g., https://yourlnbitsserver.com): " LNBITS_URL
 
 # Update the .env file with user inputs
 sed -i "s|TELEGRAM_BOT_TOKEN=.*|TELEGRAM_BOT_TOKEN=$TELEGRAM_TOKEN|g" .env
 sed -i "s|CHAT_ID=.*|CHAT_ID=$CHAT_ID|g" .env
 sed -i "s|LNBITS_API_KEY=.*|LNBITS_API_KEY=$LNBITS_KEY|g" .env
 sed -i "s|LNBITS_URL=.*|LNBITS_URL=$LNBITS_URL|g" .env
+
+# Step 4.1: Configure APP_PORT
+echo "Configuring the port for Naughtify..."
+read -p "Enter the port to run Naughtify on (default: 5009): " PORT
+PORT=${PORT:-5009}
+
+# Check if APP_PORT exists in .env and update; else, append it
+if grep -q "^APP_PORT=" .env; then
+    sed -i "s|^APP_PORT=.*|APP_PORT=$PORT|g" .env
+else
+    echo "APP_PORT=$PORT" >> .env
+fi
+
+echo "Port set to $PORT."
 
 # Step 5: Optional Live Ticker Setup
 echo "Would you like to enable the Live Ticker feature? (yes/no)"
@@ -42,12 +56,15 @@ if [[ "$ENABLE_LIVE_TICKER" == "yes" ]]; then
     read -p "Enter Live Ticker subdomain (e.g., liveticker.yourdomain.com): " LIVE_TICKER_DOMAIN
     read -p "Enter LNURLP ID (6-letter Pay Link ID): " LNURLP_ID
     read -p "Enter Highlight Threshold (default: 2100 sats): " HIGHLIGHT_THRESHOLD
-    read -p "Enter Information Page URL: " INFORMATION_URL
+    read -p "Enter Information Page URL (optional, press Enter to skip): " INFORMATION_URL
 
+    # Update the .env file with Live Ticker configurations
     sed -i "s|#DONATIONS_URL=.*|DONATIONS_URL=$LIVE_TICKER_DOMAIN|g" .env
     sed -i "s|#LNURLP_ID=.*|LNURLP_ID=$LNURLP_ID|g" .env
     sed -i "s|#HIGHLIGHT_THRESHOLD=.*|HIGHLIGHT_THRESHOLD=${HIGHLIGHT_THRESHOLD:-2100}|g" .env
-    sed -i "s|#INFORMATION_URL=.*|INFORMATION_URL=$INFORMATION_URL|g" .env
+    if [[ -n "$INFORMATION_URL" ]]; then
+        sed -i "s|#INFORMATION_URL=.*|INFORMATION_URL=$INFORMATION_URL|g" .env
+    fi
 
     echo "Configuring Live Ticker in Caddy..."
     sudo bash -c "cat >> /etc/caddy/Caddyfile" <<EOL
@@ -56,7 +73,7 @@ if [[ "$ENABLE_LIVE_TICKER" == "yes" ]]; then
 $LIVE_TICKER_DOMAIN {
     @root path /
     rewrite @root /donations
-    reverse_proxy 127.0.0.1:5009
+    reverse_proxy 127.0.0.1:$PORT
     encode gzip
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
@@ -92,19 +109,14 @@ if [[ "$ENABLE_OVERWATCH" == "yes" ]]; then
     echo "Overwatch link added to the bot. Make sure you set up Overwatch via Netlify or similar."
 fi
 
-# Step 7: Install and Configure Caddy
-echo "Installing and configuring Caddy..."
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
-curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
-sudo apt-get update
-sudo apt-get install -y caddy
+# Step 7: Install and Configure Caddy for Naughtify
+echo "Installing and configuring Caddy for Naughtify..."
+sudo bash -c "cat >> /etc/caddy/Caddyfile" <<EOL
 
-read -p "Enter the primary subdomain for Naughtify (e.g., naughtify.yourdomain.com): " NAUGHTIFY_DOMAIN
-sudo bash -c "cat > /etc/caddy/Caddyfile" <<EOL
 # Configuration for Naughtify
 $NAUGHTIFY_DOMAIN {
-    reverse_proxy /webhook* 127.0.0.1:5009
-    reverse_proxy * 127.0.0.1:5009
+    reverse_proxy /webhook* 127.0.0.1:$PORT
+    reverse_proxy * 127.0.0.1:$PORT
     encode gzip
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
@@ -127,16 +139,21 @@ $NAUGHTIFY_DOMAIN {
 }
 EOL
 sudo systemctl reload caddy
+echo "Caddy configured for Naughtify."
 
 # Step 8: Configure Telegram Webhook
 echo "Configuring Telegram webhook..."
 WEBHOOK_URL="https://$NAUGHTIFY_DOMAIN/webhook"
-curl "https://api.telegram.org/bot$TELEGRAM_TOKEN/setWebhook?url=$WEBHOOK_URL"
+curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_TOKEN/setWebhook" -d "url=$WEBHOOK_URL"
+
+echo "Telegram webhook configured."
 
 # Step 9: Create Systemd Service
 echo "Creating systemd service for Naughtify..."
 USER=$(whoami)
-sudo bash -c "cat > /etc/systemd/system/naughtify.service" <<EOL
+SERVICE_FILE="/etc/systemd/system/naughtify.service"
+
+sudo bash -c "cat > $SERVICE_FILE" <<EOL
 [Unit]
 Description=Naughtify
 After=network.target
@@ -151,6 +168,7 @@ Restart=on-failure
 [Install]
 WantedBy=multi-user.target
 EOL
+
 sudo systemctl enable naughtify
 sudo systemctl start naughtify
 
