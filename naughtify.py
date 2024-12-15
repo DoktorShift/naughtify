@@ -75,40 +75,50 @@ if DONATIONS_URL and not LNURLP_ID:
 
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
+# --------------------- Logging Configuration ---------------------
+
+# Create a custom logger
 logger = logging.getLogger("lnbits_logger")
-logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.DEBUG)  # Capture all levels; handlers will filter
 
-file_handler = RotatingFileHandler("app.log", maxBytes=5 * 1024 * 1024, backupCount=3)
-file_handler.setLevel(logging.DEBUG)
+# Formatter for log messages
+formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s')
 
+# Handler for general logs (INFO and above)
+info_handler = RotatingFileHandler("app.log", maxBytes=2 * 1024 * 1024, backupCount=3)
+info_handler.setLevel(logging.INFO)
+info_handler.setFormatter(formatter)
+
+# Handler for debug logs (DEBUG and above)
+debug_handler = RotatingFileHandler("debug.log", maxBytes=5 * 1024 * 1024, backupCount=3)
+debug_handler.setLevel(logging.DEBUG)
+debug_handler.setFormatter(formatter)
+
+# Handler for console output (INFO and above)
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
-
-formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s')
-file_handler.setFormatter(formatter)
 console_handler.setFormatter(formatter)
 
-logger.addHandler(file_handler)
+# Add handlers to the logger
+logger.addHandler(info_handler)
+logger.addHandler(debug_handler)
 logger.addHandler(console_handler)
+
+# Reduce verbosity for specific modules (e.g., apscheduler)
+logging.getLogger('apscheduler').setLevel(logging.WARNING)  # Only WARNING and above
+
+# If you have other modules that are too verbose, adjust their logging levels similarly
+# Example:
+# logging.getLogger('some_module').setLevel(logging.ERROR)
+
+# --------------------- Helper Functions ---------------------
 
 def get_main_inline_keyboard():
     balance_button = InlineKeyboardButton("💰 Balance", callback_data='balance')
-
     latest_transactions_button = InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline')
-    if DONATIONS_URL:
-        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", url=DONATIONS_URL)
-    else:
-        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline')
-
-    if OVERWATCH_URL:
-        overwatch_button = InlineKeyboardButton("📊 Overwatch", url=OVERWATCH_URL)
-    else:
-        overwatch_button = InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline')
-
-    if LNBITS_URL:
-        lnbits_button = InlineKeyboardButton("⚡ LNBits", url=LNBITS_URL)
-    else:
-        lnbits_button = InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
+    live_ticker_button = InlineKeyboardButton("📡 Live Ticker", url=DONATIONS_URL) if DONATIONS_URL else InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline')
+    overwatch_button = InlineKeyboardButton("📊 Overwatch", url=OVERWATCH_URL) if OVERWATCH_URL else InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline')
+    lnbits_button = InlineKeyboardButton("⚡ LNBits", url=LNBITS_URL) if LNBITS_URL else InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
 
     inline_keyboard = [
         [balance_button],
@@ -223,6 +233,9 @@ def load_donations():
                     if "dislikes" not in donation:
                         donation["dislikes"] = 0
             logger.debug(f"{len(donations)} donations loaded from file.")
+
+            # Initialize processed_payments with existing donations' payment_hashes if available
+
         except Exception as e:
             logger.error(f"Error loading donations: {e}")
             logger.debug(traceback.format_exc())
@@ -290,10 +303,10 @@ def handle_ticker_ban(update, context):
                     FORBIDDEN_WORDS.add(word)
                     added_words.append(word)
 
-        # Nach dem bannen aktualisieren wir die Spenden und aktualisieren last_update
+        # After banning, sanitize existing donations
         sanitize_donations()
         global last_update
-        last_update = datetime.utcnow()  # Dies triggert das automatische Refresh im Frontend
+        last_update = datetime.utcnow()  # This triggers automatic refresh in the frontend
 
         if added_words:
             if len(added_words) == 1:
@@ -415,47 +428,30 @@ def updateDonations(data):
         logger.info('Latest donation: None yet.')
     save_donations()
 
-def handle_vote_command(donation_id, vote_type):
+def notify_transaction(payment, direction):
     try:
-        for donation in donations:
-            if donation.get("id") == donation_id:
-                if vote_type == 'like':
-                    donation["likes"] += 1
-                elif vote_type == 'dislike':
-                    donation["dislikes"] += 1
-                else:
-                    return {"error": "Invalid vote type."}, 400
-                save_donations()
-                return {"success": True, "likes": donation["likes"], "dislikes": donation["dislikes"]}, 200
-        return {"error": "Donation not found."}, 404
-    except Exception as e:
-        logger.error(f"Error handling vote: {e}")
-        logger.debug(traceback.format_exc())
-        return {"error": "Internal server error."}, 500
+        amount = payment["amount"]
+        memo = payment["memo"]
+        date = payment["date"]
+        emoji = "🟢" if direction == "incoming" else "🔴"
+        sign = "+" if direction == "incoming" else "-"
+        transaction_type = "Incoming Payment" if direction == "incoming" else "Outgoing Payment"
 
-def parse_time(time_input):
-    if not time_input:
-        logger.warning("No 'time' field found, using current time.")
-        return datetime.utcnow()
-    if isinstance(time_input, str):
-        try:
-            date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%S.%fZ")
-        except ValueError:
-            try:
-                date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%SZ")
-            except ValueError:
-                logger.error(f"Unable to parse time string: {time_input}")
-                date = datetime.utcnow()
-    elif isinstance(time_input, (int, float)):
-        try:
-            date = datetime.fromtimestamp(time_input)
-        except Exception as e:
-            logger.error(f"Unable to parse timestamp: {time_input}, error: {e}")
-            date = datetime.utcnow()
-    else:
-        logger.error(f"Unsupported time format: {time_input}")
-        date = datetime.utcnow()
-    return date
+        message = (
+            f"{emoji} *{transaction_type}*\n"
+            f"💰 Amount: {sign}{amount} sats\n"
+            f"✉️ Memo: {memo}"
+        )
+
+        bot.send_message(
+            chat_id=CHAT_ID,
+            text=message,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        logger.info(f"Notification for {transaction_type} sent successfully.")
+    except Exception as e:
+        logger.error(f"Error sending transaction notification: {e}")
+        logger.debug(traceback.format_exc())
 
 def send_latest_payments():
     global total_donations, donations, last_update
@@ -535,69 +531,29 @@ def send_latest_payments():
     for payment in outgoing_payments:
         notify_transaction(payment, "outgoing")
 
-def notify_transaction(payment, direction):
-    try:
-        amount = payment["amount"]
-        memo = payment["memo"]
-        date = payment["date"]
-        emoji = "🟢" if direction == "incoming" else "🔴"
-        sign = "+" if direction == "incoming" else "-"
-        transaction_type = "Incoming Payment" if direction == "incoming" else "Outgoing Payment"
-
-        message = (
-            f"{emoji} *{transaction_type}*\n"
-            f"💰 Amount: {sign}{amount} sats\n"
-            f"✉️ Memo: {memo}"
-        )
-
-        bot.send_message(
-            chat_id=CHAT_ID,
-            text=message,
-            parse_mode=ParseMode.MARKDOWN
-        )
-        logger.info(f"Notification for {transaction_type} sent successfully.")
-    except Exception as e:
-        logger.error(f"Error sending transaction notification: {e}")
-        logger.debug(traceback.format_exc())
-
-def send_main_inline_keyboard():
-    inline_reply_markup = get_main_inline_keyboard()
-    try:
-        welcome_message = (
-            "😶‍🌫️ Here we go!\n\n"
-            "I'm ready to assist you with monitoring your LNbits transactions.\n\n"
-            "Use the buttons below to explore the features."
-        )
-        bot.send_message(
-            chat_id=CHAT_ID,
-            text=welcome_message,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=inline_reply_markup
-        )
-        logger.info("Main inline keyboard successfully sent.")
-    except Exception as telegram_error:
-        logger.error(f"Error sending the main inline keyboard: {telegram_error}")
-        logger.debug(traceback.format_exc())
-
-def send_start_message(update, context):
-    chat_id = update.effective_chat.id
-    welcome_message = (
-        "👋 Welcome to Naughtify your LNBits Wallet Monitor!\n\n"
-        "Use the buttons below for quick access to various features."
-    )
-    reply_markup = get_main_keyboard()
-    
-    try:
-        bot.send_message(
-            chat_id=chat_id,
-            text=welcome_message,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
-        )
-        logger.info(f"Start message sent to chat_id {chat_id}.")
-    except Exception as e:
-        logger.error(f"Error sending the start message: {e}")
-        logger.debug(traceback.format_exc())
+def parse_time(time_input):
+    if not time_input:
+        logger.warning("No 'time' field found, using current time.")
+        return datetime.utcnow()
+    if isinstance(time_input, str):
+        try:
+            date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%S.%fZ")
+        except ValueError:
+            try:
+                date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%SZ")
+            except ValueError:
+                logger.error(f"Unable to parse time string: {time_input}")
+                date = datetime.utcnow()
+    elif isinstance(time_input, (int, float)):
+        try:
+            date = datetime.fromtimestamp(time_input)
+        except Exception as e:
+            logger.error(f"Unable to parse timestamp: {time_input}, error: {e}")
+            date = datetime.utcnow()
+    else:
+        logger.error(f"Unsupported time format: {time_input}")
+        date = datetime.utcnow()
+    return date
 
 def send_balance_message(chat_id):
     logger.info(f"Fetching balance for chat_id: {chat_id}")
@@ -933,8 +889,7 @@ def process_update(update):
             chat_id = message['chat']['id']
             text = message.get('text', '').strip()
 
-            # Hier werden nur nicht erkannte Befehle oder Tasten behandelt,
-            # da für /help, /info, /ticker_ban etc. CommandHandler zuständig ist.
+            # Only handle specific buttons/text; other inputs are handled by CommandHandlers
             if text == "💰 Balance":
                 handle_balance(None, None)
             elif text == "📜 Latest Transactions":
@@ -946,7 +901,7 @@ def process_update(update):
             elif text == "⚡ LNBits":
                 handle_lnbits(None, None)
             else:
-                # Unbekannte Eingabe
+                # Unknown input
                 bot.send_message(
                     chat_id=chat_id,
                     text="❓ I didn't recognize that command. Use /help to see what I can do."
@@ -975,6 +930,8 @@ def start_scheduler():
         logger.info("Latest Payments Fetch disabled.")
     scheduler.start()
     logger.info("Scheduler started.")
+
+# --------------------- Flask Routes ---------------------
 
 @app.route('/')
 def home():
@@ -1110,10 +1067,105 @@ def cinema_page():
         return "Donations are not enabled for Cinema Mode.", 404
     return render_template('cinema.html')
 
+# --------------------- Core Functionality ---------------------
+
+def handle_vote_command(donation_id, vote_type):
+    try:
+        for donation in donations:
+            if donation.get("id") == donation_id:
+                if vote_type == 'like':
+                    donation["likes"] += 1
+                elif vote_type == 'dislike':
+                    donation["dislikes"] += 1
+                else:
+                    return {"error": "Invalid vote type."}, 400
+                save_donations()
+                return {"success": True, "likes": donation["likes"], "dislikes": donation["dislikes"]}, 200
+        return {"error": "Donation not found."}, 404
+    except Exception as e:
+        logger.error(f"Error handling vote: {e}")
+        logger.debug(traceback.format_exc())
+        return {"error": "Internal server error."}, 500
+
+def send_main_inline_keyboard():
+    inline_reply_markup = get_main_inline_keyboard()
+    try:
+        welcome_message = (
+            "😶‍🌫️ Here we go!\n\n"
+            "I'm ready to assist you with monitoring your LNbits transactions.\n\n"
+            "Use the buttons below to explore the features."
+        )
+        bot.send_message(
+            chat_id=CHAT_ID,
+            text=welcome_message,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=inline_reply_markup
+        )
+        logger.info("Main inline keyboard successfully sent.")
+    except Exception as telegram_error:
+        logger.error(f"Error sending the main inline keyboard: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+def send_start_message(update, context):
+    chat_id = update.effective_chat.id
+    welcome_message = (
+        "👋 Welcome to Naughtify your LNBits Wallet Monitor!\n\n"
+        "Use the buttons below for quick access to various features."
+    )
+    reply_markup = get_main_keyboard()
+    
+    try:
+        bot.send_message(
+            chat_id=chat_id,
+            text=welcome_message,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+        logger.info(f"Start message sent to chat_id {chat_id}.")
+    except Exception as e:
+        logger.error(f"Error sending the start message: {e}")
+        logger.debug(traceback.format_exc())
+
+# --------------------- Initialization to Prevent Old Notifications ---------------------
+
+def initialize_processed_payments():
+    """
+    Fetch all existing payments and mark them as processed to prevent sending Telegram messages
+    for old donations when the server starts.
+    """
+    logger.info("Initializing processed payments to prevent old notifications.")
+    payments = fetch_api("payments")
+    if payments is None:
+        logger.error("Failed to initialize processed payments: Unable to fetch payments.")
+        return
+
+    for payment in payments:
+        payment_hash = payment.get("payment_hash")
+        if payment_hash and payment_hash not in processed_payments:
+            processed_payments.add(payment_hash)
+            add_processed_payment(payment_hash)
+    logger.info("Initialization of processed payments completed.")
+
+# --------------------- Main Function ---------------------
+
 def main():
+    # Initialize processed payments to prevent old notifications
+    initialize_processed_payments()
+
+    # Start the scheduler in a separate thread
+    scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
+    scheduler_thread.start()
+
+    # Start the Flask app in a separate thread
+    flask_thread = threading.Thread(target=lambda: app.run(host=APP_HOST, port=APP_PORT), daemon=True)
+    flask_thread.start()
+    logger.info(f"Flask Server running at {APP_HOST}:{APP_PORT}")
+
+    # Set up Telegram Bot handlers
     updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
 
+    # Command Handlers
     dispatcher.add_handler(CommandHandler('balance', lambda update, context: send_balance_message(update.effective_chat.id)))
     dispatcher.add_handler(CommandHandler('transactions', lambda update, context: send_transactions_message(update.effective_chat.id, page=1)))
     dispatcher.add_handler(CommandHandler('info', handle_info_command))
@@ -1121,14 +1173,17 @@ def main():
     dispatcher.add_handler(CommandHandler('start', send_start_message))
     dispatcher.add_handler(CommandHandler('ticker_ban', handle_ticker_ban, pass_args=True))
 
+    # Callback Query Handler
     dispatcher.add_handler(CallbackQueryHandler(handle_transactions_callback, pattern='^(balance|transactions_inline|prev_\\d+|next_\\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'))
 
+    # Message Handlers for Button Presses
     dispatcher.add_handler(MessageHandler(Filters.regex('^💰 Balance$'), handle_balance))
     dispatcher.add_handler(MessageHandler(Filters.regex('^📜 Latest Transactions$'), handle_latest_transactions))
     dispatcher.add_handler(MessageHandler(Filters.regex('^📡 Live Ticker$'), handle_live_ticker))
     dispatcher.add_handler(MessageHandler(Filters.regex('^📊 Overwatch$'), handle_overwatch))
     dispatcher.add_handler(MessageHandler(Filters.regex('^⚡ LNBits$'), handle_lnbits))
 
+    # Start Telegram Bot
     updater.start_polling()
     logger.info("Telegram Bot started.")
     send_main_inline_keyboard()
@@ -1144,10 +1199,7 @@ if __name__ == "__main__":
     else:
         logger.info("⏲️ Fetch Interval disabled")
 
-    scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
-    scheduler_thread.start()
+    # Load existing donations and mark their payments as processed
+    load_donations()
 
-    flask_thread = threading.Thread(target=lambda: app.run(host=APP_HOST, port=APP_PORT), daemon=True)
-    flask_thread.start()
-    logger.info(f"Flask Server at {APP_HOST}:{APP_PORT}")
     main()
