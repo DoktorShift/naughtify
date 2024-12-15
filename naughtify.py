@@ -5,7 +5,7 @@ from flask import Flask, jsonify, request, render_template, send_from_directory,
 from flask_cors import CORS
 from telegram import Bot, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
-from dotenv import load_dotenv, set_key, dotenv_values
+from dotenv import load_dotenv, set_key
 import requests
 import traceback
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -18,7 +18,6 @@ import json
 from urllib.parse import urlparse
 import re
 import uuid
-from werkzeug.security import check_password_hash, generate_password_hash
 import subprocess
 
 # --------------------- Configuration and Setup ---------------------
@@ -47,7 +46,7 @@ LNURLP_ID = os.getenv("LNURLP_ID") if DONATIONS_URL else None
 
 FORBIDDEN_WORDS_FILE = os.getenv("FORBIDDEN_WORDS_FILE", "forbidden_words.txt")
 
-BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))
+BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "1"))
 HIGHLIGHT_THRESHOLD = int(os.getenv("HIGHLIGHT_THRESHOLD", "2100"))
 LATEST_TRANSACTIONS_COUNT = int(os.getenv("LATEST_TRANSACTIONS_COUNT", "21"))
 
@@ -62,13 +61,14 @@ DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
 
 INFORMATION_URL = os.getenv("INFORMATION_URL")  # Optional
 
-ADMIN_PASSWORD_HASH = os.getenv("ADMIN_PASSWORD_HASH")  # Gehashtes Passwort
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")  # Cleartext password
 
 required_vars = {
     "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
     "CHAT_ID": CHAT_ID,
     "LNBITS_READONLY_API_KEY": LNBITS_READONLY_API_KEY,
-    "LNBITS_URL": LNBITS_URL
+    "LNBITS_URL": LNBITS_URL,
+    "ADMIN_PASSWORD": ADMIN_PASSWORD
 }
 
 missing_vars = [var for var, value in required_vars.items() if not value]
@@ -241,9 +241,6 @@ def load_donations():
                     if "dislikes" not in donation:
                         donation["dislikes"] = 0
             logger.debug(f"{len(donations)} donations loaded from file.")
-
-            # Initialize processed_payments with existing donations' payment_hashes if available
-
         except Exception as e:
             logger.error(f"Error loading donations: {e}")
             logger.debug(traceback.format_exc())
@@ -265,7 +262,7 @@ def save_donations():
 
 processed_payments = load_processed_payments()
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Sicherer Secret-Key für Sessions
+app.secret_key = os.urandom(24)  # Secure Secret-Key for Sessions
 CORS(app)  # Enable CORS
 
 latest_balance = {
@@ -1231,7 +1228,7 @@ def initialize_processed_payments():
 
 # --------------------- Authentication Routes ---------------------
 
-# Route für das Login
+# Route for Login
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'logged_in' in session:
@@ -1239,42 +1236,42 @@ def login():
     
     if request.method == 'POST':
         password = request.form.get('password')
-        if not ADMIN_PASSWORD_HASH:
-            flash('Admin password not set. Please set ADMIN_PASSWORD_HASH in your .env file.', 'danger')
+        if not ADMIN_PASSWORD:
+            flash('Admin password not set. Please set ADMIN_PASSWORD in your .env file.', 'danger')
             return render_template('login.html')
-        if check_password_hash(ADMIN_PASSWORD_HASH, password):
+        if password == ADMIN_PASSWORD:
             session['logged_in'] = True
-            flash('Erfolgreich angemeldet!', 'success')
+            flash('Successfully logged in!', 'success')
             return redirect(url_for('settings'))
         else:
-            flash('Falsches Passwort. Bitte versuche es erneut.', 'danger')
+            flash('Incorrect password. Please try again.', 'danger')
     
     return render_template('login.html')
 
-# Route für das Logout
+# Route for Logout
 @app.route('/logout')
 def logout():
     session.pop('logged_in', None)
-    flash('Erfolgreich abgemeldet.', 'success')
+    flash('Successfully logged out.', 'success')
     return redirect(url_for('login'))
 
-# Decorator zum Schutz von Routen
+# Decorator to protect routes
 def login_required(f):
     from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'logged_in' not in session:
-            flash('Bitte melde dich zuerst an.', 'danger')
+            flash('Please log in first.', 'danger')
             return redirect(url_for('login'))
         return f(*args, **kwargs)
     return decorated_function
 
-# Route für die Einstellungen
+# Route for Settings
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
     if request.method == 'POST':
-        # Liste der zu aktualisierenden Variablen
+        # List of environment variables to update
         env_vars = [
             'TELEGRAM_BOT_TOKEN',
             'CHAT_ID',
@@ -1294,20 +1291,21 @@ def settings():
             'PROCESSED_PAYMENTS_FILE',
             'CURRENT_BALANCE_FILE',
             'DONATIONS_FILE',
-            'FORBIDDEN_WORDS_FILE'
+            'FORBIDDEN_WORDS_FILE',
+            'ADMIN_PASSWORD'
         ]
         try:
             for var in env_vars:
                 value = request.form.get(var)
                 if value is not None:
                     set_key('.env', var, value)
-                    os.environ[var] = value  # Aktualisiere die aktuelle Umgebung
-            flash('Einstellungen wurden erfolgreich aktualisiert.', 'success')
+                    os.environ[var] = value  # Update the current environment
+            flash('Settings updated successfully.', 'success')
             return redirect(url_for('settings'))
         except Exception as e:
-            flash(f'Fehler beim Aktualisieren der Einstellungen: {e}', 'danger')
+            flash(f'Error updating settings: {e}', 'danger')
     
-    # GET-Methode: Zeige die aktuellen Werte
+    # GET method: Show current values
     env_vars = {
         'TELEGRAM_BOT_TOKEN': os.getenv('TELEGRAM_BOT_TOKEN', ''),
         'CHAT_ID': os.getenv('CHAT_ID', ''),
@@ -1327,21 +1325,22 @@ def settings():
         'PROCESSED_PAYMENTS_FILE': os.getenv('PROCESSED_PAYMENTS_FILE', ''),
         'CURRENT_BALANCE_FILE': os.getenv('CURRENT_BALANCE_FILE', ''),
         'DONATIONS_FILE': os.getenv('DONATIONS_FILE', ''),
-        'FORBIDDEN_WORDS_FILE': os.getenv('FORBIDDEN_WORDS_FILE', '')
+        'FORBIDDEN_WORDS_FILE': os.getenv('FORBIDDEN_WORDS_FILE', ''),
+        'ADMIN_PASSWORD': os.getenv('ADMIN_PASSWORD', '')
     }
 
     return render_template('settings.html', env_vars=env_vars)
 
-# Route zum Neustarten des Servers
+# Route to Restart Server
 @app.route('/restart', methods=['POST'])
 @login_required
 def restart_server():
     try:
-        # Hier muss der Name der systemd-Anwendung ersetzt werden
+        # Replace 'naughtify' with the actual name of your systemd service
         subprocess.run(['systemctl', 'restart', 'naughtify'], check=True)
-        flash('Server wurde erfolgreich neu gestartet.', 'success')
+        flash('Server restarted successfully.', 'success')
     except subprocess.CalledProcessError as e:
-        flash(f'Fehler beim Neustarten des Servers: {e}', 'danger')
+        flash(f'Error restarting server: {e}', 'danger')
         logger.error(f"Error restarting server: {e}")
         logger.debug(traceback.format_exc())
     return redirect(url_for('settings'))
