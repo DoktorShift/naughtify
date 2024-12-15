@@ -153,6 +153,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const newCount = data.donations.length;
             if (newCount > lastKnownCount && lastKnownCount !== 0) {
                 const newDonation = data.donations[newCount - 1];
+                console.log('New donation detected:', newDonation);
                 playSound(newDonation.amount);
             }
             lastKnownCount = newCount;
@@ -163,9 +164,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Play sound based on donation amount
     function playSound(amount) {
-        if (isMuted) return;
+        if (isMuted) {
+            console.log('Sounds are muted. Skipping playback.');
+            return;
+        }
 
         const sound = amount > highlightThreshold ? bigSound : normalSound;
+        console.log('Playing sound:', sound.src);
         sound.currentTime = 0; // Reset to start
         sound.play().catch(err => {
             console.error('Audio playback failed:', err);
@@ -177,6 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isMuted = !isMuted;
         soundIcon.textContent = isMuted ? '🔇' : '🔊';
         soundToggleBtn.setAttribute('aria-label', isMuted ? 'Unmute Sounds' : 'Mute Sounds');
+        console.log('Sound toggled. isMuted:', isMuted);
     });
 
     // Accessibility: Initialize aria-label
