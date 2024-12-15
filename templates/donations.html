@@ -1,5 +1,4 @@
-<!-- donations.html -->
-
+<!-- templates/donations.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,8 +12,9 @@
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     
-    <!-- External CSS File -->
+    <!-- External CSS Files -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
 </head>
 <body>
     <div class="dashboard">
@@ -121,15 +121,20 @@
                     <a href="https://github.com/DoktorShift/naughtify" target="_blank" aria-label="github">
                         <i class="fab fa-github"></i>
                     </a>
+                    <!-- Login Section im Footer -->
+                    <a href="{{ url_for('login') }}" class="btn btn-primary" title="Login">Login</a>
                 </div>
             </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2024 Naughtify. Alle Rechte vorbehalten.
         </div>
     </footer>
 
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
-    <!-- External JS File -->
+    <!-- External JS Files -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
