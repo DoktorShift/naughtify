@@ -435,7 +435,7 @@ Open .env to edit
 sudo nano ~/naughtify/.env
 ```
 
-Search for `# OVERWATCH_URL=YourOverwatchURL`. Remove `#` and customize it for yourself:
+Search for `#OVERWATCH_URL=YourOverwatchURL`. Remove `#` and customize it for yourself:
 
 ```plaintext
 OVERWATCH_URL=https://lnbits.yourdomain.com
