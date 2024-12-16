@@ -1,54 +1,54 @@
-/* CSS-Variablen für Light Mode Farben und Themen */
+/* CSS Variables for Light Mode Colors and Theme */
 :root {
-/* Primäre Farben */
-    --primary-color: #1f4b6d; /* Dunkelblau */
-    --secondary-color: #3498db; /* Blau */
+    /* Primary Colors */
+    --primary-color: #1f4b6d;
+    --secondary-color: #3498db;
 
-    /* Hintergründe */
-    --background-gradient-start: #d3e8f3; /* Hellblau */
-    --background-gradient-end: #eef4f7; /* Sehr Hellblau */
-    --card-background-start: #ffffff; /* Weiß */
-    --card-background-end: #f7fbfd; /* Sehr Hellgrau */
+    /* Backgrounds */
+    --background-gradient-start: #d3e8f3;
+    --background-gradient-end: #eef4f7;
+    --card-background-start: #ffffff;
+    --card-background-end: #f7fbfd;
 
-    /* Textfarben */
-    --text-color: #333; /* Dunkelgrau */
-    --text-color-light: #666; /* Mittelgrau */
+    /* Text Colors */
+    --text-color: #333;
+    --text-color-light: #666;
 
-    /* Hervorhebungsfarben */
-    --highlight-background: #ffe0b2; /* Hellorange */
-    --highlight-text-color: #e65100; /* Dunkelorange */
-    --highlight-border: #ff9800; /* Orange */
+    /* Highlighting Colors */
+    --highlight-background: #ffe0b2;
+    --highlight-text-color: #e65100;
+    --highlight-border: #ff9800;
 
-    /* Spendenfarben */
-    --donation-amount-color: #27ae60; /* Grün */
+    /* Donation Colors */
+    --donation-amount-color: #27ae60;
 
-    /* Farben für Kopierfelder */
-    --copy-field-background: #e3eff5; /* Sehr Hellblau */
-    --copy-field-hover-background: #d0e4f1; /* Hellblau */
+    /* Copy Fields */
+    --copy-field-background: #e3eff5;
+    --copy-field-hover-background: #d0e4f1;
 
-    /* Footer-Farben */
-    --footer-background: #1f4b6d; /* Dunkelblau */
-    --footer-text-color: #fff; /* Weiß */
+    /* Footer Colors */
+    --footer-background: #1f4b6d;
+    --footer-text-color: #fff;
 
-    /* Toast-Farben */
-    --toast-success-bg: #4caf50; /* Grün */
-    --toast-success-text: #fff; /* Weiß */
-    --toast-error-bg: #f44336; /* Rot */
-    --toast-error-text: #fff; /* Weiß */
+    /* Toast Colors */
+    --toast-success-bg: #4caf50;
+    --toast-success-text: #fff;
+    --toast-error-bg: #f44336;
+    --toast-error-text: #fff;
 
-    /* Tooltip-Farben */
+    /* Tooltip Colors */
     --tooltip-background: rgba(0, 0, 0, 0.8);
     --tooltip-text-color: #fff;
 
-    /* Button-Farben */
-    --button-color: #888; /* Grau */
-    --button-hover-color-like: #27ae60; /* Grün */
-    --button-hover-color-dislike: #e74c3c; /* Rot */
+    /* Button Colors */
+    --button-color: #888;
+    --button-hover-color-like: #27ae60;
+    --button-hover-color-dislike: #e74c3c;
 
     /* Social Icons Hover Color */
-    --social-icon-hover-color: #fff; /* Weiß */
+    --social-icon-hover-color: #fff;
 
-    /* Schriftgrößen (Basis: 16px) */
+    /* Font Sizes */
     --base-font-size: 16px;
     --h1-size: 3rem;
     --h2-size: 2rem;
@@ -56,57 +56,38 @@
     --p-size: 1rem;
     --small-text: 0.9rem;
 
-    /* Übergänge */
+    /* Transitions */
     --transition-speed: 0.3s;
 }
 
-/* Dark Mode Overrides */
+/* Dark Mode Override Variables */
 body.dark-mode {
-    /* Primäre Farben */
-    --primary-color: #2c3e50; /* Dunkel-Slate-Blau */
-    --secondary-color: #2980b9; /* Starkes Blau */
-
-    /* Hintergründe */
-    --background-gradient-start: #1e2a38; /* Sehr Dunkelblau */
-    --background-gradient-end: #16202c; /* Fast Schwarzes Blau */
-    --card-background-start: #2c3e50; /* Dunkel-Slate-Blau */
-    --card-background-end: #34495e; /* Dunkleres Blau-Grau */
-
-    /* Textfarben */
-    --text-color: #ecf0f1; /* Hellgrau */
-    --text-color-light: #bdc3c7; /* Mittelhellgrau */
-
-    /* Hervorhebungsfarben */
-    --highlight-background: #e67e22; /* Orange */
-    --highlight-text-color: #ffffff; /* Weiß */
-    --highlight-border: #d35400; /* Dunkelorange */
-
-    /* Spendenfarben */
-    --donation-amount-color: #2ecc71; /* Smaragdgrün */
-
-    /* Farben für Kopierfelder */
-    --copy-field-background: #34495e; /* Dunkles Blau-Grau */
-    --copy-field-hover-background: #3c5a73; /* Etwas Hellblaueres Dunkles Blau */
-
-    /* Footer-Farben */
-    --footer-background: #1e2a38; /* Sehr Dunkelblau */
-    --footer-text-color: #ecf0f1; /* Weiß */
-
-    /* Toast-Farben */
-    --toast-success-bg: #27ae60; /* Grün */
-    --toast-success-text: #ffffff; /* Weiß */
-    --toast-error-bg: #c0392b; /* Rot */
-    --toast-error-text: #ffffff; /* Weiß */
-
-    /* Tooltip-Farben */
+    --primary-color: #2c3e50;
+    --secondary-color: #2980b9;
+    --background-gradient-start: #1e2a38;
+    --background-gradient-end: #16202c;
+    --card-background-start: #2c3e50;
+    --card-background-end: #34495e;
+    --text-color: #ecf0f1;
+    --text-color-light: #bdc3c7;
+    --highlight-background: #e67e22;
+    --highlight-text-color: #ffffff;
+    --highlight-border: #d35400;
+    --donation-amount-color: #2ecc71;
+    --copy-field-background: #34495e;
+    --copy-field-hover-background: #3c5a73;
+    --footer-background: #1e2a38;
+    --footer-text-color: #ecf0f1;
+    --toast-success-bg: #27ae60;
+    --toast-success-text: #ffffff;
+    --toast-error-bg: #c0392b;
+    --toast-error-text: #ffffff;
     --tooltip-background: rgba(44, 62, 80, 0.9);
     --tooltip-text-color: #ecf0f1;
-
-    /* Social Icons Hover Color */
-    --social-icon-hover-color: #fff; /* Weiß */
+    --social-icon-hover-color: #fff;
 }
 
-/* Allgemeine Stile */
+/* General Styles */
 body {
     margin: 0;
     font-family: 'Arial', sans-serif;
@@ -181,10 +162,7 @@ a {
 .slider {
     position: absolute;
     cursor: pointer;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    top: 0; left: 0; right: 0; bottom: 0;
     background-color: #ccc;
     transition: background-color 0.4s;
     border-radius: 24px;
@@ -210,7 +188,7 @@ a {
     transform: translateX(26px);
 }
 
-/* Info Tooltip Styles */
+/* Info Tooltip */
 .info-tooltip {
     position: absolute;
     top: 20px;
@@ -239,7 +217,7 @@ a {
     padding: 8px 0;
     position: absolute;
     z-index: 1;
-    bottom: 125%; /* Position above the icon */
+    bottom: 125%; 
     left: 50%;
     transform: translateX(-50%);
     opacity: 0;
@@ -250,7 +228,7 @@ a {
 .tooltip-text::after {
     content: "";
     position: absolute;
-    top: 100%; /* At the bottom of the tooltip */
+    top: 100%; 
     left: 50%;
     transform: translateX(-50%);
     border-width: 6px;
@@ -266,11 +244,9 @@ a {
 /* Make the entire info-tooltip clickable by overlaying the link */
 .info-link {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    text-indent: -9999px; /* Hide text */
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    text-indent: -9999px;
     z-index: 2;
 }
 
@@ -325,7 +301,7 @@ a {
     color: var(--secondary-color);
 }
 
-/* QR Code Image Styling */
+/* QR Card */
 .qr-card img {
     max-width: 100%;
     border-radius: 0.75rem;
@@ -338,7 +314,7 @@ a {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* Lightning Address Card Styling */
+/* Lightning Card */
 .lightning-card .copy-field {
     background: var(--copy-field-background);
     padding: 0.75rem;
@@ -347,9 +323,9 @@ a {
     cursor: pointer;
     transition: background var(--transition-speed) ease, transform 0.2s ease;
     display: flex;
-    flex-direction: column; /* For centered alignment */
-    align-items: center; /* Horizontal Centering */
-    justify-content: center; /* Vertical Centering */
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
     gap: 0.5rem;
 }
 
@@ -393,17 +369,13 @@ a {
     color: var(--text-color-light);
 }
 
-/* Logo Styling and Placement */
+/* Logo */
 .main-logo {
-    max-width: 300px; /* Size */
+    max-width: 300px;
     margin-top: 1rem;
     display: block;
     margin-left: auto;
     margin-right: auto;
-}
-
-.header .main-logo {
-    margin-bottom: 1rem;
 }
 
 /* Transactions Table */
@@ -452,14 +424,26 @@ table td.amount {
     color: var(--donation-amount-color);
 }
 
-/* Like and Dislike Button Styles */
+/* Patron Badge for logged-in donors */
+.patron-badge {
+    display: inline-block;
+    background-color: orange;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 0.5rem;
+    font-weight: bold;
+    margin-right: 0.5rem;
+    font-size: 0.9rem;
+    vertical-align: middle;
+}
+
+/* Like and Dislike Buttons */
 .like-button, .dislike-button { }
 
 .like-button .material-icons, .dislike-button .material-icons {
     font-size: 1.2rem;
 }
 
-/* Like and Dislike Buttons within the Actions Column */
 table td.actions {
     display: flex;
     align-items: center;
@@ -476,18 +460,18 @@ table td.actions {
 }
 
 .like-button:hover {
-    color: var(--button-hover-color-like); /* Grün */
+    color: var(--button-hover-color-like);
     transform: scale(1.2);
 }
 
 .dislike-button:hover {
-    color: var(--button-hover-color-dislike); /* Rot */
+    color: var(--button-hover-color-dislike);
     transform: scale(1.2);
 }
 
 .likes-count, .dislikes-count {
     font-size: 0.9rem;
-    color: #555; /* Optional: Can be changed to var(--text-color) */
+    color: #555;
 }
 
 /* Highlight Class for Large Donations */
@@ -534,7 +518,7 @@ table td.actions {
     font-size: 1rem;
 }
 
-/* Modern Footer Styles */
+/* Modern Footer */
 footer.footer {
     background-color: var(--footer-background);
     color: var(--footer-text-color);
@@ -610,13 +594,13 @@ footer.footer {
 }
 
 .footer-section .social-icons a i {
-    font-size: 24px; /* Adjust icon size */
+    font-size: 24px;
     color: var(--footer-text-color);
     transition: color var(--transition-speed);
 }
 
 .footer-section .social-icons a:hover i {
-    color: var(--social-icon-hover-color); /* Use variable for hover color */
+    color: var(--social-icon-hover-color);
 }
 
 /* Footer Bottom */
@@ -630,7 +614,7 @@ footer.footer {
     font-family: 'Arial', sans-serif;
 }
 
-/* Toast Notification Styles */
+/* Toast Notifications */
 #toast-container {
     position: fixed;
     bottom: 20px;
@@ -675,7 +659,7 @@ footer.footer {
     }
 }
 
-/* Material Icons Adjustment for Like/Dislike */
+/* Material Icons vertical alignment */
 .material-icons {
     vertical-align: middle;
 }
@@ -704,7 +688,6 @@ footer.footer {
         gap: 0.3rem;
     }
 
-    /* Adjust Login Button in Footer for Smaller Screens */
     footer.footer .social-icons {
         flex-direction: column;
         align-items: center;
@@ -716,31 +699,41 @@ footer.footer {
     }
 }
 
-/* Styling for the GitHub Icon to Match Others */
-.footer-section .social-icons a i {
-    font-size: 24px; /* Adjust icon size */
-    color: var(--footer-text-color);
-    transition: color var(--transition-speed);
+/* Enhanced Login Button Styling for "Login" Section */
+.footer-section.login .login-container {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
 }
 
-.footer-section .social-icons a:hover i {
-    color: var(--social-icon-hover-color); /* Use variable for hover color */
-}
-
-/* Login Button Styling */
+/* Base login-button styling (rectangular, modern, shiny) */
 .login-button {
     display: inline-flex;
     align-items: center;
     padding: 0.5rem 1rem;
-    background-color: var(--primary-color);
-    color: var(--footer-text-color);
-    border: none;
-    border-radius: 4px;
+    border: 1px solid #ccc;
+    border-radius: 0; /* no rounded corners */
     font-size: 1rem;
     cursor: pointer;
-    transition: background-color var(--transition-speed), transform var(--transition-speed);
     text-decoration: none;
     font-family: 'Arial', sans-serif;
+    font-weight: bold;
+    background: linear-gradient(to bottom, #ffffff, #d7e1e8);
+    color: #333;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2) inset;
+    transition: background var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed);
+}
+
+.login-button:hover {
+    background: linear-gradient(to bottom, #f0f0f0, #cfd7dc);
+    transform: translateY(-1px);
+}
+
+.login-button:active {
+    background: linear-gradient(to bottom, #cfd7dc, #f0f0f0);
+    box-shadow: none;
+    transform: translateY(0);
 }
 
 .login-button i.material-icons {
@@ -748,17 +741,55 @@ footer.footer {
     font-size: 20px;
 }
 
-.login-button:hover {
-    background-color: var(--secondary-color);
-    transform: translateY(-2px);
+/* Admin Login Button (silver-like) */
+.login-button.admin-login {
+    background: linear-gradient(to bottom, #e0e0e0, #c0c0c0);
+    color: #000;
+    border: 1px solid #aaa;
 }
 
-/* Adjustments for Dark Mode */
+.login-button.admin-login:hover {
+    background: linear-gradient(to bottom, #d0d0d0, #b0b0b0);
+}
+
+/* LN Login Button (yellow-like) */
+.login-button.ln-login {
+    background: linear-gradient(to bottom, #fff9d6, #ffe773);
+    color: #333;
+    border: 1px solid #ccb800;
+}
+
+.login-button.ln-login:hover {
+    background: linear-gradient(to bottom, #fff5ba, #ffdf4d);
+}
+
+/* Dark Mode Adjustments for Login Buttons */
 body.dark-mode .login-button {
-    background-color: var(--primary-color);
-    color: var(--footer-text-color);
+    background: linear-gradient(to bottom, #333, #444);
+    color: #fff;
+    border: 1px solid #444;
 }
 
 body.dark-mode .login-button:hover {
-    background-color: var(--secondary-color);
+    background: linear-gradient(to bottom, #444, #555);
+}
+
+body.dark-mode .login-button.admin-login {
+    background: linear-gradient(to bottom, #666, #777);
+    border: 1px solid #555;
+    color: #fff;
+}
+
+body.dark-mode .login-button.admin-login:hover {
+    background: linear-gradient(to bottom, #555, #666);
+}
+
+body.dark-mode .login-button.ln-login {
+    background: linear-gradient(to bottom, #999000, #ccc600);
+    border: 1px solid #aaa000;
+    color: #fff;
+}
+
+body.dark-mode .login-button.ln-login:hover {
+    background: linear-gradient(to bottom, #888000, #bbb500);
 }
