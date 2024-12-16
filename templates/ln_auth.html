@@ -1,9 +1,31 @@
 <!DOCTYPE html>
-<html>
-<head><title>Login with Lightning</title></head>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Login with Lightning</title>
+    <link rel="stylesheet" href="ln_auth.css">
+</head>
 <body>
     <h1>Login with Lightning</h1>
     <p>Scan this QR code with your Lightning wallet to log in. Remember which wallet you used as this will act as your password.</p>
-    <img src="data:image/png;base64,{{ qr_code_data }}" alt="LNURL Auth QR">
+    <div class="container">
+        <div class="qr-section">
+            <img src="data:image/png;base64,{{ qr_code_data }}" alt="LNURL Auth QR">
+        </div>
+        <div class="info-section">
+            <h2>The Login with Lightning button is powered by LNURL-auth</h2>
+            <p>LNURL-auth is a lightweight authentication protocol that is easy to use, implement, and respects the user's privacy.</p>
+
+            <h3>What is LNURL-auth?</h3>
+            <p>LNURL-auth is a generic authentication protocol using digital signatures. This means users only need a key pair. With the growing popularity of lightning wallets, users easily have such keys. No other identifying information (passwords, emails, usernames) is required.</p>
+
+            <h3>How does it work?</h3>
+            <p>The seed of your Bitcoin wallet generates secret authentication keys. When you log in to a site, the site poses a challenge only solvable by your secret key. 
+            <a href="https://github.com/fiatjaf/lnurl-rfc/blob/luds/04.md" target="_blank">A more technical explanation</a> can be found here.</p>
+
+            <h3>Are identities persistent?</h3>
+            <p>Yes, but they don't transfer across sites or wallets. Each domain uses a different key, so no cross-domain association is possible. As long as you use the same wallet for the same site, your identity remains consistent.</p>
+        </div>
+    </div>
 </body>
 </html>
