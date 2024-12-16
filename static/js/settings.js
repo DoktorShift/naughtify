@@ -6,18 +6,24 @@ function restartServer() {
         fetch('/restart', {
             method: 'POST'
         })
-        .then(response => response.json())
-        .then(data => {
-            // Handle response if needed
-            alert('Server is restarting...');
+        .then(response => {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else if (response.ok) {
+                alert('Server is restarting...');
+            } else {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Unknown error');
+                });
+            }
         })
         .catch(error => {
             console.error('Error restarting server:', error);
-            alert('Error restarting the server.');
+            alert('Error restarting the server: ' + error.message);
         });
 }
 
-// Dark Mode Toggle Script
+// Dark Mode Toggle Script and Toggle Password Visibility
 document.addEventListener('DOMContentLoaded', () => {
     const toggle = document.getElementById('darkModeToggle');
     const body = document.body;
@@ -36,5 +42,20 @@ document.addEventListener('DOMContentLoaded', () => {
             body.classList.remove('dark-mode');
             localStorage.setItem('darkMode', 'disabled');
         }
+    });
+
+    // Toggle Password Visibility
+    const togglePasswordButtons = document.querySelectorAll('.toggle-password');
+    togglePasswordButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const input = button.parentElement.previousElementSibling;
+            if (input.type === 'password') {
+                input.type = 'text';
+                button.innerHTML = '<i class="fas fa-eye-slash"></i>';
+            } else {
+                input.type = 'password';
+                button.innerHTML = '<i class="fas fa-eye"></i>';
+            }
+        });
     });
 });
