@@ -19,6 +19,10 @@ from urllib.parse import urlparse
 import re
 import uuid
 from functools import wraps
+from secp256k1 import PublicKey
+from binascii import unhexlify
+import secrets
+import string
 
 # --------------------- Configuration and Setup ---------------------
 
@@ -44,6 +48,7 @@ FORBIDDEN_WORDS_FILE = os.getenv("FORBIDDEN_WORDS_FILE", "forbidden_words.txt")
 PROCESSED_PAYMENTS_FILE = os.getenv("PROCESSED_PAYMENTS_FILE", "processed_payments.txt")
 CURRENT_BALANCE_FILE = os.getenv("CURRENT_BALANCE_FILE", "current-balance.txt")
 DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
+USERS_FILE = "user_ln.json"  # Changed from users.json to user_ln.json
 
 # Thresholds and Intervals
 BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))
@@ -84,43 +89,32 @@ bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 # --------------------- Logging Configuration ---------------------
 
-# Create a custom logger
 logger = logging.getLogger("lnbits_logger")
-logger.setLevel(logging.DEBUG)  # Capture all levels; handlers will filter
+logger.setLevel(logging.DEBUG)
 
-# Formatter for log messages
 formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s')
 
-# Handler for general logs (INFO and above)
 info_handler = RotatingFileHandler("app.log", maxBytes=2 * 1024 * 1024, backupCount=3)
 info_handler.setLevel(logging.INFO)
 info_handler.setFormatter(formatter)
 
-# Handler for debug logs (DEBUG and above)
 debug_handler = RotatingFileHandler("debug.log", maxBytes=5 * 1024 * 1024, backupCount=3)
 debug_handler.setLevel(logging.DEBUG)
 debug_handler.setFormatter(formatter)
 
-# Handler for console output (INFO and above)
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
 
-# Add handlers to the logger
 logger.addHandler(info_handler)
 logger.addHandler(debug_handler)
 logger.addHandler(console_handler)
 
-# Reduce verbosity for specific modules (e.g., apscheduler)
-logging.getLogger('apscheduler').setLevel(logging.WARNING)  # Only WARNING and above
-
-# --------------------- Flask App Initialization ---------------------
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 app = Flask(__name__)
-app.secret_key = SECRET_KEY  # Secure Secret-Key for Sessions
-CORS(app)  # Enable CORS
-
-# --------------------- Global Variables ---------------------
+app.secret_key = SECRET_KEY
+CORS(app)
 
 processed_payments = set()
 donations = []
@@ -135,48 +129,36 @@ latest_balance = {
 
 latest_payments = []
 
-# --------------------- Helper Functions ---------------------
+# LNURL-auth related
+ln_auth_challenges = {}
 
-def get_main_inline_keyboard():
-    balance_button = InlineKeyboardButton("💰 Balance", callback_data='balance')
-    latest_transactions_button = InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline')
-    
-    if DONATIONS_URL:
-        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", url=DONATIONS_URL)
-    else:
-        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline')
-    
-    if OVERWATCH_URL:
-        overwatch_button = InlineKeyboardButton("📊 Overwatch", url=OVERWATCH_URL)
-    else:
-        overwatch_button = InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline')
-    
-    if LNBITS_URL:
-        lnbits_button = InlineKeyboardButton("⚡ LNBits", url=LNBITS_URL)
-    else:
-        lnbits_button = InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
+def load_users():
+    if not os.path.exists(USERS_FILE):
+        return {}
+    try:
+        with open(USERS_FILE, 'r') as f:
+            return json.load(f)
+    except:
+        logger.error("Could not load user_ln.json")
+        return {}
 
-    inline_keyboard = [
-        [balance_button],
-        [latest_transactions_button, live_ticker_button],
-        [overwatch_button, lnbits_button]
-    ]
-    logger.debug("Main inline keyboard created.")
-    return InlineKeyboardMarkup(inline_keyboard)
+def save_users(users):
+    try:
+        with open(USERS_FILE, 'w') as f:
+            json.dump(users, f, indent=4)
+    except Exception as e:
+        logger.error(f"Error saving users: {e}")
 
-def get_main_keyboard():
-    balance_button = ["💰 Balance"]
-    main_options_row_1 = ["📊 Overwatch", "📡 Live Ticker"]
-    main_options_row_2 = ["📜 Latest Transactions", "⚡ LNBits"]
+users = load_users()
 
-    keyboard = [
-        balance_button,
-        main_options_row_1,
-        main_options_row_2
-    ]
-
-    logger.debug("Main reply keyboard created.")
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
+def create_lnurl_auth_link():
+    # Generate random k1
+    k1 = secrets.token_hex(32)
+    ln_auth_challenges[k1] = True
+    # Construct the LNURL-auth URL
+    # Ensure your domain and ports are accessible publicly.
+    url = f"https://{APP_HOST}:{APP_PORT}/lnurl-auth?tag=login&k1={k1}&action=login"
+    return url, k1
 
 def load_forbidden_words(file_path):
     forbidden = set()
@@ -295,7 +277,6 @@ def save_donations():
             logger.error(f"Error saving donations: {e}")
             logger.debug(traceback.format_exc())
 
-# Initialize processed payments and donations
 processed_payments = load_processed_payments()
 load_donations()
 
@@ -337,17 +318,16 @@ def handle_ticker_ban(update, context):
                     added_words.append(word)
         logger.debug(f"Words to ban processed: Added {added_words}, Duplicates {duplicate_words}.")
 
-        # After banning, sanitize existing donations
         sanitize_donations()
         global last_update
-        last_update = datetime.utcnow()  # This triggers automatic refresh in the frontend
+        last_update = datetime.utcnow()
 
         if added_words:
             if len(added_words) == 1:
-                success_message = f"✅ Great! I've successfully added the word '{added_words[0]}' to the banned list. The Live Ticker will update shortly!"
+                success_message = f"✅ Added the banned word '{added_words[0]}'!"
             else:
                 words_formatted = "', '".join(added_words)
-                success_message = f"✅ Great! I've added these words to the banned list: '{words_formatted}'. The Live Ticker will update shortly!"
+                success_message = f"✅ Added these banned words: '{words_formatted}'."
             bot.send_message(chat_id, text=success_message)
             logger.info(f"Added forbidden words: {added_words}")
         if duplicate_words:
@@ -355,7 +335,7 @@ def handle_ticker_ban(update, context):
                 duplicate_message = f"⚠️ The word '{duplicate_words[0]}' was already banned."
             else:
                 words_formatted = "', '".join(duplicate_words)
-                duplicate_message = f"⚠️ The following words were already banned: '{words_formatted}'."
+                duplicate_message = f"⚠️ These words were already banned: '{words_formatted}'."
             bot.send_message(chat_id, text=duplicate_message)
             logger.info(f"Duplicate forbidden words attempted to add: {duplicate_words}")
     except Exception as e:
@@ -404,12 +384,10 @@ def get_lnurlp_info(lnurlp_id):
     if not DONATIONS_URL or not LNURLP_ID:
         logger.debug("Donations not enabled. Skipping get_lnurlp_info.")
         return None
-
     pay_links = fetch_pay_links()
     if pay_links is None:
         logger.error("Could not fetch Pay Links.")
         return None
-
     for pay_link in pay_links:
         if pay_link.get("id") == lnurlp_id:
             logger.debug(f"Matching Pay Link found: {pay_link}")
@@ -474,7 +452,6 @@ def notify_transaction(payment, direction):
     try:
         amount = payment["amount"]
         memo = payment["memo"]
-        date = payment["date"]
         emoji = "🟢" if direction == "incoming" else "🔴"
         sign = "+" if direction == "incoming" else "-"
         transaction_type = "Incoming Payment" if direction == "incoming" else "Outgoing Payment"
@@ -495,6 +472,32 @@ def notify_transaction(payment, direction):
         logger.error(f"Error sending transaction notification: {e}")
         logger.debug(traceback.format_exc())
 
+def parse_time(time_input):
+    if not time_input:
+        logger.warning("No 'time' field found, using current time.")
+        return datetime.utcnow()
+    if isinstance(time_input, str):
+        try:
+            date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%S.%fZ")
+            return date
+        except ValueError:
+            try:
+                date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%SZ")
+                return date
+            except ValueError:
+                logger.error(f"Unable to parse time string: {time_input}. Using current time.")
+                return datetime.utcnow()
+    elif isinstance(time_input, (int, float)):
+        try:
+            date = datetime.fromtimestamp(time_input)
+            return date
+        except Exception as e:
+            logger.error(f"Unable to parse timestamp: {time_input}, error: {e}. Using current time.")
+            return datetime.utcnow()
+    else:
+        logger.error(f"Unsupported time format: {time_input}. Using current time.")
+        return datetime.utcnow()
+
 def send_latest_payments():
     global total_donations, donations, last_update, latest_balance, latest_payments
     logger.info("Fetching latest payments...")
@@ -508,7 +511,7 @@ def send_latest_payments():
 
     sorted_payments = sorted(payments, key=lambda x: x.get("time", ""), reverse=True)
     latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]
-    latest_payments = latest.copy()  # Update latest_payments for /status route
+    latest_payments = latest.copy()
 
     if not latest:
         logger.info("No payments found.")
@@ -518,25 +521,25 @@ def send_latest_payments():
     outgoing_payments = []
     new_processed_hashes = []
 
+    # Check if user is logged in (LN Auth)
+    user_linking_key = session.get('linking_key') if 'linking_key' in session else None
+
     for payment in latest:
         payment_hash = payment.get("payment_hash")
         if payment_hash in processed_payments:
-            logger.debug(f"Payment {payment_hash} already processed. Skipping.")
             continue
         amount_msat = payment.get("amount", 0)
         memo = sanitize_memo(payment.get("memo", "No memo provided."))
         status = payment.get("status", "completed")
         time_str = payment.get("time", None)
         date = parse_time(time_str)
-        formatted_date = date.isoformat()  # Use ISO format for consistency
+        formatted_date = date.isoformat()
         try:
             amount_sats = int(abs(amount_msat) / 1000)
         except ValueError:
             amount_sats = 0
-            logger.warning(f"Invalid amount_msat value: {amount_msat}")
 
         if status.lower() == "pending":
-            logger.debug(f"Payment {payment_hash} is pending. Skipping.")
             continue
 
         if amount_msat > 0:
@@ -549,12 +552,12 @@ def send_latest_payments():
             lnurlp_id_payment = extra_data.get("link")
             if lnurlp_id_payment == LNURLP_ID:
                 donation_memo = sanitize_memo(extra_data.get("comment", "No memo provided."))
+                # Try to parse donation amount from extra
                 try:
                     donation_amount_msat = int(extra_data.get("extra", 0))
                     donation_amount_sats = donation_amount_msat / 1000
                 except (ValueError, TypeError):
                     donation_amount_sats = amount_sats
-                    logger.warning(f"Invalid donation amount_msat: {extra_data.get('extra', 0)}. Using amount_sats: {amount_sats}")
                 donation = {
                     "id": str(uuid.uuid4()),
                     "date": formatted_date,
@@ -563,6 +566,10 @@ def send_latest_payments():
                     "likes": 0,
                     "dislikes": 0
                 }
+                # If user is logged in via LN Auth, store their linking_key
+                if user_linking_key:
+                    donation["linking_key"] = user_linking_key
+
                 donations.append(donation)
                 total_donations += donation_amount_sats
                 last_update = datetime.utcnow()
@@ -572,9 +579,7 @@ def send_latest_payments():
         processed_payments.add(payment_hash)
         new_processed_hashes.append(payment_hash)
         add_processed_payment(payment_hash)
-        logger.debug(f"Payment {payment_hash} processed and added to processed payments.")
 
-    # Update latest_balance
     wallet_info = fetch_api("wallet")
     if wallet_info:
         current_balance_msat = wallet_info.get("balance", 0)
@@ -584,47 +589,18 @@ def send_latest_payments():
             "last_change": datetime.utcnow().isoformat(),
             "memo": "Latest balance fetched."
         }
-        logger.debug(f"Updated latest_balance: {latest_balance}")
 
-    # Send notifications
     for payment in incoming_payments:
         notify_transaction(payment, "incoming")
 
     for payment in outgoing_payments:
         notify_transaction(payment, "outgoing")
 
-def parse_time(time_input):
-    if not time_input:
-        logger.warning("No 'time' field found, using current time.")
-        return datetime.utcnow()
-    if isinstance(time_input, str):
-        try:
-            date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%S.%fZ")
-            logger.debug(f"Parsed time string: {time_input} -> {date}")
-        except ValueError:
-            try:
-                date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%SZ")
-                logger.debug(f"Parsed time string: {time_input} -> {date}")
-            except ValueError:
-                logger.error(f"Unable to parse time string: {time_input}. Using current time.")
-                date = datetime.utcnow()
-    elif isinstance(time_input, (int, float)):
-        try:
-            date = datetime.fromtimestamp(time_input)
-            logger.debug(f"Parsed timestamp: {time_input} -> {date}")
-        except Exception as e:
-            logger.error(f"Unable to parse timestamp: {time_input}, error: {e}. Using current time.")
-            date = datetime.utcnow()
-    else:
-        logger.error(f"Unsupported time format: {time_input}. Using current time.")
-        date = datetime.utcnow()
-    return date
-
 def send_balance_message(chat_id):
     logger.info(f"Fetching balance for chat_id: {chat_id}")
     wallet_info = fetch_api("wallet")
     if wallet_info is None:
-        bot.send_message(chat_id, text="❌ Unable to fetch balance at the moment. Please try again.")
+        bot.send_message(chat_id, text="❌ Unable to fetch balance.")
         logger.error("Failed to fetch wallet balance.")
         return
     current_balance_msat = wallet_info.get("balance", 0)
@@ -637,7 +613,6 @@ def send_balance_message(chat_id):
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=get_main_keyboard()
         )
-        logger.info(f"Balance message sent to chat_id: {chat_id}")
     except Exception as telegram_error:
         logger.error(f"Error sending balance message: {telegram_error}")
         logger.debug(traceback.format_exc())
@@ -646,7 +621,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
     logger.info(f"Fetching transactions for chat_id: {chat_id}, page: {page}")
     payments = fetch_api("payments")
     if payments is None:
-        bot.send_message(chat_id, text="❌ Unable to fetch transactions right now.")
+        bot.send_message(chat_id, text="❌ Unable to fetch transactions.")
         logger.error("Failed to fetch transactions.")
         return
 
@@ -681,7 +656,6 @@ def send_transactions_message(chat_id, page=1, message_id=None):
             amount_sats = int(abs(amount_msat) / 1000)
         except ValueError:
             amount_sats = 0
-            logger.warning(f"Invalid amount_msat value in transaction: {amount_msat}")
         sign = "+" if amount_msat > 0 else "-"
         emoji = "🟢" if amount_msat > 0 else "🔴"
         message_lines.append(f"{emoji} {formatted_date} {sign}{amount_sats} sats")
@@ -708,7 +682,6 @@ def send_transactions_message(chat_id, page=1, message_id=None):
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=inline_reply_markup
             )
-            logger.info(f"Transactions page {page} edited for chat_id: {chat_id}")
         else:
             bot.send_message(
                 chat_id=chat_id,
@@ -716,7 +689,6 @@ def send_transactions_message(chat_id, page=1, message_id=None):
                 parse_mode=ParseMode.MARKDOWN,
                 reply_markup=inline_reply_markup
             )
-            logger.info(f"Transactions page {page} sent to chat_id: {chat_id}")
     except Exception as telegram_error:
         logger.error(f"Error sending/editing transactions: {telegram_error}")
         logger.debug(traceback.format_exc())
@@ -724,7 +696,6 @@ def send_transactions_message(chat_id, page=1, message_id=None):
 def handle_prev_page(update, context):
     query = update.callback_query
     if not query:
-        logger.warning("Callback query not found for previous page.")
         return
     chat_id = query.message.chat.id
     message_id = query.message.message_id
@@ -736,13 +707,11 @@ def handle_prev_page(update, context):
         if new_page < 1:
             new_page = 1
         send_transactions_message(chat_id, page=new_page, message_id=message_id)
-        logger.debug(f"Navigating to previous page: {new_page}")
     query.answer()
 
 def handle_next_page(update, context):
     query = update.callback_query
     if not query:
-        logger.warning("Callback query not found for next page.")
         return
     chat_id = query.message.chat.id
     message_id = query.message.message_id
@@ -752,14 +721,48 @@ def handle_next_page(update, context):
         current_page = int(match.group(1))
         new_page = current_page + 1
         send_transactions_message(chat_id, page=new_page, message_id=message_id)
-        logger.debug(f"Navigating to next page: {new_page}")
     query.answer()
+
+def get_main_inline_keyboard():
+    balance_button = InlineKeyboardButton("💰 Balance", callback_data='balance')
+    latest_transactions_button = InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline')
+    if DONATIONS_URL:
+        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", url=DONATIONS_URL)
+    else:
+        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline')
+    if OVERWATCH_URL:
+        overwatch_button = InlineKeyboardButton("📊 Overwatch", url=OVERWATCH_URL)
+    else:
+        overwatch_button = InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline')
+    if LNBITS_URL:
+        lnbits_button = InlineKeyboardButton("⚡ LNBits", url=LNBITS_URL)
+    else:
+        lnbits_button = InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
+
+    inline_keyboard = [
+        [balance_button],
+        [latest_transactions_button, live_ticker_button],
+        [overwatch_button, lnbits_button]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard)
+
+def get_main_keyboard():
+    balance_button = ["💰 Balance"]
+    main_options_row_1 = ["📊 Overwatch", "📡 Live Ticker"]
+    main_options_row_2 = ["📜 Latest Transactions", "⚡ LNBits"]
+
+    keyboard = [
+        balance_button,
+        main_options_row_1,
+        main_options_row_2
+    ]
+
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
 
 def handle_balance_callback(query):
     try:
         chat_id = query.message.chat.id
         send_balance_message(chat_id)
-        logger.debug("Handled balance callback.")
     except Exception as e:
         logger.error(f"Error handling balance callback: {e}")
         logger.debug(traceback.format_exc())
@@ -768,7 +771,6 @@ def handle_transactions_inline_callback(query):
     try:
         chat_id = query.message.chat.id
         send_transactions_message(chat_id, page=1, message_id=query.message.message_id)
-        logger.debug("Handled transactions_inline callback.")
     except Exception as e:
         logger.error(f"Error handling transactions_inline callback: {e}")
         logger.debug(traceback.format_exc())
@@ -785,7 +787,6 @@ def handle_donations_inline_callback(query):
                     [InlineKeyboardButton("🔗 Open Overwatch", url=OVERWATCH_URL)]
                 ])
             )
-            logger.debug("Handled overwatch_inline callback.")
         elif data == 'liveticker_inline' and DONATIONS_URL:
             bot.send_message(
                 chat_id=query.message.chat.id,
@@ -795,7 +796,6 @@ def handle_donations_inline_callback(query):
                     [InlineKeyboardButton("🔗 Open Live Ticker", url=DONATIONS_URL)]
                 ])
             )
-            logger.debug("Handled liveticker_inline callback.")
         elif data == 'lnbits_inline' and LNBITS_URL:
             bot.send_message(
                 chat_id=query.message.chat.id,
@@ -805,25 +805,21 @@ def handle_donations_inline_callback(query):
                     [InlineKeyboardButton("🔗 Open LNBits", url=LNBITS_URL)]
                 ])
             )
-            logger.debug("Handled lnbits_inline callback.")
         else:
             bot.send_message(
                 chat_id=query.message.chat.id,
                 text="❌ No URL configured."
             )
-            logger.warning("No URL configured for the callback data received.")
     except Exception as e:
         logger.error(f"Error handling donations_inline callback: {e}")
         logger.debug(traceback.format_exc())
 
 def handle_other_inline_callbacks(data, query):
     bot.answer_callback_query(callback_query_id=query.id, text="❓ Unknown action.")
-    logger.warning(f"Unknown callback data received: {data}")
 
 def handle_transactions_callback(update, context):
     query = update.callback_query
     data = query.data
-    logger.debug(f"Handling callback data: {data}")
 
     if data == 'balance':
         handle_balance_callback(query)
@@ -837,13 +833,10 @@ def handle_transactions_callback(update, context):
         handle_donations_inline_callback(query)
     else:
         handle_other_inline_callbacks(data, query)
-        logger.warning(f"Unhandled callback data: {data}")
-
     query.answer()
 
 def handle_info_command(update, context):
     chat_id = update.effective_chat.id
-    logger.info(f"Handling /info command for chat_id: {chat_id}")
     interval_info = (
         f"🔔 *Balance Change Threshold:* {BALANCE_CHANGE_THRESHOLD} sats\n"
         f"🔔 *Highlight Threshold:* {HIGHLIGHT_THRESHOLD} sats\n"
@@ -864,23 +857,21 @@ def handle_info_command(update, context):
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=get_main_keyboard()
         )
-        logger.info(f"Info message sent to chat_id: {chat_id}")
     except Exception as telegram_error:
         logger.error(f"Error sending /info message: {telegram_error}")
         logger.debug(traceback.format_exc())
 
 def handle_help_command(update, context):
     chat_id = update.effective_chat.id
-    logger.info(f"Handling /help command for chat_id: {chat_id}")
     help_message = (
         f"ℹ️ *{INSTANCE_NAME}* - *Help*\n\n"
-        "Hello! Here is what I can do for you:\n\n"
+        "Here is what I can do:\n\n"
         "- /balance - Show your current LNbits wallet balance.\n"
         "- /transactions - Show your latest transactions with pagination.\n"
         "- /info - Display current settings and thresholds.\n"
         "- /help - Display this help message.\n"
         "- /ticker_ban words - Add forbidden words that will be censored in the Live Ticker.\n\n"
-        "You can also use the buttons below to quickly navigate through features!"
+        "Use the buttons below to quickly navigate!"
     )
 
     try:
@@ -890,19 +881,16 @@ def handle_help_command(update, context):
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=get_main_keyboard()
         )
-        logger.info(f"Help message sent to chat_id: {chat_id}")
     except Exception as telegram_error:
         logger.error(f"Error sending /help message: {telegram_error}")
         logger.debug(traceback.format_exc())
 
 def handle_balance(update, context):
     chat_id = update.effective_chat.id
-    logger.debug(f"Handling balance request for chat_id: {chat_id}")
     send_balance_message(chat_id)
 
 def handle_latest_transactions(update, context):
     chat_id = update.effective_chat.id
-    logger.debug(f"Handling latest transactions request for chat_id: {chat_id}")
     send_transactions_message(chat_id, page=1)
 
 def handle_live_ticker(update, context):
@@ -917,13 +905,11 @@ def handle_live_ticker(update, context):
                     [InlineKeyboardButton("🔗 Open Live Ticker", url=DONATIONS_URL)]
                 ])
             )
-            logger.info(f"Live Ticker message sent to chat_id: {chat_id}")
         except Exception as e:
             logger.error(f"Error sending Live Ticker message: {e}")
             logger.debug(traceback.format_exc())
     else:
         bot.send_message(chat_id=chat_id, text="❌ Live Ticker URL not configured.")
-        logger.warning("Live Ticker URL not configured.")
 
 def handle_overwatch(update, context):
     chat_id = update.effective_chat.id
@@ -937,13 +923,11 @@ def handle_overwatch(update, context):
                     [InlineKeyboardButton("🔗 Open Overwatch", url=OVERWATCH_URL)]
                 ])
             )
-            logger.info(f"Overwatch message sent to chat_id: {chat_id}")
         except Exception as e:
             logger.error(f"Error sending Overwatch message: {e}")
             logger.debug(traceback.format_exc())
     else:
         bot.send_message(chat_id=chat_id, text="❌ Overwatch URL not configured.")
-        logger.warning("Overwatch URL not configured.")
 
 def handle_lnbits(update, context):
     chat_id = update.effective_chat.id
@@ -957,13 +941,11 @@ def handle_lnbits(update, context):
                     [InlineKeyboardButton("🔗 Open LNBits", url=LNBITS_URL)]
                 ])
             )
-            logger.info(f"LNBits message sent to chat_id: {chat_id}")
         except Exception as e:
             logger.error(f"Error sending LNBits message: {e}")
             logger.debug(traceback.format_exc())
     else:
         bot.send_message(chat_id=chat_id, text="❌ LNBits URL not configured.")
-        logger.warning("LNBits URL not configured.")
 
 def process_update(update):
     try:
@@ -971,34 +953,22 @@ def process_update(update):
             message = update['message']
             chat_id = message['chat']['id']
             text = message.get('text', '').strip()
-            logger.debug(f"Received message from chat_id {chat_id}: {text}")
-
-            # Only handle specific buttons/text; other inputs are handled by CommandHandlers
             if text == "💰 Balance":
                 handle_balance(None, None)
-                logger.debug("Handled 💰 Balance button press.")
             elif text == "📜 Latest Transactions":
                 handle_latest_transactions(None, None)
-                logger.debug("Handled 📜 Latest Transactions button press.")
             elif text == "📡 Live Ticker":
                 handle_live_ticker(None, None)
-                logger.debug("Handled 📡 Live Ticker button press.")
             elif text == "📊 Overwatch":
                 handle_overwatch(None, None)
-                logger.debug("Handled 📊 Overwatch button press.")
             elif text == "⚡ LNBits":
                 handle_lnbits(None, None)
-                logger.debug("Handled ⚡ LNBits button press.")
             else:
-                # Unknown input
                 bot.send_message(
                     chat_id=chat_id,
                     text="❓ I didn't recognize that command. Use /help to see what I can do."
                 )
-                logger.warning(f"Unknown message received from chat_id {chat_id}: {text}")
         elif 'callback_query' in update:
-            # Handled by CallbackQueryHandler
-            logger.debug("Received callback_query in update.")
             pass
         else:
             logger.info("No message or callback in update.")
@@ -1022,17 +992,13 @@ def start_scheduler():
     scheduler.start()
     logger.info("Scheduler started.")
 
-# --------------------- Flask Routes ---------------------
-
 @app.route('/')
 def home():
-    logger.debug("Home route accessed.")
     return "🔍 LNbits Monitor is running."
 
 @app.route('/status', methods=['GET'])
 def status_route():
     donation_details = fetch_donation_details()
-    logger.debug("Status route accessed.")
     return jsonify({
         "latest_balance": latest_balance,
         "latest_payments": latest_payments,
@@ -1047,22 +1013,17 @@ def status_route():
 def webhook():
     update = request.get_json()
     if not update:
-        logger.warning("Empty update received in webhook.")
         return "No update", 400
-
-    logger.debug(f"Update received in webhook: {update}")
     threading.Thread(target=process_update, args=(update,)).start()
     return "OK", 200
 
 @app.route('/donations')
 def donations_page():
     if not DONATIONS_URL or not LNURLP_ID:
-        logger.warning("Donations not enabled or LNURLP_ID not set.")
         return "Donations not enabled.", 404
     lnurlp_id = LNURLP_ID
     lnurlp_info = get_lnurlp_info(lnurlp_id)
     if lnurlp_info is None:
-        logger.error("Error fetching LNURLP info in donations_page.")
         return "Error fetching LNURLP info", 500
 
     wallet_name = lnurlp_info.get('description', 'Unknown Wallet')
@@ -1079,14 +1040,13 @@ def donations_page():
         img.save(img_io, 'PNG')
         img_io.seek(0)
         img_base64 = base64.b64encode(img_io.getvalue()).decode()
-        logger.debug("QR code generated successfully.")
     except Exception as e:
         logger.error(f"Error generating QR code: {e}")
-        logger.debug(traceback.format_exc())
         return "Error generating QR code.", 500
 
     total_donations_current = sum(donation['amount'] for donation in donations)
 
+    # Pass 'users' to template
     return render_template(
         'donations.html',
         wallet_name=wallet_name,
@@ -1097,13 +1057,13 @@ def donations_page():
         information_url=INFORMATION_URL,
         total_donations=total_donations_current,
         donations=donations,
-        highlight_threshold=HIGHLIGHT_THRESHOLD
+        highlight_threshold=HIGHLIGHT_THRESHOLD,
+        users=users
     )
 
 @app.route('/api/donations', methods=['GET'])
 def get_donations_data():
     if not DONATIONS_URL or not LNURLP_ID:
-        logger.warning("Donations not enabled.")
         return jsonify({"error": "Donations not enabled."}), 404
     try:
         donation_details = fetch_donation_details()
@@ -1114,7 +1074,6 @@ def get_donations_data():
             "lnurl": donation_details["lnurl"],
             "highlight_threshold": HIGHLIGHT_THRESHOLD
         }
-        logger.debug("Donations data fetched successfully via API.")
         return jsonify(data), 200
     except Exception as e:
         logger.error(f"Error fetching donation data: {e}")
@@ -1129,28 +1088,23 @@ def vote_donation():
         vote_type = data.get('vote_type')
 
         if not donation_id or not vote_type:
-            logger.warning("vote_donation called without donation_id or vote_type.")
             return jsonify({"error": "donation_id and vote_type required."}), 400
         if vote_type not in ['like', 'dislike']:
-            logger.warning(f"Invalid vote_type received: {vote_type}")
             return jsonify({"error": "vote_type must be 'like' or 'dislike'."}), 400
 
         voted_donations = request.cookies.get('voted_donations', '')
         voted_set = set(voted_donations.split(',')) if voted_donations else set()
         if donation_id in voted_set:
-            logger.info(f"Donation {donation_id} already voted by user.")
             return jsonify({"error": "Already voted on this donation."}), 403
 
         result, status_code = handle_vote_command(donation_id, vote_type)
         if status_code != 200:
-            logger.warning(f"Vote command failed for donation_id {donation_id}: {result}")
             return jsonify(result), status_code
 
         response = make_response(jsonify(result), 200)
         voted_set.add(donation_id)
         new_voted_donations = ','.join(voted_set)
         response.set_cookie('voted_donations', new_voted_donations, max_age=60*60*24*365)
-        logger.info(f"User voted on donation {donation_id}: {vote_type}")
         return response
     except Exception as e:
         logger.error(f"Error processing vote: {e}")
@@ -1161,10 +1115,8 @@ def vote_donation():
 def donations_updates():
     global last_update
     if not DONATIONS_URL or not LNURLP_ID:
-        logger.warning("Donations not enabled.")
         return jsonify({"error": "Donations not enabled."}), 404
     try:
-        logger.debug("Fetching last_update timestamp.")
         return jsonify({"last_update": last_update.isoformat()}), 200
     except Exception as e:
         logger.error(f"Error fetching last_update: {e}")
@@ -1174,13 +1126,169 @@ def donations_updates():
 @app.route('/cinema')
 def cinema_page():
     if not DONATIONS_URL or not LNURLP_ID:
-        logger.warning("Donations are not enabled for Cinema Mode.")
         return "Donations are not enabled for Cinema Mode.", 404
-    logger.debug("Cinema page accessed.")
     return render_template('cinema.html')
 
-# --------------------- Authentication Routes ---------------------
+def handle_vote_command(donation_id, vote_type):
+    try:
+        for donation in donations:
+            if donation.get("id") == donation_id:
+                if vote_type == 'like':
+                    donation["likes"] += 1
+                elif vote_type == 'dislike':
+                    donation["dislikes"] += 1
+                else:
+                    return {"error": "Invalid vote type."}, 400
+                save_donations()
+                return {"success": True, "likes": donation["likes"], "dislikes": donation["dislikes"]}, 200
+        return {"error": "Donation not found."}, 404
+    except Exception as e:
+        logger.error(f"Error handling vote: {e}")
+        logger.debug(traceback.format_exc())
+        return {"error": "Internal server error."}, 500
 
+def send_main_inline_keyboard():
+    inline_reply_markup = get_main_inline_keyboard()
+    try:
+        welcome_message = (
+            "😶‍🌫️ Here we go!\n\n"
+            "I'm ready to assist you with LNbits monitoring.\n\n"
+            "Use the buttons below to explore the features."
+        )
+        bot.send_message(
+            chat_id=CHAT_ID,
+            text=welcome_message,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=inline_reply_markup
+        )
+    except Exception as telegram_error:
+        logger.error(f"Error sending the main inline keyboard: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+def send_start_message(update, context):
+    chat_id = update.effective_chat.id
+    welcome_message = (
+        "👋 Welcome!\n\n"
+        "Use the buttons below for quick access."
+    )
+    reply_markup = get_main_keyboard()
+    try:
+        bot.send_message(
+            chat_id=chat_id,
+            text=welcome_message,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+    except Exception as e:
+        logger.error(f"Error sending the start message: {e}")
+        logger.debug(traceback.format_exc())
+
+def initialize_processed_payments():
+    logger.info("Initializing processed payments to prevent old notifications.")
+    payments = fetch_api("payments")
+    if payments is None:
+        logger.error("Failed to initialize processed payments: Unable to fetch payments.")
+        return
+    for payment in payments:
+        payment_hash = payment.get("payment_hash")
+        if payment_hash and payment_hash not in processed_payments:
+            processed_payments.add(payment_hash)
+            add_processed_payment(payment_hash)
+    logger.info("Initialization of processed payments completed.")
+
+# --------------------- LNURL-Auth Related Routes ---------------------
+
+@app.route('/ln_auth')
+def ln_auth_page():
+    url, k1 = create_lnurl_auth_link()
+    # Generate QR code for the LNURL-auth link
+    try:
+        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
+        qr.add_data(url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        img_io = io.BytesIO()
+        img.save(img_io, 'PNG')
+        img_io.seek(0)
+        img_base64 = base64.b64encode(img_io.getvalue()).decode()
+    except Exception as e:
+        logger.error(f"Error generating LNURL-auth QR: {e}")
+        return "Error generating QR code.", 500
+
+    return render_template('ln_auth.html', qr_code_data=img_base64)
+
+@app.route('/lnurl-auth', methods=['GET'])
+def lnurl_auth():
+    tag = request.args.get('tag')
+    k1 = request.args.get('k1')
+    action = request.args.get('action')
+    sig = request.args.get('sig')
+    key = request.args.get('key')
+
+    if tag != 'login' or not k1:
+        return jsonify({"status": "ERROR", "reason": "Invalid request"}), 400
+
+    if not sig or not key:
+        # Just show that this is an LNURL-auth endpoint
+        return jsonify({"status": "OK", "message": "This is an LNURL-auth endpoint. Awaiting signature."})
+
+    # Verify signature
+    if k1 not in ln_auth_challenges:
+        return jsonify({"status": "ERROR", "reason": "Invalid or expired k1"}), 400
+
+    try:
+        k1_bin = unhexlify(k1)
+        key_bin = unhexlify(key)
+        sig_bin = unhexlify(sig)
+
+        pubkey = PublicKey(key_bin, raw=True)
+        sig_raw = pubkey.ecdsa_deserialize(sig_bin)
+        verified = pubkey.ecdsa_verify(k1_bin, sig_raw, raw=True)
+        if not verified:
+            return jsonify({"status": "ERROR", "reason": "Signature verification failed"}), 400
+    except Exception as e:
+        logger.error(f"LNURL-auth verification error: {e}")
+        return jsonify({"status": "ERROR", "reason": "Verification error"}), 400
+
+    # If verified
+    linking_key = key.upper()
+    del ln_auth_challenges[k1]
+
+    session['ln_logged_in'] = True
+    session['linking_key'] = linking_key
+
+    # Check if user exists
+    if linking_key not in users:
+        users[linking_key] = {"linkingKey": linking_key, "pseudonym": None}
+        save_users(users)
+
+    if users[linking_key]['pseudonym'] is None:
+        return redirect(url_for('choose_pseudonym'))
+    else:
+        return redirect(url_for('donations_page'))
+
+@app.route('/choose_pseudonym', methods=['GET', 'POST'])
+def choose_pseudonym():
+    if 'ln_logged_in' not in session or 'linking_key' not in session:
+        flash("You must be logged in via LNURL-auth.", "danger")
+        return redirect(url_for('donations_page'))
+
+    linking_key = session['linking_key']
+    if request.method == 'POST':
+        pseudonym = request.form.get('pseudonym', '').strip()
+        # Validate pseudonym
+        if len(pseudonym) == 0 or len(pseudonym) > 13 or not pseudonym.isalnum():
+            flash("Invalid pseudonym. Use up to 13 alphanumeric characters.", "danger")
+        else:
+            users[linking_key]['pseudonym'] = pseudonym
+            save_users(users)
+            flash("Pseudonym set successfully!", "success")
+            return redirect(url_for('donations_page'))
+
+    return render_template('choose_pseudonym.html')
+
+
+# --------------------- Authentication Routes (Admin) ---------------------
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -1206,11 +1314,9 @@ def login():
         if password == ADMIN_PASSWORD:
             session['logged_in'] = True
             flash('Successfully logged in!', 'success')
-            logger.info("User logged in successfully.")
             return redirect(url_for('settings'))
         else:
             flash('Incorrect password. Please try again.', 'danger')
-            logger.warning("User attempted to log in with incorrect password.")
 
     return render_template('login.html')
 
@@ -1219,14 +1325,12 @@ def login():
 def logout():
     session.pop('logged_in', None)
     flash('Successfully logged out.', 'success')
-    logger.info("User logged out successfully.")
     return redirect(url_for('login'))
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
     if request.method == 'POST':
-        # List of environment variables to update
         env_vars = [
             'TELEGRAM_BOT_TOKEN',
             'CHAT_ID',
@@ -1250,7 +1354,6 @@ def settings():
             'ADMIN_PASSWORD'
         ]
 
-        # Define required fields
         required_fields = [
             'TELEGRAM_BOT_TOKEN',
             'CHAT_ID',
@@ -1267,7 +1370,6 @@ def settings():
         errors = []
 
         try:
-            # Validate required fields
             for var in required_fields:
                 value = request.form.get(var)
                 if not value or value.strip() == '':
@@ -1276,27 +1378,22 @@ def settings():
             if errors:
                 for error in errors:
                     flash(error, 'danger')
-                logger.warning(f"Settings update failed due to missing fields: {errors}")
-                # Preserve user input
                 env_vars_current = {var: request.form.get(var, '') for var in env_vars}
                 return render_template('settings.html', env_vars=env_vars_current)
 
-            # Update environment variables
             for var in env_vars:
                 value = request.form.get(var)
                 if value is not None:
                     set_key('.env', var, value)
-                    os.environ[var] = value  # Update the current environment
+                    os.environ[var] = value
 
             flash('Settings updated successfully.', 'success')
-            logger.info("Settings updated via settings page.")
             return redirect(url_for('settings'))
         except Exception as e:
             flash(f'Error updating settings: {e}', 'danger')
             logger.error(f"Error updating settings: {e}")
             logger.debug("".join(traceback.format_exception(None, e, e.__traceback__)))
 
-    # GET method: Show current values
     env_vars_current = {
         'TELEGRAM_BOT_TOKEN': os.getenv('TELEGRAM_BOT_TOKEN', ''),
         'CHAT_ID': os.getenv('CHAT_ID', ''),
@@ -1322,131 +1419,6 @@ def settings():
 
     return render_template('settings.html', env_vars=env_vars_current)
 
-# --------------------- Core Functionality ---------------------
-
-def handle_vote_command(donation_id, vote_type):
-    try:
-        for donation in donations:
-            if donation.get("id") == donation_id:
-                if vote_type == 'like':
-                    donation["likes"] += 1
-                elif vote_type == 'dislike':
-                    donation["dislikes"] += 1
-                else:
-                    logger.warning(f"Invalid vote_type received: {vote_type}")
-                    return {"error": "Invalid vote type."}, 400
-                save_donations()
-                logger.info(f"Donation {donation_id} voted: {vote_type}. Total likes: {donation['likes']}, dislikes: {donation['dislikes']}")
-                return {"success": True, "likes": donation["likes"], "dislikes": donation["dislikes"]}, 200
-        logger.warning(f"Donation {donation_id} not found.")
-        return {"error": "Donation not found."}, 404
-    except Exception as e:
-        logger.error(f"Error handling vote: {e}")
-        logger.debug(traceback.format_exc())
-        return {"error": "Internal server error."}, 500
-
-def send_main_inline_keyboard():
-    inline_reply_markup = get_main_inline_keyboard()
-    try:
-        welcome_message = (
-            "😶‍🌫️ Here we go!\n\n"
-            "I'm ready to assist you with monitoring your LNbits transactions.\n\n"
-            "Use the buttons below to explore the features."
-        )
-        bot.send_message(
-            chat_id=CHAT_ID,
-            text=welcome_message,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=inline_reply_markup
-        )
-        logger.info("Main inline keyboard successfully sent.")
-    except Exception as telegram_error:
-        logger.error(f"Error sending the main inline keyboard: {telegram_error}")
-        logger.debug(traceback.format_exc())
-
-def send_start_message(update, context):
-    chat_id = update.effective_chat.id
-    welcome_message = (
-        "👋 Welcome to Naughtify your LNBits Wallet Monitor!\n\n"
-        "Use the buttons below for quick access to various features."
-    )
-    reply_markup = get_main_keyboard()
-    
-    try:
-        bot.send_message(
-            chat_id=chat_id,
-            text=welcome_message,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
-        )
-        logger.info(f"Start message sent to chat_id {chat_id}.")
-    except Exception as e:
-        logger.error(f"Error sending the start message: {e}")
-        logger.debug(traceback.format_exc())
-
-def initialize_processed_payments():
-    """
-    Fetch all existing payments and mark them as processed to prevent sending Telegram messages
-    for old donations when the server starts.
-    """
-    logger.info("Initializing processed payments to prevent old notifications.")
-    payments = fetch_api("payments")
-    if payments is None:
-        logger.error("Failed to initialize processed payments: Unable to fetch payments.")
-        return
-
-    for payment in payments:
-        payment_hash = payment.get("payment_hash")
-        if payment_hash and payment_hash not in processed_payments:
-            processed_payments.add(payment_hash)
-            add_processed_payment(payment_hash)
-            logger.debug(f"Payment {payment_hash} marked as processed during initialization.")
-    logger.info("Initialization of processed payments completed.")
-
-# --------------------- Main Function ---------------------
-
-def main():
-    # Start the Flask app in a separate thread
-    flask_thread = threading.Thread(target=run_flask_app, daemon=True)
-    flask_thread.start()
-    logger.debug("Flask app thread started.")
-
-    # Initialize processed payments to prevent old notifications
-    initialize_processed_payments()
-
-    # Start the scheduler in a separate thread
-    scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
-    scheduler_thread.start()
-    logger.debug("Scheduler thread started.")
-
-    # Set up Telegram Bot handlers
-    updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
-    dispatcher = updater.dispatcher
-
-    # Command Handlers
-    dispatcher.add_handler(CommandHandler('balance', lambda update, context: send_balance_message(update.effective_chat.id)))
-    dispatcher.add_handler(CommandHandler('transactions', lambda update, context: send_transactions_message(update.effective_chat.id, page=1)))
-    dispatcher.add_handler(CommandHandler('info', handle_info_command))
-    dispatcher.add_handler(CommandHandler('help', handle_help_command))
-    dispatcher.add_handler(CommandHandler('start', send_start_message))
-    dispatcher.add_handler(CommandHandler('ticker_ban', handle_ticker_ban, pass_args=True))
-
-    # Callback Query Handler
-    dispatcher.add_handler(CallbackQueryHandler(handle_transactions_callback, pattern='^(balance|transactions_inline|prev_\\d+|next_\\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'))
-
-    # Message Handlers for Button Presses
-    dispatcher.add_handler(MessageHandler(Filters.regex('^💰 Balance$'), handle_balance))
-    dispatcher.add_handler(MessageHandler(Filters.regex('^📜 Latest Transactions$'), handle_latest_transactions))
-    dispatcher.add_handler(MessageHandler(Filters.regex('^📡 Live Ticker$'), handle_live_ticker))
-    dispatcher.add_handler(MessageHandler(Filters.regex('^📊 Overwatch$'), handle_overwatch))
-    dispatcher.add_handler(MessageHandler(Filters.regex('^⚡ LNBits$'), handle_lnbits))
-
-    # Start Telegram Bot
-    updater.start_polling()
-    logger.info("Telegram Bot started.")
-    send_main_inline_keyboard()
-    updater.idle()
-
 def run_flask_app():
     try:
         logger.info(f"Starting Flask app on {APP_HOST}:{APP_PORT}")
@@ -1455,7 +1427,36 @@ def run_flask_app():
         logger.error(f"Error running Flask app: {e}")
         logger.debug(traceback.format_exc())
 
-# --------------------- Application Entry Point ---------------------
+def main():
+    flask_thread = threading.Thread(target=run_flask_app, daemon=True)
+    flask_thread.start()
+
+    initialize_processed_payments()
+
+    scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
+    scheduler_thread.start()
+
+    updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
+    dispatcher = updater.dispatcher
+
+    dispatcher.add_handler(CommandHandler('balance', lambda update, context: send_balance_message(update.effective_chat.id)))
+    dispatcher.add_handler(CommandHandler('transactions', lambda update, context: send_transactions_message(update.effective_chat.id, page=1)))
+    dispatcher.add_handler(CommandHandler('info', handle_info_command))
+    dispatcher.add_handler(CommandHandler('help', handle_help_command))
+    dispatcher.add_handler(CommandHandler('start', send_start_message))
+    dispatcher.add_handler(CommandHandler('ticker_ban', handle_ticker_ban, pass_args=True))
+
+    dispatcher.add_handler(CallbackQueryHandler(handle_transactions_callback, pattern='^(balance|transactions_inline|prev_\\d+|next_\\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'))
+
+    dispatcher.add_handler(MessageHandler(Filters.regex('^💰 Balance$'), handle_balance))
+    dispatcher.add_handler(MessageHandler(Filters.regex('^📜 Latest Transactions$'), handle_latest_transactions))
+    dispatcher.add_handler(MessageHandler(Filters.regex('^📡 Live Ticker$'), handle_live_ticker))
+    dispatcher.add_handler(MessageHandler(Filters.regex('^📊 Overwatch$'), handle_overwatch))
+    dispatcher.add_handler(MessageHandler(Filters.regex('^⚡ LNBits$'), handle_lnbits))
+
+    updater.start_polling()
+    send_main_inline_keyboard()
+    updater.idle()
 
 if __name__ == "__main__":
     logger.info("🚀 Starting LNbits Balance Monitor.")
@@ -1467,7 +1468,5 @@ if __name__ == "__main__":
     else:
         logger.info("⏲️ Fetch Interval disabled")
 
-    # Load existing donations and mark their payments as processed
     load_donations()
-
     main()
