@@ -126,9 +126,15 @@ function renderTable() {
 
             row.setAttribute('data-id', transaction.id);
 
+            // Insert patron badge if linking_key is present
+            let badgeHTML = '';
+            if (transaction.linking_key && window.users && window.users[transaction.linking_key] && window.users[transaction.linking_key].pseudonym) {
+                badgeHTML = `<span class="patron-badge">${window.users[transaction.linking_key].pseudonym}</span>`;
+            }
+
             row.innerHTML = `
                 <td>${formatDate(transaction.date)}</td>
-                <td>${transaction.memo}</td>
+                <td>${badgeHTML}${transaction.memo}</td>
                 <td>${transaction.amount} Sats</td>
                 <td class="actions">
                     <span class="like-button" onclick="voteDonation('${transaction.id}', 'like')">
@@ -180,6 +186,11 @@ async function fetchInitialDonations() {
         const donationsData = await donationsResponse.json();
         const updatesData = await updatesResponse.json();
 
+        // Store users globally so we can show the patron badge
+        // Assuming the server passes 'users' via a script tag if needed.
+        // If not available, you may need to fetch them or embed them in the template.
+        window.users = donationsData.users || {};
+
         updateDonations(donationsData);
         lastUpdate = new Date(updatesData.last_update);
 
@@ -206,6 +217,7 @@ async function checkForUpdates() {
                 throw new Error('Failed to fetch updated donations');
             }
             const donationsData = await donationsResponse.json();
+            window.users = donationsData.users || {};
             updateDonations(donationsData);
         }
 
