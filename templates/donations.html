@@ -1,4 +1,3 @@
-<!-- templates/donations.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -51,7 +50,6 @@
                 <!-- QR Code Card -->
                 <div class="card qr-card">
                     <h5>Scan to send via Lightning Network.</h5>
-                    <!-- QR Code with Click Handler to Copy LNURL -->
                     <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}" onclick="copyLnurl(this)" title="Click to copy the LNURL">
                 </div>
 
@@ -69,7 +67,7 @@
                 <h2>Total Amount</h2>
                 <div class="donation-amount" id="totalDonations">0 Sats</div>
                 
-                <!-- Logo source -->
+                <!-- Logo -->
                 <img src="{{ url_for('static', filename='assets/main_logo.png') }}" alt="Main Logo" class="main-logo">
                 
                 <div class="donation-history" id="donationHistory">Latest Patron: None yet.</div>
@@ -121,10 +119,16 @@
                     <a href="https://github.com/DoktorShift/naughtify" target="_blank" aria-label="GitHub">
                         <i class="fab fa-github"></i>
                     </a>
-                    <!-- Login Button in Footer -->
-                    <a href="{{ url_for('login') }}" class="login-button" title="Login" aria-label="Login">
-                        <i class="material-icons">key</i>
-                    </a>
+                </div>
+            </div>
+            <!-- New Login Section -->
+            <div class="footer-section login">
+                <h3>Login</h3>
+                <div class="login-container">
+                    <!-- Admin Login Button -->
+                    <a href="{{ url_for('login') }}" class="login-button admin-login">Login as Admin</a>
+                    <!-- LN Auth Login Button -->
+                    <a href="{{ url_for('ln_auth_page') }}" class="login-button ln-login">Login with Lightning</a>
                 </div>
             </div>
         </div>
