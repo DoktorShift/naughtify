@@ -1,0 +1,233 @@
+<!-- templates/settings.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Settings - Naughtify</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+    <!-- Bootstrap CSS (for styling and tabs) -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container d-flex justify-content-between align-items-center">
+            <!-- Title Section -->
+            <div class="header-title">
+                <h1>Naughtify Settings</h1>
+                <p>Manage your configurations securely and easily</p>
+            </div>
+            <!-- Actions Section -->
+            <div class="header-actions d-flex align-items-center">
+                <!-- Dark Mode Toggle -->
+                <div class="toggle-container mr-3">
+                    <label class="switch">
+                        <input type="checkbox" id="darkModeToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <!-- Logout Button -->
+                <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary" title="Logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container my-4">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+
+        <div class="dashboard p-4 rounded shadow-sm">
+            <form method="POST" class="settings-form">
+                <!-- Tabs Navigation -->
+                <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="base-tab" data-toggle="tab" href="#base" role="tab" aria-controls="base" aria-selected="true">Base</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="optional-tab" data-toggle="tab" href="#optional" role="tab" aria-controls="optional" aria-selected="false">Optional</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="security-tab" data-toggle="tab" href="#security" role="tab" aria-controls="security" aria-selected="false">Security</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="configuration-tab" data-toggle="tab" href="#configuration" role="tab" aria-controls="configuration" aria-selected="false">Configuration</a>
+                    </li>
+                </ul>
+
+                <!-- Tabs Content -->
+                <div class="tab-content" id="settingsTabsContent">
+                    <!-- Base Tab -->
+                    <div class="tab-pane fade show active" id="base" role="tabpanel" aria-labelledby="base-tab">
+                        <fieldset class="form-group mt-3">
+                            <legend>Telegram Settings <span class="text-danger">*</span></legend>
+                            <div class="form-group">
+                                <label for="TELEGRAM_BOT_TOKEN">Telegram Bot Token <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="TELEGRAM_BOT_TOKEN" name="TELEGRAM_BOT_TOKEN" value="{{ env_vars.TELEGRAM_BOT_TOKEN }}" required>
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary toggle-password" type="button">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="CHAT_ID">Chat ID <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="CHAT_ID" name="CHAT_ID" value="{{ env_vars.CHAT_ID }}" required>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="form-group mt-3">
+                            <legend>LNbits Settings <span class="text-danger">*</span></legend>
+                            <div class="form-group">
+                                <label for="LNBITS_READONLY_API_KEY">LNbits Readonly API Key <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="LNBITS_READONLY_API_KEY" name="LNBITS_READONLY_API_KEY" value="{{ env_vars.LNBITS_READONLY_API_KEY }}" required>
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary toggle-password" type="button">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="LNBITS_URL">LNbits URL <span class="text-danger">*</span></label>
+                                <input type="url" class="form-control" id="LNBITS_URL" name="LNBITS_URL" value="{{ env_vars.LNBITS_URL }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="LNURLP_ID">LNURLp ID</label>
+                                <input type="text" class="form-control" id="LNURLP_ID" name="LNURLP_ID" value="{{ env_vars.LNURLP_ID }}">
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <!-- Optional Tab -->
+                    <div class="tab-pane fade" id="optional" role="tabpanel" aria-labelledby="optional-tab">
+                        <fieldset class="form-group mt-3">
+                            <legend>Thresholds</legend>
+                            <div class="form-group">
+                                <label for="BALANCE_CHANGE_THRESHOLD">Balance Change Threshold (sats)</label>
+                                <input type="number" class="form-control" id="BALANCE_CHANGE_THRESHOLD" name="BALANCE_CHANGE_THRESHOLD" value="{{ env_vars.BALANCE_CHANGE_THRESHOLD }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="HIGHLIGHT_THRESHOLD">Highlight Threshold (sats)</label>
+                                <input type="number" class="form-control" id="HIGHLIGHT_THRESHOLD" name="HIGHLIGHT_THRESHOLD" value="{{ env_vars.HIGHLIGHT_THRESHOLD }}">
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="form-group mt-3">
+                            <legend>Transaction Settings</legend>
+                            <div class="form-group">
+                                <label for="LATEST_TRANSACTIONS_COUNT">Latest Transactions Count</label>
+                                <input type="number" class="form-control" id="LATEST_TRANSACTIONS_COUNT" name="LATEST_TRANSACTIONS_COUNT" value="{{ env_vars.LATEST_TRANSACTIONS_COUNT }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="PAYMENTS_FETCH_INTERVAL">Payments Fetch Interval (seconds)</label>
+                                <input type="number" class="form-control" id="PAYMENTS_FETCH_INTERVAL" name="PAYMENTS_FETCH_INTERVAL" value="{{ env_vars.PAYMENTS_FETCH_INTERVAL }}">
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="form-group mt-3">
+                            <legend>URLs</legend>
+                            <div class="form-group">
+                                <label for="OVERWATCH_URL">Overwatch URL</label>
+                                <input type="url" class="form-control" id="OVERWATCH_URL" name="OVERWATCH_URL" value="{{ env_vars.OVERWATCH_URL }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="DONATIONS_URL">Donations URL</label>
+                                <input type="url" class="form-control" id="DONATIONS_URL" name="DONATIONS_URL" value="{{ env_vars.DONATIONS_URL }}">
+                            </div>
+                            <div class="form-group">
+                                <label for="INFORMATION_URL">Information URL</label>
+                                <input type="url" class="form-control" id="INFORMATION_URL" name="INFORMATION_URL" value="{{ env_vars.INFORMATION_URL }}">
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <!-- Security Tab -->
+                    <div class="tab-pane fade" id="security" role="tabpanel" aria-labelledby="security-tab">
+                        <fieldset class="form-group mt-3">
+                            <legend>Admin Password <span class="text-danger">*</span></legend>
+                            <div class="form-group">
+                                <label for="ADMIN_PASSWORD">Admin Password <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="ADMIN_PASSWORD" name="ADMIN_PASSWORD" value="{{ env_vars.ADMIN_PASSWORD }}" required>
+                                    <div class="input-group-append">
+                                        <button class="btn btn-outline-secondary toggle-password" type="button">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </fieldset>
+                    </div>
+
+                    <!-- Configuration Tab -->
+                    <div class="tab-pane fade" id="configuration" role="tabpanel" aria-labelledby="configuration-tab">
+                        <fieldset class="form-group mt-3">
+                            <legend>Flask Server Configuration <span class="text-danger">*</span></legend>
+                            <div class="form-group">
+                                <label for="APP_HOST">Flask Server Host <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="APP_HOST" name="APP_HOST" value="{{ env_vars.APP_HOST }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="APP_PORT">Flask Server Port <span class="text-danger">*</span></label>
+                                <input type="number" class="form-control" id="APP_PORT" name="APP_PORT" value="{{ env_vars.APP_PORT }}" required>
+                            </div>
+                        </fieldset>
+
+                        <fieldset class="form-group mt-3">
+                            <legend>Files <span class="text-danger">*</span></legend>
+                            <div class="form-group">
+                                <label for="PROCESSED_PAYMENTS_FILE">Processed Payments File <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="PROCESSED_PAYMENTS_FILE" name="PROCESSED_PAYMENTS_FILE" value="{{ env_vars.PROCESSED_PAYMENTS_FILE }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="CURRENT_BALANCE_FILE">Current Balance File <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="CURRENT_BALANCE_FILE" name="CURRENT_BALANCE_FILE" value="{{ env_vars.CURRENT_BALANCE_FILE }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="DONATIONS_FILE">Donations File <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="DONATIONS_FILE" name="DONATIONS_FILE" value="{{ env_vars.DONATIONS_FILE }}" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="FORBIDDEN_WORDS_FILE">Forbidden Words File <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="FORBIDDEN_WORDS_FILE" name="FORBIDDEN_WORDS_FILE" value="{{ env_vars.FORBIDDEN_WORDS_FILE }}" required>
+                            </div>
+                        </fieldset>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="form-group text-center">
+                    <button type="submit" class="btn btn-success">Save Settings</button>
+                    <button type="button" class="btn btn-danger ml-2" onclick="restartServer()">Restart Server</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <!-- Bootstrap JS and dependencies -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Settings JavaScript -->
+    <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+</body>
+</html>

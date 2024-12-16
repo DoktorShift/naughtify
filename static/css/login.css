@@ -1,0 +1,59 @@
+/* static/css/login.css */
+
+/* Allgemeine Stile für die Login-Seite */
+body {
+    background: linear-gradient(135deg, #d3e8f3, #eef4f7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    font-family: 'Arial', sans-serif;
+}
+
+.login-container {
+    background: #ffffff;
+    padding: 2rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.login-container .title {
+    margin-bottom: 1.5rem;
+    color: #1f4b6d;
+}
+
+.login-form .form-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.login-form label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.login-form input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.login-form button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #1f4b6d;
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.login-form button:hover {
+    background-color: #3498db;
+}

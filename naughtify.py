@@ -1,11 +1,11 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from flask import Flask, jsonify, request, render_template, send_from_directory, make_response
+from flask import Flask, jsonify, request, render_template, redirect, url_for, session, flash, make_response
 from flask_cors import CORS
 from telegram import Bot, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
 from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
-from dotenv import load_dotenv
+from dotenv import load_dotenv, set_key
 import requests
 import traceback
 from apscheduler.schedulers.background import BackgroundScheduler
@@ -18,48 +18,47 @@ import json
 from urllib.parse import urlparse
 import re
 import uuid
+from functools import wraps
 
 # --------------------- Configuration and Setup ---------------------
 
 load_dotenv()
 
+# Essential Environment Variables
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
-
-try:
-    CHAT_ID = int(CHAT_ID)
-except (TypeError, ValueError):
-    raise EnvironmentError("CHAT_ID must be an integer.")
-
 LNBITS_READONLY_API_KEY = os.getenv("LNBITS_READONLY_API_KEY")
 LNBITS_URL = os.getenv("LNBITS_URL")
 INSTANCE_NAME = os.getenv("INSTANCE_NAME", "LNbits Instance")
 
-parsed_lnbits_url = urlparse(LNBITS_URL)
-LNBITS_DOMAIN = parsed_lnbits_url.netloc
+# Optional URLs
+OVERWATCH_URL = os.getenv("OVERWATCH_URL")
+DONATIONS_URL = os.getenv("DONATIONS_URL")
+INFORMATION_URL = os.getenv("INFORMATION_URL")
 
-OVERWATCH_URL = os.getenv("OVERWATCH_URL")  # Optional
-
-DONATIONS_URL = os.getenv("DONATIONS_URL")  # Optional
+# LNURLP ID (Required if Donations are enabled)
 LNURLP_ID = os.getenv("LNURLP_ID") if DONATIONS_URL else None
 
+# Files
 FORBIDDEN_WORDS_FILE = os.getenv("FORBIDDEN_WORDS_FILE", "forbidden_words.txt")
-
-BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))
-HIGHLIGHT_THRESHOLD = int(os.getenv("HIGHLIGHT_THRESHOLD", "2100"))
-LATEST_TRANSACTIONS_COUNT = int(os.getenv("LATEST_TRANSACTIONS_COUNT", "21"))
-
-PAYMENTS_FETCH_INTERVAL = int(os.getenv("PAYMENTS_FETCH_INTERVAL", "60"))
-
-APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
-APP_PORT = int(os.getenv("APP_PORT", "5009"))
-
 PROCESSED_PAYMENTS_FILE = os.getenv("PROCESSED_PAYMENTS_FILE", "processed_payments.txt")
 CURRENT_BALANCE_FILE = os.getenv("CURRENT_BALANCE_FILE", "current-balance.txt")
 DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
 
-INFORMATION_URL = os.getenv("INFORMATION_URL")  # Optional
+# Thresholds and Intervals
+BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))
+HIGHLIGHT_THRESHOLD = int(os.getenv("HIGHLIGHT_THRESHOLD", "2100"))
+LATEST_TRANSACTIONS_COUNT = int(os.getenv("LATEST_TRANSACTIONS_COUNT", "21"))
+PAYMENTS_FETCH_INTERVAL = int(os.getenv("PAYMENTS_FETCH_INTERVAL", "60"))  # in seconds
 
+# Server Configuration
+APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
+APP_PORT = int(os.getenv("APP_PORT", "5009"))
+
+# Secret Key for Flask Sessions
+SECRET_KEY = os.getenv("SECRET_KEY", os.urandom(24))
+
+# Validate Essential Variables
 required_vars = {
     "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
     "CHAT_ID": CHAT_ID,
@@ -74,6 +73,13 @@ if missing_vars:
 if DONATIONS_URL and not LNURLP_ID:
     raise EnvironmentError("LNURLP_ID must be set when DONATIONS_URL is provided.")
 
+# Define LNBITS_DOMAIN by parsing LNBITS_URL
+parsed_url = urlparse(LNBITS_URL)
+LNBITS_DOMAIN = parsed_url.netloc
+if not LNBITS_DOMAIN:
+    raise ValueError("Invalid LNBITS_URL provided. Cannot parse domain.")
+
+# Initialize Telegram Bot
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 # --------------------- Logging Configuration ---------------------
@@ -108,14 +114,47 @@ logger.addHandler(console_handler)
 # Reduce verbosity for specific modules (e.g., apscheduler)
 logging.getLogger('apscheduler').setLevel(logging.WARNING)  # Only WARNING and above
 
+# --------------------- Flask App Initialization ---------------------
+
+app = Flask(__name__)
+app.secret_key = SECRET_KEY  # Secure Secret-Key for Sessions
+CORS(app)  # Enable CORS
+
+# --------------------- Global Variables ---------------------
+
+processed_payments = set()
+donations = []
+total_donations = 0
+last_update = datetime.utcnow()
+
+latest_balance = {
+    "balance_sats": None,
+    "last_change": None,
+    "memo": None
+}
+
+latest_payments = []
+
 # --------------------- Helper Functions ---------------------
 
 def get_main_inline_keyboard():
     balance_button = InlineKeyboardButton("💰 Balance", callback_data='balance')
     latest_transactions_button = InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline')
-    live_ticker_button = InlineKeyboardButton("📡 Live Ticker", url=DONATIONS_URL) if DONATIONS_URL else InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline')
-    overwatch_button = InlineKeyboardButton("📊 Overwatch", url=OVERWATCH_URL) if OVERWATCH_URL else InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline')
-    lnbits_button = InlineKeyboardButton("⚡ LNBits", url=LNBITS_URL) if LNBITS_URL else InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
+    
+    if DONATIONS_URL:
+        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", url=DONATIONS_URL)
+    else:
+        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline')
+    
+    if OVERWATCH_URL:
+        overwatch_button = InlineKeyboardButton("📊 Overwatch", url=OVERWATCH_URL)
+    else:
+        overwatch_button = InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline')
+    
+    if LNBITS_URL:
+        lnbits_button = InlineKeyboardButton("⚡ LNBits", url=LNBITS_URL)
+    else:
+        lnbits_button = InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
 
     inline_keyboard = [
         [balance_button],
@@ -237,9 +276,6 @@ def load_donations():
                     if "dislikes" not in donation:
                         donation["dislikes"] = 0
             logger.debug(f"{len(donations)} donations loaded from file.")
-
-            # Initialize processed_payments with existing donations' payment_hashes if available
-
         except Exception as e:
             logger.error(f"Error loading donations: {e}")
             logger.debug(traceback.format_exc())
@@ -259,20 +295,8 @@ def save_donations():
             logger.error(f"Error saving donations: {e}")
             logger.debug(traceback.format_exc())
 
+# Initialize processed payments and donations
 processed_payments = load_processed_payments()
-app = Flask(__name__)
-CORS(app)  # Enable CORS
-
-latest_balance = {
-    "balance_sats": None,
-    "last_change": None,
-    "memo": None
-}
-
-latest_payments = []
-donations = []
-total_donations = 0
-last_update = datetime.utcnow()
 load_donations()
 
 def sanitize_donations():
@@ -305,7 +329,7 @@ def handle_ticker_ban(update, context):
     try:
         with open(FORBIDDEN_WORDS_FILE, 'a') as f:
             for word in words_to_ban:
-                if word in FORBIDDEN_WORDS:
+                if word.lower() in (fw.lower() for fw in FORBIDDEN_WORDS):
                     duplicate_words.append(word)
                 else:
                     f.write(word + '\n')
@@ -399,8 +423,9 @@ def fetch_donation_details():
         return {
             "total_donations": total_donations,
             "donations": donations,
-            "lightning_address": "Not available",
-            "lnurl": "Not available"
+            "lightning_address": "Unavailable",
+            "lnurl": "Unavailable",
+            "highlight_threshold": HIGHLIGHT_THRESHOLD
         }
 
     lnurlp_info = get_lnurlp_info(LNURLP_ID)
@@ -409,8 +434,9 @@ def fetch_donation_details():
         return {
             "total_donations": total_donations,
             "donations": donations,
-            "lightning_address": "Not available",
-            "lnurl": "Not available"
+            "lightning_address": "Unavailable",
+            "lnurl": "Unavailable",
+            "highlight_threshold": HIGHLIGHT_THRESHOLD
         }
 
     username = lnurlp_info.get('username', 'Unknown')
@@ -422,7 +448,8 @@ def fetch_donation_details():
         "total_donations": total_donations,
         "donations": donations,
         "lightning_address": lightning_address,
-        "lnurl": lnurl
+        "lnurl": lnurl,
+        "highlight_threshold": HIGHLIGHT_THRESHOLD
     }
 
 def update_donations_with_details(data):
@@ -469,7 +496,7 @@ def notify_transaction(payment, direction):
         logger.debug(traceback.format_exc())
 
 def send_latest_payments():
-    global total_donations, donations, last_update
+    global total_donations, donations, last_update, latest_balance, latest_payments
     logger.info("Fetching latest payments...")
     payments = fetch_api("payments")
     if payments is None:
@@ -481,6 +508,7 @@ def send_latest_payments():
 
     sorted_payments = sorted(payments, key=lambda x: x.get("time", ""), reverse=True)
     latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]
+    latest_payments = latest.copy()  # Update latest_payments for /status route
 
     if not latest:
         logger.info("No payments found.")
@@ -500,7 +528,7 @@ def send_latest_payments():
         status = payment.get("status", "completed")
         time_str = payment.get("time", None)
         date = parse_time(time_str)
-        formatted_date = date.strftime("%b %d, %Y %H:%M")
+        formatted_date = date.isoformat()  # Use ISO format for consistency
         try:
             amount_sats = int(abs(amount_msat) / 1000)
         except ValueError:
@@ -546,6 +574,19 @@ def send_latest_payments():
         add_processed_payment(payment_hash)
         logger.debug(f"Payment {payment_hash} processed and added to processed payments.")
 
+    # Update latest_balance
+    wallet_info = fetch_api("wallet")
+    if wallet_info:
+        current_balance_msat = wallet_info.get("balance", 0)
+        current_balance_sats = current_balance_msat / 1000
+        latest_balance = {
+            "balance_sats": int(current_balance_sats),
+            "last_change": datetime.utcnow().isoformat(),
+            "memo": "Latest balance fetched."
+        }
+        logger.debug(f"Updated latest_balance: {latest_balance}")
+
+    # Send notifications
     for payment in incoming_payments:
         notify_transaction(payment, "incoming")
 
@@ -643,8 +684,8 @@ def send_transactions_message(chat_id, page=1, message_id=None):
             logger.warning(f"Invalid amount_msat value in transaction: {amount_msat}")
         sign = "+" if amount_msat > 0 else "-"
         emoji = "🟢" if amount_msat > 0 else "🔴"
-        message_lines.append(f"{emoji} {formatted_date} {sign}{amount_sats} sat")
-        message_lines.append(f"✉️ {memo}")
+        message_lines.append(f"{emoji} {formatted_date} {sign}{amount_sats} sats")
+        message_lines.append(f"✉️ Memo: {memo}")
 
     full_message = "\n".join(message_lines)
     inline_keyboard = []
@@ -788,15 +829,10 @@ def handle_transactions_callback(update, context):
         handle_balance_callback(query)
     elif data == 'transactions_inline':
         handle_transactions_inline_callback(query)
-    elif data.startswith('prev_') or data.startswith('next_'):
-        if data.startswith('prev_'):
-            current_page = int(data.split('_')[1])
-            new_page = current_page - 1
-        elif data.startswith('next_'):
-            current_page = int(data.split('_')[1])
-            new_page = current_page + 1
-        send_transactions_message(query.message.chat.id, page=new_page, message_id=query.message.message_id)
-        logger.debug(f"Handled pagination callback. New page: {new_page}")
+    elif data.startswith('prev_'):
+        handle_prev_page(update, context)
+    elif data.startswith('next_'):
+        handle_next_page(update, context)
     elif data in ['overwatch_inline', 'liveticker_inline', 'lnbits_inline']:
         handle_donations_inline_callback(query)
     else:
@@ -811,7 +847,7 @@ def handle_info_command(update, context):
     interval_info = (
         f"🔔 *Balance Change Threshold:* {BALANCE_CHANGE_THRESHOLD} sats\n"
         f"🔔 *Highlight Threshold:* {HIGHLIGHT_THRESHOLD} sats\n"
-        f"🔄 *Latest Payments Fetch Interval:* Every {PAYMENTS_FETCH_INTERVAL / 60:.1f} minutes"
+        f"🔄 *Latest Payments Fetch Interval:* Every {PAYMENTS_FETCH_INTERVAL} seconds"
     )
 
     info_message = (
@@ -980,7 +1016,7 @@ def start_scheduler():
             id='latest_payments_fetch',
             next_run_time=datetime.utcnow() + timedelta(seconds=1)
         )
-        logger.info(f"Latest Payments Fetch scheduled every {PAYMENTS_FETCH_INTERVAL / 60:.1f} minutes.")
+        logger.info(f"Latest Payments Fetch scheduled every {PAYMENTS_FETCH_INTERVAL} seconds.")
     else:
         logger.info("Latest Payments Fetch disabled.")
     scheduler.start()
@@ -994,7 +1030,7 @@ def home():
     return "🔍 LNbits Monitor is running."
 
 @app.route('/status', methods=['GET'])
-def status():
+def status_route():
     donation_details = fetch_donation_details()
     logger.debug("Status route accessed.")
     return jsonify({
@@ -1143,6 +1179,149 @@ def cinema_page():
     logger.debug("Cinema page accessed.")
     return render_template('cinema.html')
 
+# --------------------- Authentication Routes ---------------------
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            flash('Please log in to access this page.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'logged_in' in session:
+        return redirect(url_for('settings'))
+
+    if request.method == 'POST':
+        password = request.form.get('password')
+        ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+
+        if not ADMIN_PASSWORD:
+            flash('Admin password not set. Please set ADMIN_PASSWORD in your .env file.', 'danger')
+            return render_template('login.html')
+
+        if password == ADMIN_PASSWORD:
+            session['logged_in'] = True
+            flash('Successfully logged in!', 'success')
+            logger.info("User logged in successfully.")
+            return redirect(url_for('settings'))
+        else:
+            flash('Incorrect password. Please try again.', 'danger')
+            logger.warning("User attempted to log in with incorrect password.")
+
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    session.pop('logged_in', None)
+    flash('Successfully logged out.', 'success')
+    logger.info("User logged out successfully.")
+    return redirect(url_for('login'))
+
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    if request.method == 'POST':
+        # List of environment variables to update
+        env_vars = [
+            'TELEGRAM_BOT_TOKEN',
+            'CHAT_ID',
+            'LNBITS_READONLY_API_KEY',
+            'LNBITS_URL',
+            'INSTANCE_NAME',
+            'BALANCE_CHANGE_THRESHOLD',
+            'LATEST_TRANSACTIONS_COUNT',
+            'PAYMENTS_FETCH_INTERVAL',
+            'OVERWATCH_URL',
+            'DONATIONS_URL',
+            'LNURLP_ID',
+            'HIGHLIGHT_THRESHOLD',
+            'INFORMATION_URL',
+            'APP_HOST',
+            'APP_PORT',
+            'PROCESSED_PAYMENTS_FILE',
+            'CURRENT_BALANCE_FILE',
+            'DONATIONS_FILE',
+            'FORBIDDEN_WORDS_FILE',
+            'ADMIN_PASSWORD'
+        ]
+
+        # Define required fields
+        required_fields = [
+            'TELEGRAM_BOT_TOKEN',
+            'CHAT_ID',
+            'LNBITS_READONLY_API_KEY',
+            'LNBITS_URL',
+            'APP_HOST',
+            'APP_PORT',
+            'PROCESSED_PAYMENTS_FILE',
+            'CURRENT_BALANCE_FILE',
+            'DONATIONS_FILE',
+            'FORBIDDEN_WORDS_FILE'
+        ]
+
+        errors = []
+
+        try:
+            # Validate required fields
+            for var in required_fields:
+                value = request.form.get(var)
+                if not value or value.strip() == '':
+                    errors.append(f"{var.replace('_', ' ').title()} is required.")
+
+            if errors:
+                for error in errors:
+                    flash(error, 'danger')
+                logger.warning(f"Settings update failed due to missing fields: {errors}")
+                # Preserve user input
+                env_vars_current = {var: request.form.get(var, '') for var in env_vars}
+                return render_template('settings.html', env_vars=env_vars_current)
+
+            # Update environment variables
+            for var in env_vars:
+                value = request.form.get(var)
+                if value is not None:
+                    set_key('.env', var, value)
+                    os.environ[var] = value  # Update the current environment
+
+            flash('Settings updated successfully.', 'success')
+            logger.info("Settings updated via settings page.")
+            return redirect(url_for('settings'))
+        except Exception as e:
+            flash(f'Error updating settings: {e}', 'danger')
+            logger.error(f"Error updating settings: {e}")
+            logger.debug("".join(traceback.format_exception(None, e, e.__traceback__)))
+
+    # GET method: Show current values
+    env_vars_current = {
+        'TELEGRAM_BOT_TOKEN': os.getenv('TELEGRAM_BOT_TOKEN', ''),
+        'CHAT_ID': os.getenv('CHAT_ID', ''),
+        'LNBITS_READONLY_API_KEY': os.getenv('LNBITS_READONLY_API_KEY', ''),
+        'LNBITS_URL': os.getenv('LNBITS_URL', ''),
+        'INSTANCE_NAME': os.getenv('INSTANCE_NAME', ''),
+        'BALANCE_CHANGE_THRESHOLD': os.getenv('BALANCE_CHANGE_THRESHOLD', ''),
+        'LATEST_TRANSACTIONS_COUNT': os.getenv('LATEST_TRANSACTIONS_COUNT', ''),
+        'PAYMENTS_FETCH_INTERVAL': os.getenv('PAYMENTS_FETCH_INTERVAL', ''),
+        'OVERWATCH_URL': os.getenv('OVERWATCH_URL', ''),
+        'DONATIONS_URL': os.getenv('DONATIONS_URL', ''),
+        'LNURLP_ID': os.getenv('LNURLP_ID', ''),
+        'HIGHLIGHT_THRESHOLD': os.getenv('HIGHLIGHT_THRESHOLD', ''),
+        'INFORMATION_URL': os.getenv('INFORMATION_URL', ''),
+        'APP_HOST': os.getenv('APP_HOST', ''),
+        'APP_PORT': os.getenv('APP_PORT', ''),
+        'PROCESSED_PAYMENTS_FILE': os.getenv('PROCESSED_PAYMENTS_FILE', ''),
+        'CURRENT_BALANCE_FILE': os.getenv('CURRENT_BALANCE_FILE', ''),
+        'DONATIONS_FILE': os.getenv('DONATIONS_FILE', ''),
+        'FORBIDDEN_WORDS_FILE': os.getenv('FORBIDDEN_WORDS_FILE', ''),
+        'ADMIN_PASSWORD': os.getenv('ADMIN_PASSWORD', '')
+    }
+
+    return render_template('settings.html', env_vars=env_vars_current)
+
 # --------------------- Core Functionality ---------------------
 
 def handle_vote_command(donation_id, vote_type):
@@ -1227,12 +1406,10 @@ def initialize_processed_payments():
 # --------------------- Main Function ---------------------
 
 def main():
-    # Initialize Telegram Bot
-    from telegram import Bot, ParseMode
-    from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
-
-    bot = Bot(token=TELEGRAM_BOT_TOKEN)
-    logger.debug("Telegram Bot initialized.")
+    # Start the Flask app in a separate thread
+    flask_thread = threading.Thread(target=run_flask_app, daemon=True)
+    flask_thread.start()
+    logger.debug("Flask app thread started.")
 
     # Initialize processed payments to prevent old notifications
     initialize_processed_payments()
@@ -1241,11 +1418,6 @@ def main():
     scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
     scheduler_thread.start()
     logger.debug("Scheduler thread started.")
-
-    # Start the Flask app in a separate thread
-    flask_thread = threading.Thread(target=lambda: app.run(host=APP_HOST, port=APP_PORT), daemon=True)
-    flask_thread.start()
-    logger.info(f"Flask Server running at {APP_HOST}:{APP_PORT}")
 
     # Set up Telegram Bot handlers
     updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
@@ -1275,13 +1447,23 @@ def main():
     send_main_inline_keyboard()
     updater.idle()
 
+def run_flask_app():
+    try:
+        logger.info(f"Starting Flask app on {APP_HOST}:{APP_PORT}")
+        app.run(host=APP_HOST, port=APP_PORT, debug=False, use_reloader=False)
+    except Exception as e:
+        logger.error(f"Error running Flask app: {e}")
+        logger.debug(traceback.format_exc())
+
+# --------------------- Application Entry Point ---------------------
+
 if __name__ == "__main__":
     logger.info("🚀 Starting LNbits Balance Monitor.")
     logger.info(f"🔔 Balance Change Threshold: {BALANCE_CHANGE_THRESHOLD} sats")
     logger.info(f"🔔 Highlight Threshold: {HIGHLIGHT_THRESHOLD} sats")
     logger.info(f"📊 Fetching the latest {LATEST_TRANSACTIONS_COUNT} transactions")
     if PAYMENTS_FETCH_INTERVAL > 0:
-        logger.info(f"⏲️ Interval: every {PAYMENTS_FETCH_INTERVAL / 60:.1f} min")
+        logger.info(f"⏲️ Interval: every {PAYMENTS_FETCH_INTERVAL} seconds")
     else:
         logger.info("⏲️ Fetch Interval disabled")
 

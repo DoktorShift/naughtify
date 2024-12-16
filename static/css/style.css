@@ -1,6 +1,6 @@
 /* CSS-Variablen für Light Mode Farben und Themen */
 :root {
-    /* Primäre Farben */
+/* Primäre Farben */
     --primary-color: #1f4b6d; /* Dunkelblau */
     --secondary-color: #3498db; /* Blau */
 
@@ -202,11 +202,11 @@ a {
     border-radius: 50%;
 }
 
-input:checked + .slider {
+.switch input:checked + .slider {
     background-color: var(--secondary-color);
 }
 
-input:checked + .slider:before {
+.switch input:checked + .slider:before {
     transform: translateX(26px);
 }
 
@@ -347,22 +347,15 @@ input:checked + .slider:before {
     cursor: pointer;
     transition: background var(--transition-speed) ease, transform 0.2s ease;
     display: flex;
-    flex-direction: column; /* Für zentrierte Ausrichtung */
-    align-items: center; /* Horizontales Zentrieren */
-    justify-content: center; /* Vertikales Zentrieren */
+    flex-direction: column; /* For centered alignment */
+    align-items: center; /* Horizontal Centering */
+    justify-content: center; /* Vertical Centering */
     gap: 0.5rem;
 }
 
 .lightning-card .copy-field:hover {
     background: var(--copy-field-hover-background);
     transform: scale(1.02);
-}
-
-.lightning-card .copy-field p:first-child {
-    margin-bottom: 0.3125rem;
-    font-weight: bold;
-    font-size: 1.1rem;
-    color: var(--text-color);
 }
 
 .lightning-card .emoji {
@@ -402,7 +395,7 @@ input:checked + .slider:before {
 
 /* Logo Styling and Placement */
 .main-logo {
-    max-width: 300px; /* Größe */
+    max-width: 300px; /* Size */
     margin-top: 1rem;
     display: block;
     margin-left: auto;
@@ -466,7 +459,7 @@ table td.amount {
     font-size: 1.2rem;
 }
 
-/* Like and Dislike Buttons innerhalb der Actions-Spalte */
+/* Like and Dislike Buttons within the Actions Column */
 table td.actions {
     display: flex;
     align-items: center;
@@ -494,10 +487,10 @@ table td.actions {
 
 .likes-count, .dislikes-count {
     font-size: 0.9rem;
-    color: #555; /* Optional: Kann zu var(--text-color) geändert werden */
+    color: #555; /* Optional: Can be changed to var(--text-color) */
 }
 
-/* Highlight Class für große Spenden */
+/* Highlight Class for Large Donations */
 .highlight {
     background-color: var(--highlight-background) !important;
     color: var(--highlight-text-color) !important;
@@ -617,13 +610,13 @@ footer.footer {
 }
 
 .footer-section .social-icons a i {
-    font-size: 24px; /* Anpassung der Symbolgröße */
+    font-size: 24px; /* Adjust icon size */
     color: var(--footer-text-color);
     transition: color var(--transition-speed);
 }
 
 .footer-section .social-icons a:hover i {
-    color: var(--social-icon-hover-color); /* Verwendung der Variable für Hover-Farbe */
+    color: var(--social-icon-hover-color); /* Use variable for hover color */
 }
 
 /* Footer Bottom */
@@ -682,7 +675,7 @@ footer.footer {
     }
 }
 
-/* Material Icons Anpassung für Like/Dislike */
+/* Material Icons Adjustment for Like/Dislike */
 .material-icons {
     vertical-align: middle;
 }
@@ -710,15 +703,62 @@ footer.footer {
     .like-button, .dislike-button {
         gap: 0.3rem;
     }
+
+    /* Adjust Login Button in Footer for Smaller Screens */
+    footer.footer .social-icons {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    footer.footer .social-icons a.login-button {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
-/* Styling für das GitHub-Symbol, um es den anderen anzupassen */
+/* Styling for the GitHub Icon to Match Others */
 .footer-section .social-icons a i {
-    font-size: 24px; /* Anpassung der Symbolgröße */
+    font-size: 24px; /* Adjust icon size */
     color: var(--footer-text-color);
     transition: color var(--transition-speed);
 }
 
 .footer-section .social-icons a:hover i {
-    color: var(--social-icon-hover-color); /* Verwendung der Variable für Hover-Farbe */
+    color: var(--social-icon-hover-color); /* Use variable for hover color */
+}
+
+/* Login Button Styling */
+.login-button {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: var(--footer-text-color);
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: background-color var(--transition-speed), transform var(--transition-speed);
+    text-decoration: none;
+    font-family: 'Arial', sans-serif;
+}
+
+.login-button i.material-icons {
+    margin-right: 0.5rem;
+    font-size: 20px;
+}
+
+.login-button:hover {
+    background-color: var(--secondary-color);
+    transform: translateY(-2px);
+}
+
+/* Adjustments for Dark Mode */
+body.dark-mode .login-button {
+    background-color: var(--primary-color);
+    color: var(--footer-text-color);
+}
+
+body.dark-mode .login-button:hover {
+    background-color: var(--secondary-color);
 }

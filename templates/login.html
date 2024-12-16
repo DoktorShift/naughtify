@@ -1,0 +1,40 @@
+<!-- templates/login.html -->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Naughtify Einstellungen</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <!-- Bootstrap CSS (optional, für einfachere Gestaltung) -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+<body>
+    <div class="login-container">
+        <h2 class="title">Naughtify Einstellungen - Login</h2>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                {{ message }}
+                <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                  <span aria-hidden="true">&times;</span>
+                </button>
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
+        <form method="POST" class="login-form">
+            <div class="form-group">
+                <label for="password">Passwort</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Gib dein Passwort ein" required>
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
+        </form>
+    </div>
+
+    <!-- Bootstrap JS und Abhängigkeiten -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>
