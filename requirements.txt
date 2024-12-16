@@ -13,3 +13,4 @@ qrcode==7.3.1
 Pillow==10.0.0
 werkzeug
 python-secp256k1
+secp256k1
