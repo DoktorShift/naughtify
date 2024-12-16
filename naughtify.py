@@ -3,8 +3,8 @@ import logging
 from logging.handlers import RotatingFileHandler
 from flask import Flask, jsonify, request, render_template, redirect, url_for, session, flash, make_response
 from flask_cors import CORS
-from telegram import Bot, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
+from telegram import Bot, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup, Update
+from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters, CallbackContext
 from dotenv import load_dotenv, set_key
 import requests
 import traceback
@@ -19,6 +19,7 @@ from urllib.parse import urlparse
 import re
 import uuid
 from functools import wraps
+# LNURL-auth related imports
 from secp256k1 import PublicKey
 from binascii import unhexlify
 import secrets
@@ -48,7 +49,7 @@ FORBIDDEN_WORDS_FILE = os.getenv("FORBIDDEN_WORDS_FILE", "forbidden_words.txt")
 PROCESSED_PAYMENTS_FILE = os.getenv("PROCESSED_PAYMENTS_FILE", "processed_payments.txt")
 CURRENT_BALANCE_FILE = os.getenv("CURRENT_BALANCE_FILE", "current-balance.txt")
 DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
-USERS_FILE = "user_ln.json"  # Changed from users.json to user_ln.json
+USERS_FILE = "user_ln.json"  # For LNURL-auth users
 
 # Thresholds and Intervals
 BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))
@@ -63,7 +64,6 @@ APP_PORT = int(os.getenv("APP_PORT", "5009"))
 # Secret Key for Flask Sessions
 SECRET_KEY = os.getenv("SECRET_KEY", os.urandom(24))
 
-# Validate Essential Variables
 required_vars = {
     "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
     "CHAT_ID": CHAT_ID,
@@ -78,13 +78,11 @@ if missing_vars:
 if DONATIONS_URL and not LNURLP_ID:
     raise EnvironmentError("LNURLP_ID must be set when DONATIONS_URL is provided.")
 
-# Define LNBITS_DOMAIN by parsing LNBITS_URL
 parsed_url = urlparse(LNBITS_URL)
 LNBITS_DOMAIN = parsed_url.netloc
 if not LNBITS_DOMAIN:
     raise ValueError("Invalid LNBITS_URL provided. Cannot parse domain.")
 
-# Initialize Telegram Bot
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 # --------------------- Logging Configuration ---------------------
@@ -152,11 +150,8 @@ def save_users(users):
 users = load_users()
 
 def create_lnurl_auth_link():
-    # Generate random k1
     k1 = secrets.token_hex(32)
     ln_auth_challenges[k1] = True
-    # Construct the LNURL-auth URL
-    # Ensure your domain and ports are accessible publicly.
     url = f"https://{APP_HOST}:{APP_PORT}/lnurl-auth?tag=login&k1={k1}&action=login"
     return url, k1
 
@@ -168,7 +163,6 @@ def load_forbidden_words(file_path):
                 word = line.strip()
                 if word:
                     forbidden.add(word)
-        logger.debug(f"{len(forbidden)} forbidden words loaded from {file_path}.")
     except FileNotFoundError:
         logger.error(f"Forbidden words file not found: {file_path}.")
     except Exception as e:
@@ -176,25 +170,18 @@ def load_forbidden_words(file_path):
         logger.debug(traceback.format_exc())
     return forbidden
 
-FORBIDDEN_WORDS = load_forbidden_words(FORBIDDEN_WORDS_FILE)
+FORBIDDEN_WORDS = load_forbidden_words(FORBIDDEN_WORDS_FILE)  # Ensure this is defined globally
 
 def sanitize_memo(memo):
     if not memo:
-        logger.debug("No memo provided to sanitize.")
         return "No memo provided."
-
     def replace_match(match):
         word = match.group()
-        logger.debug(f"Sanitizing word: {word}")
         return '*' * len(word)
-
     if not FORBIDDEN_WORDS:
-        logger.debug("No forbidden words to sanitize.")
         return memo
     pattern = re.compile(r'\b(' + '|'.join(map(re.escape, FORBIDDEN_WORDS)) + r')\b', re.IGNORECASE)
-    sanitized_memo = pattern.sub(replace_match, memo)
-    logger.debug(f"Sanitized memo: Original: '{memo}' -> Sanitized: '{sanitized_memo}'")
-    return sanitized_memo
+    return pattern.sub(replace_match, memo)
 
 def load_processed_payments():
     processed = set()
@@ -203,7 +190,6 @@ def load_processed_payments():
             with open(PROCESSED_PAYMENTS_FILE, 'r') as f:
                 for line in f:
                     processed.add(line.strip())
-            logger.debug(f"{len(processed)} processed payment hashes loaded.")
         except Exception as e:
             logger.error(f"Error loading processed payments: {e}")
             logger.debug(traceback.format_exc())
@@ -215,7 +201,6 @@ def add_processed_payment(payment_hash):
     try:
         with open(PROCESSED_PAYMENTS_FILE, 'a') as f:
             f.write(f"{payment_hash}\n")
-        logger.debug(f"Payment hash {payment_hash} added to processed list.")
     except Exception as e:
         logger.error(f"Error adding processed payment: {e}")
         logger.debug(traceback.format_exc())
@@ -232,7 +217,6 @@ def load_last_balance():
                 return 0.0
             try:
                 balance = float(content)
-                logger.debug(f"Last balance loaded: {balance} sats.")
                 return balance
             except ValueError:
                 logger.error(f"Invalid balance value in file: {content}. Last balance set to 0.")
@@ -257,7 +241,6 @@ def load_donations():
                         donation["likes"] = 0
                     if "dislikes" not in donation:
                         donation["dislikes"] = 0
-            logger.debug(f"{len(donations)} donations loaded from file.")
         except Exception as e:
             logger.error(f"Error loading donations: {e}")
             logger.debug(traceback.format_exc())
@@ -272,7 +255,6 @@ def save_donations():
                     "total_donations": total_donations,
                     "donations": donations
                 }, f, indent=4)
-            logger.debug("Donation data successfully saved.")
         except Exception as e:
             logger.error(f"Error saving donations: {e}")
             logger.debug(traceback.format_exc())
@@ -286,7 +268,6 @@ def sanitize_donations():
         for donation in donations:
             donation['memo'] = sanitize_memo(donation.get('memo', ''))
         save_donations()
-        logger.info("Donations sanitized and saved.")
     except Exception as e:
         logger.error(f"Error sanitizing donations: {e}")
         logger.debug(traceback.format_exc())
@@ -294,14 +275,12 @@ def sanitize_donations():
 def handle_ticker_ban(update, context):
     chat_id = update.effective_chat.id
     if len(context.args) == 0:
-        bot.send_message(chat_id, text="❌ Please provide at least one word to ban. Example: /ticker_ban badword")
-        logger.debug("Ticker ban command received without arguments.")
+        bot.send_message(chat_id, text="❌ Please provide at least one word to ban.")
         return
 
     words_to_ban = [word.strip() for word in context.args if word.strip()]
     if not words_to_ban:
         bot.send_message(chat_id, text="❌ No valid words provided.")
-        logger.debug("Ticker ban command received with no valid words.")
         return
 
     added_words = []
@@ -316,7 +295,6 @@ def handle_ticker_ban(update, context):
                     f.write(word + '\n')
                     FORBIDDEN_WORDS.add(word)
                     added_words.append(word)
-        logger.debug(f"Words to ban processed: Added {added_words}, Duplicates {duplicate_words}.")
 
         sanitize_donations()
         global last_update
@@ -329,7 +307,6 @@ def handle_ticker_ban(update, context):
                 words_formatted = "', '".join(added_words)
                 success_message = f"✅ Added these banned words: '{words_formatted}'."
             bot.send_message(chat_id, text=success_message)
-            logger.info(f"Added forbidden words: {added_words}")
         if duplicate_words:
             if len(duplicate_words) == 1:
                 duplicate_message = f"⚠️ The word '{duplicate_words[0]}' was already banned."
@@ -337,10 +314,9 @@ def handle_ticker_ban(update, context):
                 words_formatted = "', '".join(duplicate_words)
                 duplicate_message = f"⚠️ These words were already banned: '{words_formatted}'."
             bot.send_message(chat_id, text=duplicate_message)
-            logger.info(f"Duplicate forbidden words attempted to add: {duplicate_words}")
     except Exception as e:
         logger.error(f"Error adding words to forbidden list: {e}")
-        bot.send_message(chat_id, text="❌ An error occurred while banning words. Please try again.")
+        bot.send_message(chat_id, text="❌ An error occurred.")
         logger.debug(traceback.format_exc())
 
 def fetch_api(endpoint):
@@ -350,10 +326,9 @@ def fetch_api(endpoint):
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
             data = response.json()
-            logger.debug(f"Data fetched from {endpoint}: {data}")
             return data
         else:
-            logger.error(f"Error fetching {endpoint}. Status Code: {response.status_code}")
+            logger.error(f"Error fetching {endpoint}. Status: {response.status_code}")
             return None
     except Exception as e:
         logger.error(f"Error fetching {endpoint}: {e}")
@@ -362,42 +337,33 @@ def fetch_api(endpoint):
 
 def fetch_pay_links():
     if not DONATIONS_URL or not LNURLP_ID:
-        logger.debug("Donations not enabled. Skipping fetch_pay_links.")
         return None
     url = f"{LNBITS_URL}/lnurlp/api/v1/links"
     headers = {"X-Api-Key": LNBITS_READONLY_API_KEY}
     try:
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
-            data = response.json()
-            logger.debug(f"Pay Links fetched: {data}")
-            return data
+            return response.json()
         else:
-            logger.error(f"Error fetching Pay Links. Status Code: {response.status_code}")
+            logger.error(f"Error fetching Pay Links. Status: {response.status_code}")
             return None
     except Exception as e:
         logger.error(f"Error fetching Pay Links: {e}")
-        logger.debug(traceback.format_exc())
         return None
 
 def get_lnurlp_info(lnurlp_id):
     if not DONATIONS_URL or not LNURLP_ID:
-        logger.debug("Donations not enabled. Skipping get_lnurlp_info.")
         return None
     pay_links = fetch_pay_links()
     if pay_links is None:
-        logger.error("Could not fetch Pay Links.")
         return None
     for pay_link in pay_links:
         if pay_link.get("id") == lnurlp_id:
-            logger.debug(f"Matching Pay Link found: {pay_link}")
             return pay_link
-    logger.error(f"No Pay Link found with ID {lnurlp_id}.")
     return None
 
 def fetch_donation_details():
     if not DONATIONS_URL or not LNURLP_ID:
-        logger.debug("Donations not enabled. Returning basic data.")
         return {
             "total_donations": total_donations,
             "donations": donations,
@@ -408,7 +374,6 @@ def fetch_donation_details():
 
     lnurlp_info = get_lnurlp_info(LNURLP_ID)
     if lnurlp_info is None:
-        logger.error("No LNURLp info found.")
         return {
             "total_donations": total_donations,
             "donations": donations,
@@ -421,7 +386,6 @@ def fetch_donation_details():
     lightning_address = f"{username}@{LNBITS_DOMAIN}"
     lnurl = lnurlp_info.get('lnurl', '')
 
-    logger.debug(f"Donation details fetched: Lightning Address: {lightning_address}, LNURL: {lnurl}")
     return {
         "total_donations": total_donations,
         "donations": donations,
@@ -436,7 +400,6 @@ def update_donations_with_details(data):
         "lightning_address": donation_details.get("lightning_address"),
         "lnurl": donation_details.get("lnurl")
     })
-    logger.debug("Donation details updated with additional information.")
     return data
 
 def updateDonations(data):
@@ -467,61 +430,46 @@ def notify_transaction(payment, direction):
             text=message,
             parse_mode=ParseMode.MARKDOWN
         )
-        logger.info(f"Notification for {transaction_type} sent successfully.")
     except Exception as e:
         logger.error(f"Error sending transaction notification: {e}")
         logger.debug(traceback.format_exc())
 
 def parse_time(time_input):
     if not time_input:
-        logger.warning("No 'time' field found, using current time.")
         return datetime.utcnow()
     if isinstance(time_input, str):
         try:
-            date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%S.%fZ")
-            return date
+            return datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%S.%fZ")
         except ValueError:
             try:
-                date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%SZ")
-                return date
+                return datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%SZ")
             except ValueError:
-                logger.error(f"Unable to parse time string: {time_input}. Using current time.")
                 return datetime.utcnow()
     elif isinstance(time_input, (int, float)):
         try:
-            date = datetime.fromtimestamp(time_input)
-            return date
-        except Exception as e:
-            logger.error(f"Unable to parse timestamp: {time_input}, error: {e}. Using current time.")
+            return datetime.fromtimestamp(time_input)
+        except:
             return datetime.utcnow()
     else:
-        logger.error(f"Unsupported time format: {time_input}. Using current time.")
         return datetime.utcnow()
 
 def send_latest_payments():
     global total_donations, donations, last_update, latest_balance, latest_payments
-    logger.info("Fetching latest payments...")
     payments = fetch_api("payments")
-    if payments is None:
-        logger.warning("No payments fetched.")
+    if payments is None or not isinstance(payments, list):
         return
-    if not isinstance(payments, list):
-        logger.error("Unexpected data format for payments.")
-        return
-
     sorted_payments = sorted(payments, key=lambda x: x.get("time", ""), reverse=True)
     latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]
     latest_payments = latest.copy()
 
     if not latest:
-        logger.info("No payments found.")
         return
 
     incoming_payments = []
     outgoing_payments = []
     new_processed_hashes = []
 
-    # Check if user is logged in (LN Auth)
+    # session is not reliable here due to background thread. We'll just leave logic as-is.
     user_linking_key = session.get('linking_key') if 'linking_key' in session else None
 
     for payment in latest:
@@ -552,7 +500,6 @@ def send_latest_payments():
             lnurlp_id_payment = extra_data.get("link")
             if lnurlp_id_payment == LNURLP_ID:
                 donation_memo = sanitize_memo(extra_data.get("comment", "No memo provided."))
-                # Try to parse donation amount from extra
                 try:
                     donation_amount_msat = int(extra_data.get("extra", 0))
                     donation_amount_sats = donation_amount_msat / 1000
@@ -566,14 +513,14 @@ def send_latest_payments():
                     "likes": 0,
                     "dislikes": 0
                 }
-                # If user is logged in via LN Auth, store their linking_key
-                if user_linking_key:
-                    donation["linking_key"] = user_linking_key
+
+                # If LN auth user logged in at request time, link donation:
+                if 'ln_logged_in' in session and session['ln_logged_in'] and 'linking_key' in session:
+                    donation["linking_key"] = session['linking_key']
 
                 donations.append(donation)
                 total_donations += donation_amount_sats
                 last_update = datetime.utcnow()
-                logger.info(f"New donation detected: {donation_amount_sats} sats - {donation_memo}")
                 updateDonations({"total_donations": total_donations, "donations": donations})
 
         processed_payments.add(payment_hash)
@@ -584,11 +531,11 @@ def send_latest_payments():
     if wallet_info:
         current_balance_msat = wallet_info.get("balance", 0)
         current_balance_sats = current_balance_msat / 1000
-        latest_balance = {
+        latest_balance.update({
             "balance_sats": int(current_balance_sats),
             "last_change": datetime.utcnow().isoformat(),
             "memo": "Latest balance fetched."
-        }
+        })
 
     for payment in incoming_payments:
         notify_transaction(payment, "incoming")
@@ -597,32 +544,24 @@ def send_latest_payments():
         notify_transaction(payment, "outgoing")
 
 def send_balance_message(chat_id):
-    logger.info(f"Fetching balance for chat_id: {chat_id}")
     wallet_info = fetch_api("wallet")
     if wallet_info is None:
         bot.send_message(chat_id, text="❌ Unable to fetch balance.")
-        logger.error("Failed to fetch wallet balance.")
         return
     current_balance_msat = wallet_info.get("balance", 0)
     current_balance_sats = current_balance_msat / 1000
     balance_text = f"💰 *Current Balance:* {int(current_balance_sats)} sats"
-    try:
-        bot.send_message(
-            chat_id=chat_id,
-            text=balance_text,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=get_main_keyboard()
-        )
-    except Exception as telegram_error:
-        logger.error(f"Error sending balance message: {telegram_error}")
-        logger.debug(traceback.format_exc())
+    bot.send_message(
+        chat_id=chat_id,
+        text=balance_text,
+        parse_mode=ParseMode.MARKDOWN,
+        reply_markup=get_main_keyboard()
+    )
 
 def send_transactions_message(chat_id, page=1, message_id=None):
-    logger.info(f"Fetching transactions for chat_id: {chat_id}, page: {page}")
     payments = fetch_api("payments")
     if payments is None:
         bot.send_message(chat_id, text="❌ Unable to fetch transactions.")
-        logger.error("Failed to fetch transactions.")
         return
 
     filtered_payments = [p for p in payments if p.get("status", "").lower() != "pending"]
@@ -634,7 +573,6 @@ def send_transactions_message(chat_id, page=1, message_id=None):
         total_pages = 1
     if page < 1 or page > total_pages:
         bot.send_message(chat_id, text="❌ Invalid page number.")
-        logger.warning(f"Invalid page number requested: {page}")
         return
 
     start_index = (page - 1) * transactions_per_page
@@ -642,7 +580,6 @@ def send_transactions_message(chat_id, page=1, message_id=None):
     page_transactions = sorted_payments[start_index:end_index]
     if not page_transactions:
         bot.send_message(chat_id, text="❌ No transactions found on this page.")
-        logger.info(f"No transactions found on page {page}.")
         return
 
     message_lines = [f"📜 *Latest Transactions - Page {page}/{total_pages}* 📜\n"]
@@ -672,26 +609,21 @@ def send_transactions_message(chat_id, page=1, message_id=None):
         inline_keyboard.append(buttons)
 
     inline_reply_markup = InlineKeyboardMarkup(inline_keyboard) if inline_keyboard else None
-
-    try:
-        if message_id:
-            bot.edit_message_text(
-                chat_id=chat_id,
-                message_id=message_id,
-                text=full_message,
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=inline_reply_markup
-            )
-        else:
-            bot.send_message(
-                chat_id=chat_id,
-                text=full_message,
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=inline_reply_markup
-            )
-    except Exception as telegram_error:
-        logger.error(f"Error sending/editing transactions: {telegram_error}")
-        logger.debug(traceback.format_exc())
+    if message_id:
+        bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=message_id,
+            text=full_message,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=inline_reply_markup
+        )
+    else:
+        bot.send_message(
+            chat_id=chat_id,
+            text=full_message,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=inline_reply_markup
+        )
 
 def handle_prev_page(update, context):
     query = update.callback_query
@@ -756,7 +688,6 @@ def get_main_keyboard():
         main_options_row_1,
         main_options_row_2
     ]
-
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
 
 def handle_balance_callback(query):
@@ -820,7 +751,6 @@ def handle_other_inline_callbacks(data, query):
 def handle_transactions_callback(update, context):
     query = update.callback_query
     data = query.data
-
     if data == 'balance':
         handle_balance_callback(query)
     elif data == 'transactions_inline':
@@ -865,12 +795,12 @@ def handle_help_command(update, context):
     chat_id = update.effective_chat.id
     help_message = (
         f"ℹ️ *{INSTANCE_NAME}* - *Help*\n\n"
-        "Here is what I can do:\n\n"
+        "Hello! Here is what I can do:\n\n"
         "- /balance - Show your current LNbits wallet balance.\n"
         "- /transactions - Show your latest transactions with pagination.\n"
-        "- /info - Display current settings and thresholds.\n"
-        "- /help - Display this help message.\n"
-        "- /ticker_ban words - Add forbidden words that will be censored in the Live Ticker.\n\n"
+        "- /info - Display current settings.\n"
+        "- /help - Display this help.\n"
+        "- /ticker_ban words - Add forbidden words.\n\n"
         "Use the buttons below to quickly navigate!"
     )
 
@@ -964,10 +894,7 @@ def process_update(update):
             elif text == "⚡ LNBits":
                 handle_lnbits(None, None)
             else:
-                bot.send_message(
-                    chat_id=chat_id,
-                    text="❓ I didn't recognize that command. Use /help to see what I can do."
-                )
+                bot.send_message(chat_id=chat_id, text="❓ I didn't recognize that command. Use /help.")
         elif 'callback_query' in update:
             pass
         else:
@@ -1035,7 +962,6 @@ def donations_page():
         qr.add_data(lnurl)
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
-
         img_io = io.BytesIO()
         img.save(img_io, 'PNG')
         img_io.seek(0)
@@ -1046,7 +972,6 @@ def donations_page():
 
     total_donations_current = sum(donation['amount'] for donation in donations)
 
-    # Pass 'users' to template
     return render_template(
         'donations.html',
         wallet_name=wallet_name,
@@ -1057,8 +982,7 @@ def donations_page():
         information_url=INFORMATION_URL,
         total_donations=total_donations_current,
         donations=donations,
-        highlight_threshold=HIGHLIGHT_THRESHOLD,
-        users=users
+        highlight_threshold=HIGHLIGHT_THRESHOLD
     )
 
 @app.route('/api/donations', methods=['GET'])
@@ -1077,7 +1001,6 @@ def get_donations_data():
         return jsonify(data), 200
     except Exception as e:
         logger.error(f"Error fetching donation data: {e}")
-        logger.debug(traceback.format_exc())
         return jsonify({"error": "Error fetching donation data"}), 500
 
 @app.route('/api/vote', methods=['POST'])
@@ -1108,7 +1031,6 @@ def vote_donation():
         return response
     except Exception as e:
         logger.error(f"Error processing vote: {e}")
-        logger.debug(traceback.format_exc())
         return jsonify({"error": "Internal server error."}), 500
 
 @app.route('/donations_updates', methods=['GET'])
@@ -1120,7 +1042,6 @@ def donations_updates():
         return jsonify({"last_update": last_update.isoformat()}), 200
     except Exception as e:
         logger.error(f"Error fetching last_update: {e}")
-        logger.debug(traceback.format_exc())
         return jsonify({"error": "Error fetching last_update"}), 500
 
 @app.route('/cinema')
@@ -1129,166 +1050,6 @@ def cinema_page():
         return "Donations are not enabled for Cinema Mode.", 404
     return render_template('cinema.html')
 
-def handle_vote_command(donation_id, vote_type):
-    try:
-        for donation in donations:
-            if donation.get("id") == donation_id:
-                if vote_type == 'like':
-                    donation["likes"] += 1
-                elif vote_type == 'dislike':
-                    donation["dislikes"] += 1
-                else:
-                    return {"error": "Invalid vote type."}, 400
-                save_donations()
-                return {"success": True, "likes": donation["likes"], "dislikes": donation["dislikes"]}, 200
-        return {"error": "Donation not found."}, 404
-    except Exception as e:
-        logger.error(f"Error handling vote: {e}")
-        logger.debug(traceback.format_exc())
-        return {"error": "Internal server error."}, 500
-
-def send_main_inline_keyboard():
-    inline_reply_markup = get_main_inline_keyboard()
-    try:
-        welcome_message = (
-            "😶‍🌫️ Here we go!\n\n"
-            "I'm ready to assist you with LNbits monitoring.\n\n"
-            "Use the buttons below to explore the features."
-        )
-        bot.send_message(
-            chat_id=CHAT_ID,
-            text=welcome_message,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=inline_reply_markup
-        )
-    except Exception as telegram_error:
-        logger.error(f"Error sending the main inline keyboard: {telegram_error}")
-        logger.debug(traceback.format_exc())
-
-def send_start_message(update, context):
-    chat_id = update.effective_chat.id
-    welcome_message = (
-        "👋 Welcome!\n\n"
-        "Use the buttons below for quick access."
-    )
-    reply_markup = get_main_keyboard()
-    try:
-        bot.send_message(
-            chat_id=chat_id,
-            text=welcome_message,
-            reply_markup=reply_markup,
-            parse_mode=ParseMode.MARKDOWN
-        )
-    except Exception as e:
-        logger.error(f"Error sending the start message: {e}")
-        logger.debug(traceback.format_exc())
-
-def initialize_processed_payments():
-    logger.info("Initializing processed payments to prevent old notifications.")
-    payments = fetch_api("payments")
-    if payments is None:
-        logger.error("Failed to initialize processed payments: Unable to fetch payments.")
-        return
-    for payment in payments:
-        payment_hash = payment.get("payment_hash")
-        if payment_hash and payment_hash not in processed_payments:
-            processed_payments.add(payment_hash)
-            add_processed_payment(payment_hash)
-    logger.info("Initialization of processed payments completed.")
-
-# --------------------- LNURL-Auth Related Routes ---------------------
-
-@app.route('/ln_auth')
-def ln_auth_page():
-    url, k1 = create_lnurl_auth_link()
-    # Generate QR code for the LNURL-auth link
-    try:
-        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
-        qr.add_data(url)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-        img_io = io.BytesIO()
-        img.save(img_io, 'PNG')
-        img_io.seek(0)
-        img_base64 = base64.b64encode(img_io.getvalue()).decode()
-    except Exception as e:
-        logger.error(f"Error generating LNURL-auth QR: {e}")
-        return "Error generating QR code.", 500
-
-    return render_template('ln_auth.html', qr_code_data=img_base64)
-
-@app.route('/lnurl-auth', methods=['GET'])
-def lnurl_auth():
-    tag = request.args.get('tag')
-    k1 = request.args.get('k1')
-    action = request.args.get('action')
-    sig = request.args.get('sig')
-    key = request.args.get('key')
-
-    if tag != 'login' or not k1:
-        return jsonify({"status": "ERROR", "reason": "Invalid request"}), 400
-
-    if not sig or not key:
-        # Just show that this is an LNURL-auth endpoint
-        return jsonify({"status": "OK", "message": "This is an LNURL-auth endpoint. Awaiting signature."})
-
-    # Verify signature
-    if k1 not in ln_auth_challenges:
-        return jsonify({"status": "ERROR", "reason": "Invalid or expired k1"}), 400
-
-    try:
-        k1_bin = unhexlify(k1)
-        key_bin = unhexlify(key)
-        sig_bin = unhexlify(sig)
-
-        pubkey = PublicKey(key_bin, raw=True)
-        sig_raw = pubkey.ecdsa_deserialize(sig_bin)
-        verified = pubkey.ecdsa_verify(k1_bin, sig_raw, raw=True)
-        if not verified:
-            return jsonify({"status": "ERROR", "reason": "Signature verification failed"}), 400
-    except Exception as e:
-        logger.error(f"LNURL-auth verification error: {e}")
-        return jsonify({"status": "ERROR", "reason": "Verification error"}), 400
-
-    # If verified
-    linking_key = key.upper()
-    del ln_auth_challenges[k1]
-
-    session['ln_logged_in'] = True
-    session['linking_key'] = linking_key
-
-    # Check if user exists
-    if linking_key not in users:
-        users[linking_key] = {"linkingKey": linking_key, "pseudonym": None}
-        save_users(users)
-
-    if users[linking_key]['pseudonym'] is None:
-        return redirect(url_for('choose_pseudonym'))
-    else:
-        return redirect(url_for('donations_page'))
-
-@app.route('/choose_pseudonym', methods=['GET', 'POST'])
-def choose_pseudonym():
-    if 'ln_logged_in' not in session or 'linking_key' not in session:
-        flash("You must be logged in via LNURL-auth.", "danger")
-        return redirect(url_for('donations_page'))
-
-    linking_key = session['linking_key']
-    if request.method == 'POST':
-        pseudonym = request.form.get('pseudonym', '').strip()
-        # Validate pseudonym
-        if len(pseudonym) == 0 or len(pseudonym) > 13 or not pseudonym.isalnum():
-            flash("Invalid pseudonym. Use up to 13 alphanumeric characters.", "danger")
-        else:
-            users[linking_key]['pseudonym'] = pseudonym
-            save_users(users)
-            flash("Pseudonym set successfully!", "success")
-            return redirect(url_for('donations_page'))
-
-    return render_template('choose_pseudonym.html')
-
-
-# --------------------- Authentication Routes (Admin) ---------------------
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -1314,9 +1075,11 @@ def login():
         if password == ADMIN_PASSWORD:
             session['logged_in'] = True
             flash('Successfully logged in!', 'success')
+            logger.info("User logged in successfully.")
             return redirect(url_for('settings'))
         else:
             flash('Incorrect password. Please try again.', 'danger')
+            logger.warning("User attempted to log in with incorrect password.")
 
     return render_template('login.html')
 
@@ -1325,6 +1088,7 @@ def login():
 def logout():
     session.pop('logged_in', None)
     flash('Successfully logged out.', 'success')
+    logger.info("User logged out successfully.")
     return redirect(url_for('login'))
 
 @app.route('/settings', methods=['GET', 'POST'])
@@ -1378,6 +1142,7 @@ def settings():
             if errors:
                 for error in errors:
                     flash(error, 'danger')
+                logger.warning(f"Settings update failed due to missing fields: {errors}")
                 env_vars_current = {var: request.form.get(var, '') for var in env_vars}
                 return render_template('settings.html', env_vars=env_vars_current)
 
@@ -1388,6 +1153,7 @@ def settings():
                     os.environ[var] = value
 
             flash('Settings updated successfully.', 'success')
+            logger.info("Settings updated via settings page.")
             return redirect(url_for('settings'))
         except Exception as e:
             flash(f'Error updating settings: {e}', 'danger')
@@ -1419,6 +1185,71 @@ def settings():
 
     return render_template('settings.html', env_vars=env_vars_current)
 
+def handle_vote_command(donation_id, vote_type):
+    try:
+        for donation in donations:
+            if donation.get("id") == donation_id:
+                if vote_type == 'like':
+                    donation["likes"] += 1
+                elif vote_type == 'dislike':
+                    donation["dislikes"] += 1
+                else:
+                    return {"error": "Invalid vote type."}, 400
+                save_donations()
+                return {"success": True, "likes": donation["likes"], "dislikes": donation["dislikes"]}, 200
+        return {"error": "Donation not found."}, 404
+    except Exception as e:
+        logger.error(f"Error handling vote: {e}")
+        logger.debug(traceback.format_exc())
+        return {"error": "Internal server error."}, 500
+
+def send_main_inline_keyboard():
+    inline_reply_markup = get_main_inline_keyboard()
+    try:
+        welcome_message = (
+            "😶‍🌫️ Here we go!\n\n"
+            "I'm ready to assist you with monitoring your LNbits transactions.\n\n"
+            "Use the buttons below to explore the features."
+        )
+        bot.send_message(
+            chat_id=CHAT_ID,
+            text=welcome_message,
+            parse_mode=ParseMode.MARKDOWN,
+            reply_markup=inline_reply_markup
+        )
+    except Exception as telegram_error:
+        logger.error(f"Error sending the main inline keyboard: {telegram_error}")
+        logger.debug(traceback.format_exc())
+
+def send_start_message(update, context):
+    chat_id = update.effective_chat.id
+    welcome_message = (
+        "👋 Welcome to Naughtify your LNBits Wallet Monitor!\n\n"
+        "Use the buttons below for quick access."
+    )
+    reply_markup = get_main_keyboard()
+    try:
+        bot.send_message(
+            chat_id=chat_id,
+            text=welcome_message,
+            reply_markup=reply_markup,
+            parse_mode=ParseMode.MARKDOWN
+        )
+    except Exception as e:
+        logger.error(f"Error sending the start message: {e}")
+        logger.debug(traceback.format_exc())
+
+def initialize_processed_payments():
+    payments = fetch_api("payments")
+    if payments is None:
+        logger.error("Failed to initialize processed payments: Unable to fetch payments.")
+        return
+    for payment in payments:
+        payment_hash = payment.get("payment_hash")
+        if payment_hash and payment_hash not in processed_payments:
+            processed_payments.add(payment_hash)
+            add_processed_payment(payment_hash)
+
 def run_flask_app():
     try:
         logger.info(f"Starting Flask app on {APP_HOST}:{APP_PORT}")
@@ -1426,6 +1257,93 @@ def run_flask_app():
     except Exception as e:
         logger.error(f"Error running Flask app: {e}")
         logger.debug(traceback.format_exc())
+
+@app.route('/ln_auth')
+def ln_auth_page():
+    url, k1 = create_lnurl_auth_link()
+    try:
+        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
+        qr.add_data(url)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+        img_io = io.BytesIO()
+        img.save(img_io, 'PNG')
+        img_io.seek(0)
+        img_base64 = base64.b64encode(img_io.getvalue()).decode()
+    except Exception as e:
+        logger.error(f"Error generating LNURL-auth QR: {e}")
+        return "Error generating QR code.", 500
+
+    return render_template('ln_auth.html', qr_code_data=img_base64)
+
+@app.route('/lnurl-auth', methods=['GET'])
+def lnurl_auth():
+    tag = request.args.get('tag')
+    k1 = request.args.get('k1')
+    action = request.args.get('action')
+    sig = request.args.get('sig')
+    key = request.args.get('key')
+
+    if tag != 'login' or not k1:
+        return jsonify({"status": "ERROR", "reason": "Invalid request"}), 400
+
+    if not sig or not key:
+        return jsonify({"status": "OK", "message": "This is an LNURL-auth endpoint. Awaiting signature."})
+
+    if k1 not in ln_auth_challenges:
+        return jsonify({"status": "ERROR", "reason": "Invalid or expired k1"}), 400
+
+    try:
+        k1_bin = unhexlify(k1)
+        key_bin = unhexlify(key)
+        sig_bin = unhexlify(sig)
+        pubkey = PublicKey(key_bin, raw=True)
+        sig_raw = pubkey.ecdsa_deserialize(sig_bin)
+        verified = pubkey.ecdsa_verify(k1_bin, sig_raw, raw=True)
+        if not verified:
+            return jsonify({"status": "ERROR", "reason": "Signature verification failed"}), 400
+    except Exception as e:
+        logger.error(f"LNURL-auth verification error: {e}")
+        return jsonify({"status": "ERROR", "reason": "Verification error"}), 400
+
+    linking_key = key.upper()
+    del ln_auth_challenges[k1]
+
+    session['ln_logged_in'] = True
+    session['linking_key'] = linking_key
+
+    if linking_key not in users:
+        users[linking_key] = {"linkingKey": linking_key, "pseudonym": None}
+        save_users(users)
+
+    if users[linking_key]['pseudonym'] is None:
+        return redirect(url_for('choose_pseudonym'))
+    else:
+        return redirect(url_for('donations_page'))
+
+@app.route('/choose_pseudonym', methods=['GET', 'POST'])
+def choose_pseudonym():
+    if 'ln_logged_in' not in session or 'linking_key' not in session:
+        flash("You must be logged in via LNURL-auth.", "danger")
+        return redirect(url_for('donations_page'))
+
+    linking_key = session['linking_key']
+    if request.method == 'POST':
+        pseudonym = request.form.get('pseudonym', '').strip()
+        if len(pseudonym) == 0 or len(pseudonym) > 13 or not pseudonym.isalnum():
+            flash("Invalid pseudonym. Use up to 13 alphanumeric characters.", "danger")
+        else:
+            users[linking_key]['pseudonym'] = pseudonym
+            save_users(users)
+            flash("Pseudonym set successfully!", "success")
+            return redirect(url_for('donations_page'))
+
+    return render_template('choose_pseudonym.html')
+
+# Add a global error handler for telegram.ext to handle any unexpected errors
+def error_handler(update: Update, context: CallbackContext):
+    logger.error("Exception while handling an update:", exc_info=context.error)
+    # You can send a message to the admin or log it. For now, just log.
 
 def main():
     flask_thread = threading.Thread(target=run_flask_app, daemon=True)
@@ -1454,7 +1372,11 @@ def main():
     dispatcher.add_handler(MessageHandler(Filters.regex('^📊 Overwatch$'), handle_overwatch))
     dispatcher.add_handler(MessageHandler(Filters.regex('^⚡ LNBits$'), handle_lnbits))
 
+    # Add the error handler
+    dispatcher.add_error_handler(error_handler)
+
     updater.start_polling()
+    logger.info("Telegram Bot started.")
     send_main_inline_keyboard()
     updater.idle()
 
