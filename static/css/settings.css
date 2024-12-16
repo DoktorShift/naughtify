@@ -89,9 +89,10 @@ input:checked + .slider:before {
 
 /* Main Content Styles */
 .dashboard {
-    background: #ffffff; /* Removed bg-white class */
+    background: #ffffff;
     border-radius: 10px;
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    padding: 1rem;
 }
 
 .settings-form fieldset {
@@ -125,17 +126,14 @@ input:checked + .slider:before {
     box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
 }
 
-.settings-form button {
-    padding: 0.6rem 1.2rem;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-}
-
 .settings-form .btn-success {
     background-color: #28a745;
     color: #fff;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 .settings-form .btn-success:hover {
@@ -145,10 +143,32 @@ input:checked + .slider:before {
 .settings-form .btn-danger {
     background-color: #dc3545;
     color: #fff;
+    border: none;
+    padding: 0.6rem 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 .settings-form .btn-danger:hover {
     background-color: #c82333;
+}
+
+/* Toggle Password Button Styles */
+.toggle-password {
+    border: none;
+    background: none;
+    padding: 0 0.5rem;
+    cursor: pointer;
+    outline: none;
+}
+
+.toggle-password:focus {
+    outline: none;
+}
+
+.toggle-password i {
+    color: #555;
 }
 
 /* Dark Mode Styles */
@@ -168,11 +188,17 @@ input:checked + .slider:before {
 }
 
 .dark-mode .dashboard {
-    background: #34495e; /* Updated to ensure dashboard background changes */
+    background: #34495e;
 }
 
-.dark-mode .settings-form {
-    background: #34495e;
+.dark-mode .nav-tabs .nav-link {
+    background-color: #2c3e50;
+    color: #ecf0f1;
+}
+
+.dark-mode .nav-tabs .nav-link.active {
+    background-color: #4ca1af;
+    color: #fff;
 }
 
 .dark-mode .settings-form fieldset {
