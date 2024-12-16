@@ -18,7 +18,6 @@ import json
 from urllib.parse import urlparse
 import re
 import uuid
-import subprocess
 from functools import wraps
 
 # --------------------- Configuration and Setup ---------------------
@@ -47,13 +46,13 @@ LNURLP_ID = os.getenv("LNURLP_ID") if DONATIONS_URL else None
 
 FORBIDDEN_WORDS_FILE = os.getenv("FORBIDDEN_WORDS_FILE", "forbidden_words.txt")
 
-BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "1"))
-HIGHLIGHT_THRESHOLD = int(os.getenv("HIGHLIGHT_THRESHOLD", "30"))
-LATEST_TRANSACTIONS_COUNT = int(os.getenv("LATEST_TRANSACTIONS_COUNT", "20"))
+BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))
+HIGHLIGHT_THRESHOLD = int(os.getenv("HIGHLIGHT_THRESHOLD", "2100"))
+LATEST_TRANSACTIONS_COUNT = int(os.getenv("LATEST_TRANSACTIONS_COUNT", "21"))
 
-PAYMENTS_FETCH_INTERVAL = int(os.getenv("PAYMENTS_FETCH_INTERVAL", "12"))  # In minutes
+PAYMENTS_FETCH_INTERVAL = int(os.getenv("PAYMENTS_FETCH_INTERVAL", "60"))  # in seconds
 
-APP_HOST = os.getenv("APP_HOST", "127.0.0.1")  # Change to '0.0.0.0' if accessing externally
+APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
 APP_PORT = int(os.getenv("APP_PORT", "5009"))
 
 PROCESSED_PAYMENTS_FILE = os.getenv("PROCESSED_PAYMENTS_FILE", "processed_payments.txt")
@@ -62,25 +61,16 @@ DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
 
 INFORMATION_URL = os.getenv("INFORMATION_URL")  # Optional
 
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")  # Cleartext password
+SECRET_KEY = os.getenv("SECRET_KEY", os.urandom(24))
 
-# --------------------- Validate Essential Environment Variables ---------------------
-
-required_env_vars = {
+required_vars = {
     "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
     "CHAT_ID": CHAT_ID,
     "LNBITS_READONLY_API_KEY": LNBITS_READONLY_API_KEY,
-    "LNBITS_URL": LNBITS_URL,
-    "APP_HOST": APP_HOST,
-    "APP_PORT": APP_PORT,
-    "PROCESSED_PAYMENTS_FILE": PROCESSED_PAYMENTS_FILE,
-    "CURRENT_BALANCE_FILE": CURRENT_BALANCE_FILE,
-    "DONATIONS_FILE": DONATIONS_FILE,
-    "FORBIDDEN_WORDS_FILE": FORBIDDEN_WORDS_FILE,
-    "ADMIN_PASSWORD": ADMIN_PASSWORD
+    "LNBITS_URL": LNBITS_URL
 }
 
-missing_vars = [var for var, value in required_env_vars.items() if not value]
+missing_vars = [var for var, value in required_vars.items() if not value]
 if missing_vars:
     raise EnvironmentError(f"Essential environment variables missing: {', '.join(missing_vars)}")
 
@@ -93,7 +83,7 @@ bot = Bot(token=TELEGRAM_BOT_TOKEN)
 # --------------------- Logging Configuration ---------------------
 
 # Create a custom logger
-logger = logging.getLogger("naughtify_logger")
+logger = logging.getLogger("lnbits_logger")
 logger.setLevel(logging.DEBUG)  # Capture all levels; handlers will filter
 
 # Formatter for log messages
@@ -122,16 +112,28 @@ logger.addHandler(console_handler)
 # Reduce verbosity for specific modules (e.g., apscheduler)
 logging.getLogger('apscheduler').setLevel(logging.WARNING)  # Only WARNING and above
 
-# --------------------- Helper Functions ---------------------
+# --------------------- Flask App Initialization ---------------------
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if 'logged_in' not in session:
-            flash('Please log in first.', 'danger')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
+app = Flask(__name__)
+app.secret_key = SECRET_KEY  # Secure Secret-Key for Sessions
+CORS(app)  # Enable CORS
+
+# --------------------- Global Variables ---------------------
+
+processed_payments = set()
+donations = []
+total_donations = 0
+last_update = datetime.utcnow()
+
+latest_balance = {
+    "balance_sats": None,
+    "last_change": None,
+    "memo": None
+}
+
+latest_payments = []
+
+# --------------------- Helper Functions ---------------------
 
 def get_main_inline_keyboard():
     balance_button = InlineKeyboardButton("💰 Balance", callback_data='balance')
@@ -169,7 +171,7 @@ def load_forbidden_words(file_path):
             for line in f:
                 word = line.strip()
                 if word:
-                    forbidden.add(word.lower())
+                    forbidden.add(word)
         logger.debug(f"{len(forbidden)} forbidden words loaded from {file_path}.")
     except FileNotFoundError:
         logger.error(f"Forbidden words file not found: {file_path}.")
@@ -260,6 +262,9 @@ def load_donations():
                     if "dislikes" not in donation:
                         donation["dislikes"] = 0
             logger.debug(f"{len(donations)} donations loaded from file.")
+
+            # Initialize processed_payments with existing donations' payment_hashes if available
+
         except Exception as e:
             logger.error(f"Error loading donations: {e}")
             logger.debug(traceback.format_exc())
@@ -278,6 +283,22 @@ def save_donations():
         except Exception as e:
             logger.error(f"Error saving donations: {e}")
             logger.debug(traceback.format_exc())
+
+processed_payments = load_processed_payments()
+app = Flask(__name__)
+CORS(app)  # Enable CORS
+
+latest_balance = {
+    "balance_sats": None,
+    "last_change": None,
+    "memo": None
+}
+
+latest_payments = []
+donations = []
+total_donations = 0
+last_update = datetime.utcnow()
+load_donations()
 
 def sanitize_donations():
     global donations
@@ -309,11 +330,11 @@ def handle_ticker_ban(update, context):
     try:
         with open(FORBIDDEN_WORDS_FILE, 'a') as f:
             for word in words_to_ban:
-                if word.lower() in FORBIDDEN_WORDS:
+                if word in FORBIDDEN_WORDS:
                     duplicate_words.append(word)
                 else:
                     f.write(word + '\n')
-                    FORBIDDEN_WORDS.add(word.lower())
+                    FORBIDDEN_WORDS.add(word)
                     added_words.append(word)
         logger.debug(f"Words to ban processed: Added {added_words}, Duplicates {duplicate_words}.")
 
@@ -409,7 +430,7 @@ def fetch_donation_details():
 
     lnurlp_info = get_lnurlp_info(LNURLP_ID)
     if lnurlp_info is None:
-        logger.error("No Pay Link info found.")
+        logger.error("No LNURLp info found.")
         return {
             "total_donations": total_donations,
             "donations": donations,
@@ -472,6 +493,104 @@ def notify_transaction(payment, direction):
         logger.error(f"Error sending transaction notification: {e}")
         logger.debug(traceback.format_exc())
 
+def send_latest_payments():
+    global total_donations, donations, last_update, latest_balance, latest_payments
+    logger.info("Fetching latest payments...")
+    payments = fetch_api("payments")
+    if payments is None:
+        logger.warning("No payments fetched.")
+        return
+    if not isinstance(payments, list):
+        logger.error("Unexpected data format for payments.")
+        return
+
+    sorted_payments = sorted(payments, key=lambda x: x.get("time", ""), reverse=True)
+    latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]
+    latest_payments = latest.copy()  # Update latest_payments for /status route
+
+    if not latest:
+        logger.info("No payments found.")
+        return
+
+    incoming_payments = []
+    outgoing_payments = []
+    new_processed_hashes = []
+
+    for payment in latest:
+        payment_hash = payment.get("payment_hash")
+        if payment_hash in processed_payments:
+            logger.debug(f"Payment {payment_hash} already processed. Skipping.")
+            continue
+        amount_msat = payment.get("amount", 0)
+        memo = sanitize_memo(payment.get("memo", "No memo provided."))
+        status = payment.get("status", "completed")
+        time_str = payment.get("time", None)
+        date = parse_time(time_str)
+        formatted_date = date.strftime("%b %d, %Y %H:%M")
+        try:
+            amount_sats = int(abs(amount_msat) / 1000)
+        except ValueError:
+            amount_sats = 0
+            logger.warning(f"Invalid amount_msat value: {amount_msat}")
+
+        if status.lower() == "pending":
+            logger.debug(f"Payment {payment_hash} is pending. Skipping.")
+            continue
+
+        if amount_msat > 0:
+            incoming_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
+        elif amount_msat < 0:
+            outgoing_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
+
+        if DONATIONS_URL and LNURLP_ID:
+            extra_data = payment.get("extra", {})
+            lnurlp_id_payment = extra_data.get("link")
+            if lnurlp_id_payment == LNURLP_ID:
+                donation_memo = sanitize_memo(extra_data.get("comment", "No memo provided."))
+                try:
+                    donation_amount_msat = int(extra_data.get("extra", 0))
+                    donation_amount_sats = donation_amount_msat / 1000
+                except (ValueError, TypeError):
+                    donation_amount_sats = amount_sats
+                    logger.warning(f"Invalid donation amount_msat: {extra_data.get('extra', 0)}. Using amount_sats: {amount_sats}")
+                donation = {
+                    "id": str(uuid.uuid4()),
+                    "date": formatted_date,
+                    "memo": donation_memo,
+                    "amount": donation_amount_sats,
+                    "likes": 0,
+                    "dislikes": 0
+                }
+                donations.append(donation)
+                total_donations += donation_amount_sats
+                last_update = datetime.utcnow()
+                logger.info(f"New donation detected: {donation_amount_sats} sats - {donation_memo}")
+                updateDonations({"total_donations": total_donations, "donations": donations})
+
+        processed_payments.add(payment_hash)
+        new_processed_hashes.append(payment_hash)
+        add_processed_payment(payment_hash)
+        logger.debug(f"Payment {payment_hash} processed and added to processed payments.")
+
+    # Update latest_balance
+    wallet_info = fetch_api("wallet")
+    if wallet_info:
+        current_balance_msat = wallet_info.get("balance", 0)
+        current_balance_sats = current_balance_msat / 1000
+        latest_balance = {
+            "balance_sats": int(current_balance_sats),
+            "last_change": datetime.utcnow().isoformat(),
+            "memo": "Latest balance fetched."
+        }
+        logger.debug(f"Updated latest_balance: {latest_balance}")
+
+    # Send notifications
+    for payment in incoming_payments:
+        notify_transaction(payment, "incoming")
+
+    for payment in outgoing_payments:
+        notify_transaction(payment, "outgoing")
+
 def parse_time(time_input):
     if not time_input:
         logger.warning("No 'time' field found, using current time.")
@@ -499,7 +618,8 @@ def parse_time(time_input):
         date = datetime.utcnow()
     return date
 
-def send_balance_message(chat_id):
+def send_balance_message(update, context):
+    chat_id = update.effective_chat.id if update else CHAT_ID
     logger.info(f"Fetching balance for chat_id: {chat_id}")
     wallet_info = fetch_api("wallet")
     if wallet_info is None:
@@ -564,7 +684,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
         sign = "+" if amount_msat > 0 else "-"
         emoji = "🟢" if amount_msat > 0 else "🔴"
         message_lines.append(f"{emoji} {formatted_date} {sign}{amount_sats} sats")
-        message_lines.append(f"✉️ {memo}")
+        message_lines.append(f"✉️ Memo: {memo}")
 
     full_message = "\n".join(message_lines)
     inline_keyboard = []
@@ -576,7 +696,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
             buttons.append(InlineKeyboardButton("➡️ Next", callback_data=f'next_{page}'))
         inline_keyboard.append(buttons)
 
-    inline_reply_markup = InlineKeyboardMarkup([buttons]) if inline_keyboard else None
+    inline_reply_markup = InlineKeyboardMarkup(inline_keyboard) if inline_keyboard else None
 
     try:
         if message_id:
@@ -598,65 +718,6 @@ def send_transactions_message(chat_id, page=1, message_id=None):
             logger.info(f"Transactions page {page} sent to chat_id: {chat_id}")
     except Exception as telegram_error:
         logger.error(f"Error sending/editing transactions: {telegram_error}")
-        logger.debug(traceback.format_exc())
-
-def list_transactions(update, context):
-    chat_id = update.effective_chat.id
-    try:
-        # Fetch payments from LNbits API
-        payments = fetch_api("payments")
-        
-        if payments is None or not isinstance(payments, list):
-            bot.send_message(chat_id, "❌ Unable to fetch transactions at the moment. Please try again later.")
-            logger.error("Failed to fetch transactions for /transactions command.")
-            return
-        
-        # Sort payments by time descending
-        sorted_payments = sorted(payments, key=lambda x: x.get("time", ""), reverse=True)
-        latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]
-        
-        if not latest:
-            bot.send_message(chat_id, "📭 No transactions found.")
-            logger.info("No transactions found for /transactions command.")
-            return
-        
-        # Build the message
-        message = "*📜 Latest Transactions:*\n\n"
-        
-        for idx, payment in enumerate(latest, start=1):
-            amount_msat = payment.get("amount", 0)
-            amount_sats = int(abs(amount_msat) / 1000)
-            memo = sanitize_memo(payment.get("memo", "No memo provided."))
-            status = payment.get("status", "completed")
-            time_str = payment.get("time", None)
-            date = parse_time(time_str).strftime("%b %d, %Y %H:%M")
-            
-            if amount_msat > 0:
-                emoji = "🟢 Incoming"
-                sign = "+"
-            elif amount_msat < 0:
-                emoji = "🔴 Outgoing"
-                sign = "-"
-            else:
-                emoji = "⚪ Unknown"
-                sign = ""
-            
-            message += f"{idx}. {emoji} {sign}{amount_sats} sats\n"
-            message += f"✉️ Memo: {memo}\n"
-            message += f"🕒 Date: {date}\n\n"
-        
-        # Send the aggregated transaction list to the user
-        bot.send_message(
-            chat_id=chat_id,
-            text=message,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=get_main_keyboard()
-        )
-        logger.info(f"Transactions list sent to chat_id: {chat_id}")
-        
-    except Exception as e:
-        bot.send_message(chat_id, "❌ An error occurred while fetching transactions.")
-        logger.error(f"Error sending transactions list: {e}")
         logger.debug(traceback.format_exc())
 
 def handle_prev_page(update, context):
@@ -696,7 +757,7 @@ def handle_next_page(update, context):
 def handle_balance_callback(query):
     try:
         chat_id = query.message.chat.id
-        send_balance_message(chat_id)
+        send_balance_message(None, None)  # Pass None as update; send to CHAT_ID
         logger.debug("Handled balance callback.")
     except Exception as e:
         logger.error(f"Error handling balance callback: {e}")
@@ -767,15 +828,10 @@ def handle_transactions_callback(update, context):
         handle_balance_callback(query)
     elif data == 'transactions_inline':
         handle_transactions_inline_callback(query)
-    elif data.startswith('prev_') or data.startswith('next_'):
-        if data.startswith('prev_'):
-            current_page = int(data.split('_')[1])
-            new_page = current_page - 1
-        elif data.startswith('next_'):
-            current_page = int(data.split('_')[1])
-            new_page = current_page + 1
-        send_transactions_message(query.message.chat.id, page=new_page, message_id=query.message.message_id)
-        logger.debug(f"Handled pagination callback. New page: {new_page}")
+    elif data.startswith('prev_'):
+        handle_prev_page(update, context)
+    elif data.startswith('next_'):
+        handle_next_page(update, context)
     elif data in ['overwatch_inline', 'liveticker_inline', 'lnbits_inline']:
         handle_donations_inline_callback(query)
     else:
@@ -790,7 +846,7 @@ def handle_info_command(update, context):
     interval_info = (
         f"🔔 *Balance Change Threshold:* {BALANCE_CHANGE_THRESHOLD} sats\n"
         f"🔔 *Highlight Threshold:* {HIGHLIGHT_THRESHOLD} sats\n"
-        f"🔄 *Latest Payments Fetch Interval:* Every {PAYMENTS_FETCH_INTERVAL} minutes"
+        f"🔄 *Latest Payments Fetch Interval:* Every {PAYMENTS_FETCH_INTERVAL} seconds"
     )
 
     info_message = (
@@ -841,7 +897,7 @@ def handle_help_command(update, context):
 def handle_balance(update, context):
     chat_id = update.effective_chat.id
     logger.debug(f"Handling balance request for chat_id: {chat_id}")
-    send_balance_message(chat_id)
+    send_balance_message(update, context)
 
 def handle_latest_transactions(update, context):
     chat_id = update.effective_chat.id
@@ -955,11 +1011,11 @@ def start_scheduler():
         scheduler.add_job(
             send_latest_payments,
             'interval',
-            minutes=PAYMENTS_FETCH_INTERVAL,
+            seconds=PAYMENTS_FETCH_INTERVAL,
             id='latest_payments_fetch',
             next_run_time=datetime.utcnow() + timedelta(seconds=1)
         )
-        logger.info(f"Latest Payments Fetch scheduled every {PAYMENTS_FETCH_INTERVAL} minutes.")
+        logger.info(f"Latest Payments Fetch scheduled every {PAYMENTS_FETCH_INTERVAL} seconds.")
     else:
         logger.info("Latest Payments Fetch disabled.")
     scheduler.start()
@@ -967,108 +1023,13 @@ def start_scheduler():
 
 # --------------------- Flask Routes ---------------------
 
-app = Flask(__name__)
-app.secret_key = os.urandom(24)  # Secure Secret-Key for Sessions
-CORS(app)  # Enable CORS
-
-latest_balance = {
-    "balance_sats": None,
-    "last_change": None,
-    "memo": None
-}
-
-latest_payments = []
-donations = []
-total_donations = 0
-last_update = datetime.utcnow()
-
-load_donations()
-
-processed_payments = load_processed_payments()
-
-def list_transactions_page(chat_id, page):
-    try:
-        payments = fetch_api("payments")
-        
-        if payments is None or not isinstance(payments, list):
-            bot.send_message(chat_id, "❌ Unable to fetch transactions at the moment. Please try again later.")
-            logger.error("Failed to fetch transactions for pagination.")
-            return
-        
-        sorted_payments = sorted(payments, key=lambda x: x.get("time", ""), reverse=True)
-        
-        transactions_per_page = 10
-        total_pages = (len(sorted_payments) + transactions_per_page - 1) // transactions_per_page
-        
-        if page < 1 or page > total_pages:
-            bot.send_message(chat_id, f"❌ Page {page} does not exist. Please select a page between 1 and {total_pages}.")
-            return
-        
-        start_idx = (page - 1) * transactions_per_page
-        end_idx = start_idx + transactions_per_page
-        page_transactions = sorted_payments[start_idx:end_idx]
-        
-        if not page_transactions:
-            bot.send_message(chat_id, "📭 No transactions found.")
-            logger.info("No transactions found for pagination.")
-            return
-        
-        message = f"*📜 Latest Transactions: Page {page} of {total_pages}*\n\n"
-        
-        for idx, payment in enumerate(page_transactions, start=start_idx + 1):
-            amount_msat = payment.get("amount", 0)
-            amount_sats = int(abs(amount_msat) / 1000)
-            memo = sanitize_memo(payment.get("memo", "No memo provided."))
-            status = payment.get("status", "completed")
-            time_str = payment.get("time", None)
-            date = parse_time(time_str).strftime("%b %d, %Y %H:%M")
-            
-            if amount_msat > 0:
-                emoji = "🟢 Incoming"
-                sign = "+"
-            elif amount_msat < 0:
-                emoji = "🔴 Outgoing"
-                sign = "-"
-            else:
-                emoji = "⚪ Unknown"
-                sign = ""
-            
-            message += f"{idx}. {emoji} {sign}{amount_sats} sats\n"
-            message += f"✉️ Memo: {memo}\n"
-            message += f"🕒 Date: {date}\n\n"
-        
-        # Inline keyboard for pagination
-        keyboard = []
-        if page > 1:
-            keyboard.append(InlineKeyboardButton("⬅️ Previous", callback_data=f"prev_{page}"))
-        if page < total_pages:
-            keyboard.append(InlineKeyboardButton("Next ➡️", callback_data=f"next_{page}"))
-        
-        if keyboard:
-            reply_markup = InlineKeyboardMarkup([keyboard])
-        else:
-            reply_markup = get_main_keyboard()
-        
-        bot.send_message(
-            chat_id=chat_id,
-            text=message,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=reply_markup
-        )
-        logger.info(f"Transactions list sent to chat_id: {chat_id}, page: {page}")
-        
-    except Exception as e:
-        bot.send_message(chat_id, "❌ An error occurred while fetching transactions.")
-        logger.error(f"Error sending transactions list: {e}")
-        logger.debug(traceback.format_exc())
-
 @app.route('/')
 def home():
     logger.debug("Home route accessed.")
     return "🔍 LNbits Monitor is running."
 
 @app.route('/status', methods=['GET'])
-def status():
+def status_route():
     donation_details = fetch_donation_details()
     logger.debug("Status route accessed.")
     return jsonify({
@@ -1219,7 +1180,15 @@ def cinema_page():
 
 # --------------------- Authentication Routes ---------------------
 
-# Route for Login
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            flash('Please log in to access this page.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if 'logged_in' in session:
@@ -1227,9 +1196,12 @@ def login():
 
     if request.method == 'POST':
         password = request.form.get('password')
+        ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+
         if not ADMIN_PASSWORD:
             flash('Admin password not set. Please set ADMIN_PASSWORD in your .env file.', 'danger')
             return render_template('login.html')
+
         if password == ADMIN_PASSWORD:
             session['logged_in'] = True
             flash('Successfully logged in!', 'success')
@@ -1241,7 +1213,6 @@ def login():
 
     return render_template('login.html')
 
-# Route for Logout
 @app.route('/logout')
 @login_required
 def logout():
@@ -1249,8 +1220,6 @@ def logout():
     flash('Successfully logged out.', 'success')
     logger.info("User logged out successfully.")
     return redirect(url_for('login'))
-
-# --------------------- Settings Route with Server-Side Validation ---------------------
 
 @app.route('/settings', methods=['GET', 'POST'])
 @login_required
@@ -1327,7 +1296,7 @@ def settings():
             logger.debug("".join(traceback.format_exception(None, e, e.__traceback__)))
 
     # GET method: Show current values
-    env_vars = {
+    env_vars_current = {
         'TELEGRAM_BOT_TOKEN': os.getenv('TELEGRAM_BOT_TOKEN', ''),
         'CHAT_ID': os.getenv('CHAT_ID', ''),
         'LNBITS_READONLY_API_KEY': os.getenv('LNBITS_READONLY_API_KEY', ''),
@@ -1350,22 +1319,7 @@ def settings():
         'ADMIN_PASSWORD': os.getenv('ADMIN_PASSWORD', '')
     }
 
-    return render_template('settings.html', env_vars=env_vars)
-
-# Route to Restart Server
-@app.route('/restart', methods=['POST'])
-@login_required
-def restart_server():
-    try:
-        # Replace 'naughtify' with the actual name of your systemd service
-        subprocess.run(['systemctl', 'restart', 'naughtify'], check=True)
-        flash('Server restarted successfully.', 'success')
-        logger.info("Server restarted successfully via settings page.")
-    except subprocess.CalledProcessError as e:
-        flash(f'Error restarting server: {e}', 'danger')
-        logger.error(f"Error restarting server: {e}")
-        logger.debug(traceback.format_exc())
-    return redirect(url_for('settings'))
+    return render_template('settings.html', env_vars=env_vars_current)
 
 # --------------------- Core Functionality ---------------------
 
@@ -1441,84 +1395,65 @@ def initialize_processed_payments():
         return
 
     for payment in payments:
-        payment_hash = payment.get("payment_hash")
+        payment_hash = payment.get('payment_hash')
         if payment_hash and payment_hash not in processed_payments:
             processed_payments.add(payment_hash)
             add_processed_payment(payment_hash)
             logger.debug(f"Payment {payment_hash} marked as processed during initialization.")
     logger.info("Initialization of processed payments completed.")
 
-def send_latest_payments():
-    global last_update
-    # Fetch and process latest payments
-    logger.info("Scheduler triggered: Sending latest payments.")
-    # Implement the logic to fetch and process latest payments
-    # This could involve fetching from LNbits API and sending updates via Telegram
-    # For simplicity, we'll call send_transactions_message for the configured CHAT_ID
-    send_transactions_message(CHAT_ID, page=1)
-    logger.debug("Latest payments sent.")
-
 # --------------------- Main Function ---------------------
 
 def main():
-    # Start Telegram Bot in a separate thread
-    def start_telegram_bot():
-        updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
-        dispatcher = updater.dispatcher
+    # Initialize processed payments to prevent old notifications
+    initialize_processed_payments()
 
-        # Command Handlers
-        dispatcher.add_handler(CommandHandler('balance', lambda update, context: send_balance_message(update.effective_chat.id)))
-        dispatcher.add_handler(CommandHandler('transactions', list_transactions))
-        dispatcher.add_handler(CommandHandler('info', handle_info_command))
-        dispatcher.add_handler(CommandHandler('help', handle_help_command))
-        dispatcher.add_handler(CommandHandler('start', send_start_message))
-        dispatcher.add_handler(CommandHandler('ticker_ban', handle_ticker_ban, pass_args=True))
-
-        # Callback Query Handler
-        dispatcher.add_handler(CallbackQueryHandler(handle_transactions_callback, pattern='^(balance|transactions_inline|prev_\\d+|next_\\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'))
-
-        # Message Handlers for Button Presses
-        dispatcher.add_handler(MessageHandler(Filters.regex('^💰 Balance$'), handle_balance))
-        dispatcher.add_handler(MessageHandler(Filters.regex('^📜 Latest Transactions$'), handle_latest_transactions))
-        dispatcher.add_handler(MessageHandler(Filters.regex('^📡 Live Ticker$'), handle_live_ticker))
-        dispatcher.add_handler(MessageHandler(Filters.regex('^📊 Overwatch$'), handle_overwatch))
-        dispatcher.add_handler(MessageHandler(Filters.regex('^⚡ LNBits$'), handle_lnbits))
-
-        # Start Telegram Bot
-        updater.start_polling()
-        logger.info("Telegram Bot started.")
-        send_main_inline_keyboard()
-        # Removed updater.idle() to prevent blocking
-
-    telegram_thread = threading.Thread(target=start_telegram_bot, daemon=True)
-    telegram_thread.start()
-    logger.debug("Telegram bot thread started.")
-
-    # Start the scheduler
+    # Start the scheduler in a separate thread
     scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
     scheduler_thread.start()
     logger.debug("Scheduler thread started.")
 
-    # Run the Flask app in the main thread
-    try:
-        app.run(host=APP_HOST, port=APP_PORT)
-    except Exception as e:
-        logger.error(f"Error running Flask app: {e}")
-        logger.debug(traceback.format_exc())
+    # Set up Telegram Bot handlers
+    updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
+    dispatcher = updater.dispatcher
+
+    # Command Handlers
+    dispatcher.add_handler(CommandHandler('balance', send_balance_message))
+    dispatcher.add_handler(CommandHandler('transactions', lambda update, context: send_transactions_message(update.effective_chat.id, page=1)))
+    dispatcher.add_handler(CommandHandler('info', handle_info_command))
+    dispatcher.add_handler(CommandHandler('help', handle_help_command))
+    dispatcher.add_handler(CommandHandler('start', send_start_message))
+    dispatcher.add_handler(CommandHandler('ticker_ban', handle_ticker_ban, pass_args=True))
+
+    # Callback Query Handler
+    dispatcher.add_handler(CallbackQueryHandler(handle_transactions_callback, pattern='^(balance|transactions_inline|prev_\\d+|next_\\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'))
+
+    # Message Handlers for Button Presses
+    dispatcher.add_handler(MessageHandler(Filters.regex('^💰 Balance$'), handle_balance))
+    dispatcher.add_handler(MessageHandler(Filters.regex('^📜 Latest Transactions$'), handle_latest_transactions))
+    dispatcher.add_handler(MessageHandler(Filters.regex('^📡 Live Ticker$'), handle_live_ticker))
+    dispatcher.add_handler(MessageHandler(Filters.regex('^📊 Overwatch$'), handle_overwatch))
+    dispatcher.add_handler(MessageHandler(Filters.regex('^⚡ LNBits$'), handle_lnbits))
+
+    # Start Telegram Bot
+    updater.start_polling()
+    logger.info("Telegram Bot started.")
+    send_main_inline_keyboard()
+    updater.idle()
+
+# --------------------- Application Entry Point ---------------------
 
 if __name__ == "__main__":
-    logger.info("🚀 Starting Naughtify Settings Server.")
+    logger.info("🚀 Starting LNbits Balance Monitor.")
     logger.info(f"🔔 Balance Change Threshold: {BALANCE_CHANGE_THRESHOLD} sats")
     logger.info(f"🔔 Highlight Threshold: {HIGHLIGHT_THRESHOLD} sats")
     logger.info(f"📊 Fetching the latest {LATEST_TRANSACTIONS_COUNT} transactions")
     if PAYMENTS_FETCH_INTERVAL > 0:
-        logger.info(f"⏲️ Interval: every {PAYMENTS_FETCH_INTERVAL} min")
+        logger.info(f"⏲️ Interval: every {PAYMENTS_FETCH_INTERVAL} seconds")
     else:
         logger.info("⏲️ Fetch Interval disabled")
 
     # Load existing donations and mark their payments as processed
     load_donations()
-    processed_payments = load_processed_payments()
-    initialize_processed_payments()
 
     main()
