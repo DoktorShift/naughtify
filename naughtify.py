@@ -1506,7 +1506,7 @@ def choose_pseudonym():
         # Check if pseudonym is already taken
         if any(user['pseudonym'].lower() == pseudonym.lower() for user in users.values()):
             flash('Pseudonym is already taken. Please choose another.', 'danger')
-            return render_template(choose_pseudonym.html')
+            return render_template('choose_pseudonym.html')
 
         # Save the new user
         users[linking_key] = {"pseudonym": pseudonym}
