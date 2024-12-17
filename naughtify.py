@@ -1032,7 +1032,7 @@ def start_scheduler():
 @app.route('/')
 def home():
     logger.debug("Home route accessed.")
-    return "🔍 LNbits Monitor is running."
+    return "🔍 Naughtify Wallet Monitor is running."
 
 @app.route('/status', methods=['GET'])
 def status_route():
@@ -1374,14 +1374,14 @@ def save_users(users):
         logger.error(f"Error saving users: {e}")
         logger.debug(traceback.format_exc())
 
-@app.route('/user_ln_auth')
-def user_ln_auth():
+@app.route('/user_user_login')
+def user_user_login():
     tag = 'login'
     k1 = secrets.token_hex(32)  # 32 bytes in hex
     action = 'login'  # As per LUD-04 spec
 
     # Construct the LNURL-auth URL
-    lnurl_auth_url = url_for('user_ln_auth_callback', _external=True)
+    lnurl_auth_url = url_for('user_user_login_callback', _external=True)
     lnurl_auth_url += f'?tag={tag}&k1={k1}&action={action}'
 
     # Store k1 with expiration
@@ -1398,8 +1398,8 @@ def user_ln_auth():
         "lnurl": lnurl_auth_url
     })
 
-@app.route('/user_ln_auth_callback', methods=['GET'])
-def user_ln_auth_callback():
+@app.route('/user_user_login_callback', methods=['GET'])
+def user_user_login_callback():
     tag = request.args.get('tag')
     k1 = request.args.get('k1')
     action = request.args.get('action')
@@ -1459,7 +1459,7 @@ def user_ln_auth_callback():
 @app.route('/user_login')
 def user_login():
     # Fetch the LNURL-auth URL
-    lnurl_response = user_ln_auth()
+    lnurl_response = user_user_login()
     if lnurl_response.status_code != 200:
         flash('Failed to generate LNURL-auth.', 'danger')
         return redirect(url_for('donations_page'))
@@ -1486,8 +1486,8 @@ def user_login():
 
     return render_template('user_login.html', qr_code_data=img_base64)
 
-@app.route('/set_pseudonym', methods=['GET', 'POST'])
-def set_pseudonym():
+@app.route('/choose_pseudonym', methods=['GET', 'POST'])
+def choose_pseudonym():
     if 'user_linking_key' not in session:
         flash('Unauthorized access.', 'danger')
         return redirect(url_for('login'))
@@ -1498,7 +1498,7 @@ def set_pseudonym():
         pseudonym = request.form.get('pseudonym').strip()
         if not re.match(r'^[A-Za-z0-9]{1,13}$', pseudonym):
             flash('Pseudonym must be up to 13 alphanumeric characters.', 'danger')
-            return render_template('set_pseudonym.html')
+            return render_template('choose_pseudonym.html')
 
         # Load existing users
         users = load_users()
@@ -1506,7 +1506,7 @@ def set_pseudonym():
         # Check if pseudonym is already taken
         if any(user['pseudonym'].lower() == pseudonym.lower() for user in users.values()):
             flash('Pseudonym is already taken. Please choose another.', 'danger')
-            return render_template('set_pseudonym.html')
+            return render_template(choose_pseudonym.html')
 
         # Save the new user
         users[linking_key] = {"pseudonym": pseudonym}
@@ -1519,7 +1519,7 @@ def set_pseudonym():
         flash('Pseudonym set successfully!', 'success')
         return redirect(url_for('donations_page'))
 
-    return render_template('set_pseudonym.html')
+    return render_template('choose_pseudonym.html')
 
 @app.route('/api/check_user_login', methods=['GET'])
 def api_check_user_login():
