@@ -1,3 +1,4 @@
+<!-- templates/user_login.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,9 +7,9 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/ln_auth.css') }}">
 </head>
 <body>
-    <h1>Login with Lightning</h1>
-    <p>Scan this QR code with your Lightning wallet to log in. Remember which wallet you used as this will act as your password.</p>
-    <div class="container">
+    <div class="login-container">
+        <h1>Login with Lightning</h1>
+        <p>Scan this QR code with your Lightning wallet to log in. Remember which wallet you used as this will act as your password.</p>
         <div class="qr-section">
             <img src="data:image/png;base64,{{ qr_code_data }}" alt="LNURL Auth QR">
         </div>
