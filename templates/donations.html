@@ -1,3 +1,4 @@
+<!-- templates/donations.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -65,7 +66,7 @@
             <!-- Donations Box -->
             <div class="donations-box">
                 <h2>Total Amount</h2>
-                <div class="donation-amount" id="totalDonations">0 Sats</div>
+                <div class="donation-amount" id="totalDonations">{{ total_donations }} Sats</div>
                 
                 <!-- Logo -->
                 <img src="{{ url_for('static', filename='assets/main_logo.png') }}" alt="Main Logo" class="main-logo">
@@ -128,7 +129,7 @@
                     <!-- Admin Login Button -->
                     <a href="{{ url_for('login') }}" class="login-button admin-login">Login as Admin</a>
                     <!-- New LN Auth Login Button -->
-                    <a href="{{ url_for('user_login') }}" class="ln-auth-button">
+                    <a href="{{ url_for('user_login') }}" class="ln-auth-button" title="Login with Lightning" aria-label="Login with Lightning">
                         <img src="{{ url_for('static', filename='assets/black-on-yellow.svg') }}" alt="Login with Lightning">
                     </a>
                 </div>
