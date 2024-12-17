@@ -127,8 +127,10 @@
                 <div class="login-container">
                     <!-- Admin Login Button -->
                     <a href="{{ url_for('login') }}" class="login-button admin-login">Login as Admin</a>
-                    <!-- LN Auth Login Button -->
-                    <a href="{{ url_for('ln_auth_page') }}" class="login-button ln-login">Login with Lightning</a>
+                    <!-- New LN Auth Login Button -->
+                    <a href="{{ url_for('user_login') }}" class="ln-auth-button">
+                        <img src="{{ url_for('static', filename='assets/black-on-yellow.svg') }}" alt="Login with Lightning">
+                    </a>
                 </div>
             </div>
         </div>
