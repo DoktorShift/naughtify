@@ -1,43 +1,58 @@
 /* static/css/settings.css */
 
-/* General Styles */
+/* =========================================
+   General Styles
+   ========================================= */
+
+/* Body Styling */
 body {
-    background: linear-gradient(135deg, #d3e8f3, #eef4f7);
-    color: #333;
-    font-family: 'Arial', sans-serif;
-    transition: background 0.3s, color 0.3s;
+    background: linear-gradient(135deg, #d3e8f3, #eef4f7); /* Light gradient background */
+    color: #333; /* Default text color */
+    font-family: 'Arial', sans-serif; /* Base font */
+    transition: background 0.3s, color 0.3s; /* Smooth transition for theme changes */
 }
 
-/* Header Styles */
+/* =========================================
+   Header Styles
+   ========================================= */
+
+/* Header Container */
 .header {
-    background-color: #f8f9fa;
-    padding: 1rem 0;
-    border-bottom: 1px solid #e0e0e0;
+    background-color: #f8f9fa; /* Light grey background */
+    padding: 1rem 0; /* Vertical padding */
+    border-bottom: 1px solid #e0e0e0; /* Bottom border */
 }
 
+/* Header Title */
 .header-title h1 {
-    margin: 0;
-    font-size: 1.75rem;
-    color: #1f4b6d;
+    margin: 0; /* Remove default margin */
+    font-size: 1.75rem; /* Larger font size */
+    color: #1f4b6d; /* Dark blue color */
 }
 
 .header-title p {
-    margin: 0;
-    color: #666;
-    font-size: 1rem;
+    margin: 0; /* Remove default margin */
+    color: #666; /* Medium grey color */
+    font-size: 1rem; /* Base font size */
 }
 
+/* Header Actions Container */
 .header-actions {
-    display: flex;
-    align-items: center;
+    display: flex; /* Horizontal layout */
+    align-items: center; /* Center items vertically */
 }
 
+/* Toggle Switch Container */
 .toggle-container {
-    display: flex;
-    align-items: center;
+    display: flex; /* Horizontal layout */
+    align-items: center; /* Center items vertically */
 }
 
-/* Toggle Switch Styles */
+/* =========================================
+   Toggle Switch Styles
+   ========================================= */
+
+/* Switch Container */
 .switch {
     position: relative;
     display: inline-block;
@@ -45,12 +60,14 @@ body {
     height: 24px;
 }
 
+/* Hide Default Checkbox */
 .switch input { 
     opacity: 0;
     width: 0;
     height: 0;
 }
 
+/* Slider Styling */
 .slider {
     position: absolute;
     cursor: pointer;
@@ -58,11 +75,12 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc;
-    transition: 0.4s;
-    border-radius: 24px;
+    background-color: #ccc; /* Default slider color */
+    transition: 0.4s; /* Smooth transition */
+    border-radius: 24px; /* Rounded slider */
 }
 
+/* Slider Before (Knob) */
 .slider:before {
     position: absolute;
     content: "";
@@ -70,215 +88,259 @@ body {
     width: 18px;
     left: 3px;
     bottom: 3px;
-    background-color: white;
-    transition: 0.4s;
-    border-radius: 50%;
+    background-color: white; /* Knob color */
+    transition: 0.4s; /* Smooth transition */
+    border-radius: 50%; /* Circular knob */
 }
 
+/* Checked State Slider */
 input:checked + .slider {
-    background-color: #2196F3;
+    background-color: #2196F3; /* Blue when checked */
 }
 
+/* Focus State Slider */
 input:focus + .slider {
-    box-shadow: 0 0 1px #2196F3;
+    box-shadow: 0 0 1px #2196F3; /* Blue shadow on focus */
 }
 
+/* Checked State Knob Movement */
 input:checked + .slider:before {
-    transform: translateX(26px);
+    transform: translateX(26px); /* Move knob to the right */
 }
 
-/* Main Content Styles */
+/* =========================================
+   Main Content Styles
+   ========================================= */
+
+/* Dashboard Container */
 .dashboard {
-    background: #ffffff;
-    border-radius: 10px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-    padding: 1rem;
+    background: #ffffff; /* White background */
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1); /* Subtle shadow */
+    padding: 1rem; /* Internal padding */
 }
 
+/* Settings Form Fieldset */
 .settings-form fieldset {
-    border: 1px solid #ced4da;
-    padding: 1rem;
-    margin-bottom: 1.5rem;
-    border-radius: 5px;
+    border: 1px solid #ced4da; /* Light grey border */
+    padding: 1rem; /* Internal padding */
+    margin-bottom: 1.5rem; /* Space below */
+    border-radius: 5px; /* Rounded corners */
 }
 
+/* Settings Form Legend */
 .settings-form legend {
-    font-size: 1.1rem;
-    font-weight: bold;
-    color: #495057;
+    font-size: 1.1rem; /* Slightly larger font */
+    font-weight: bold; /* Bold text */
+    color: #495057; /* Dark grey color */
 }
 
+/* Form Group Labels */
 .settings-form .form-group label {
-    font-weight: 600;
+    font-weight: 600; /* Semi-bold text */
 }
 
+/* Form Inputs */
 .settings-form input {
-    width: 100%;
-    padding: 0.5rem;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    transition: background-color 0.3s, color 0.3s;
+    width: 100%; /* Full width */
+    padding: 0.5rem; /* Internal padding */
+    border: 1px solid #ced4da; /* Light grey border */
+    border-radius: 4px; /* Rounded corners */
+    transition: background-color 0.3s, color 0.3s; /* Smooth transition */
 }
 
+/* Form Inputs Focus State */
 .settings-form input:focus {
-    border-color: #80bdff;
-    outline: none;
-    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+    border-color: #80bdff; /* Blue border on focus */
+    outline: none; /* Remove default outline */
+    box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25); /* Blue shadow */
 }
 
+/* Success Button */
 .settings-form .btn-success {
-    background-color: #28a745;
-    color: #fff;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+    background-color: #28a745; /* Green background */
+    color: #fff; /* White text */
+    border: none; /* No border */
+    padding: 0.6rem 1.2rem; /* Padding */
+    border-radius: 4px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s; /* Smooth transition */
 }
 
+/* Success Button Hover State */
 .settings-form .btn-success:hover {
-    background-color: #218838;
+    background-color: #218838; /* Darker green on hover */
 }
 
+/* Danger Button */
 .settings-form .btn-danger {
-    background-color: #dc3545;
-    color: #fff;
-    border: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s;
+    background-color: #dc3545; /* Red background */
+    color: #fff; /* White text */
+    border: none; /* No border */
+    padding: 0.6rem 1.2rem; /* Padding */
+    border-radius: 4px; /* Rounded corners */
+    cursor: pointer; /* Pointer cursor on hover */
+    transition: background-color 0.3s; /* Smooth transition */
 }
 
+/* Danger Button Hover State */
 .settings-form .btn-danger:hover {
-    background-color: #c82333;
+    background-color: #c82333; /* Darker red on hover */
 }
 
-/* Toggle Password Button Styles */
+/* =========================================
+   Toggle Password Button Styles
+   ========================================= */
+
+/* Toggle Password Button */
 .toggle-password {
-    border: none;
-    background: none;
-    padding: 0 0.5rem;
-    cursor: pointer;
-    outline: none;
+    border: none; /* No border */
+    background: none; /* Transparent background */
+    padding: 0 0.5rem; /* Horizontal padding */
+    cursor: pointer; /* Pointer cursor on hover */
+    outline: none; /* Remove default outline */
 }
 
+/* Toggle Password Button Focus State */
 .toggle-password:focus {
-    outline: none;
+    outline: none; /* Remove default outline */
 }
 
+/* Toggle Password Icon */
 .toggle-password i {
-    color: #555;
+    color: #555; /* Grey icon color */
 }
 
-/* Dark Mode Styles */
+/* =========================================
+   Dark Mode Styles
+   ========================================= */
+
+/* Dark Mode Container */
 .dark-mode {
-    background: linear-gradient(135deg, #2c3e50, #4ca1af);
-    color: #ecf0f1;
+    background: linear-gradient(135deg, #2c3e50, #4ca1af); /* Dark gradient background */
+    color: #ecf0f1; /* Light text color */
 }
 
+/* Dark Mode Header */
 .dark-mode .header {
-    background-color: #2c3e50;
-    border-bottom: 1px solid #1a252f;
+    background-color: #2c3e50; /* Dark background */
+    border-bottom: 1px solid #1a252f; /* Dark border */
 }
 
+/* Dark Mode Header Titles */
 .dark-mode .header-title h1,
 .dark-mode .header-title p {
-    color: #ecf0f1;
+    color: #ecf0f1; /* Light text color */
 }
 
+/* Dark Mode Dashboard */
 .dark-mode .dashboard {
-    background: #34495e;
+    background: #34495e; /* Dark grey background */
 }
 
+/* Dark Mode Navigation Tabs */
 .dark-mode .nav-tabs .nav-link {
-    background-color: #2c3e50;
-    color: #ecf0f1;
+    background-color: #2c3e50; /* Dark background */
+    color: #ecf0f1; /* Light text color */
 }
 
+/* Dark Mode Active Navigation Tab */
 .dark-mode .nav-tabs .nav-link.active {
-    background-color: #4ca1af;
-    color: #fff;
+    background-color: #4ca1af; /* Blue background */
+    color: #fff; /* White text */
 }
 
+/* Dark Mode Settings Form Fieldset */
 .dark-mode .settings-form fieldset {
-    border: 1px solid #1a252f;
+    border: 1px solid #1a252f; /* Dark border */
 }
 
+/* Dark Mode Settings Form Legend */
 .dark-mode .settings-form legend {
-    color: #ecf0f1;
+    color: #ecf0f1; /* Light text color */
 }
 
+/* Dark Mode Form Inputs */
 .dark-mode .settings-form input {
-    background-color: #2c3e50;
-    color: #ecf0f1;
-    border: 1px solid #1a252f;
+    background-color: #2c3e50; /* Dark background */
+    color: #ecf0f1; /* Light text color */
+    border: 1px solid #1a252f; /* Dark border */
 }
 
+/* Dark Mode Form Inputs Placeholder */
 .dark-mode .settings-form input::placeholder {
-    color: #bdc3c7;
+    color: #bdc3c7; /* Light grey placeholder */
 }
 
+/* Dark Mode Success Button */
 .dark-mode .settings-form .btn-success {
-    background-color: #28a745;
+    background-color: #28a745; /* Green remains the same */
 }
 
+/* Dark Mode Success Button Hover State */
 .dark-mode .settings-form .btn-success:hover {
-    background-color: #218838;
+    background-color: #218838; /* Darker green on hover */
 }
 
+/* Dark Mode Danger Button */
 .dark-mode .settings-form .btn-danger {
-    background-color: #dc3545;
+    background-color: #dc3545; /* Red remains the same */
 }
 
+/* Dark Mode Danger Button Hover State */
 .dark-mode .settings-form .btn-danger:hover {
-    background-color: #c82333;
+    background-color: #c82333; /* Darker red on hover */
 }
 
-/* Responsive Design */
+/* =========================================
+   Responsive Design
+   ========================================= */
+
+/* Medium Devices (Tablets) */
 @media (max-width: 768px) {
     .header-title h1 {
-        font-size: 1.5rem;
+        font-size: 1.5rem; /* Smaller font size */
     }
 
     .header-title p {
-        font-size: 0.9rem;
+        font-size: 0.9rem; /* Smaller font size */
     }
 
     .toggle-container {
-        margin-right: 1rem;
+        margin-right: 1rem; /* Adjust margin */
     }
 }
 
+/* Small Devices (Mobile Phones) */
 @media (max-width: 576px) {
     .header {
-        text-align: center;
+        text-align: center; /* Center align text */
     }
 
     .header-actions {
-        justify-content: center;
-        margin-top: 1rem;
+        justify-content: center; /* Center align actions */
+        margin-top: 1rem; /* Top margin */
     }
 
     .settings-form fieldset {
-        padding: 0.75rem;
+        padding: 0.75rem; /* Reduced padding */
     }
 
     .settings-form legend {
-        font-size: 1rem;
+        font-size: 1rem; /* Smaller font size */
     }
 
     .settings-form button {
-        width: 100%;
-        margin-bottom: 0.5rem;
+        width: 100%; /* Full width buttons */
+        margin-bottom: 0.5rem; /* Bottom margin */
     }
 
     .settings-form button:last-child {
-        margin-bottom: 0;
+        margin-bottom: 0; /* Remove bottom margin for last button */
     }
 
-    /* Adjust dashboard padding for smaller screens */
+    /* Adjust Dashboard Padding for Smaller Screens */
     .dashboard {
-        padding: 1rem;
+        padding: 1rem; /* Reduced padding */
     }
 }
