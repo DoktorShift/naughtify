@@ -1,10 +1,14 @@
-/* CSS Variables for Light Mode Colors and Theme */
+/* =========================
+   CSS Variables for Themes
+   =========================
+   Define reusable colors, font sizes, and other variables to ensure consistency and easy customization.
+*/
 :root {
     /* Primary Colors */
     --primary-color: #1f4b6d;
     --secondary-color: #3498db;
 
-    /* Backgrounds */
+    /* Background Gradients */
     --background-gradient-start: #d3e8f3;
     --background-gradient-end: #eef4f7;
     --card-background-start: #ffffff;
@@ -14,15 +18,15 @@
     --text-color: #333;
     --text-color-light: #666;
 
-    /* Highlighting Colors */
+    /* Highlighting Colors for Special Donations */
     --highlight-background: #ffe0b2;
     --highlight-text-color: #e65100;
     --highlight-border: #ff9800;
 
-    /* Donation Colors */
+    /* Donation Amount Color */
     --donation-amount-color: #27ae60;
 
-    /* Copy Fields */
+    /* Copy Field Colors */
     --copy-field-background: #e3eff5;
     --copy-field-hover-background: #d0e4f1;
 
@@ -30,7 +34,7 @@
     --footer-background: #1f4b6d;
     --footer-text-color: #fff;
 
-    /* Toast Colors */
+    /* Toast Notification Colors */
     --toast-success-bg: #4caf50;
     --toast-success-text: #fff;
     --toast-error-bg: #f44336;
@@ -56,11 +60,15 @@
     --p-size: 1rem;
     --small-text: 0.9rem;
 
-    /* Transitions */
+    /* Transition Speeds for Smooth Animations */
     --transition-speed: 0.3s;
 }
 
-/* Dark Mode Override Variables */
+/* =========================
+   Dark Mode Theme Variables
+   =========================
+   Override default variables for dark mode to ensure a consistent dark-themed appearance.
+*/
 body.dark-mode {
     --primary-color: #2c3e50;
     --secondary-color: #2980b9;
@@ -87,7 +95,11 @@ body.dark-mode {
     --social-icon-hover-color: #fff;
 }
 
-/* General Styles */
+/* =========================
+   General Styles
+   =========================
+   Base styles for the entire application, ensuring consistency across elements.
+*/
 body {
     margin: 0;
     font-family: 'Arial', sans-serif;
@@ -115,7 +127,11 @@ a {
     color: inherit;
 }
 
-/* Header */
+/* =========================
+   Header Styles
+   =========================
+   Styles for the header section, including title, subtitle, dark mode toggle, tooltips, and cinema button.
+*/
 .header {
     text-align: center;
     margin-bottom: 2.5rem;
@@ -139,7 +155,11 @@ a {
     color: #f0f0f0;
 }
 
-/* Dark Mode Toggle Styles */
+/* =========================
+   Dark Mode Toggle Styles
+   =========================
+   Styles for the toggle switch to enable or disable dark mode.
+*/
 .toggle-container {
     position: absolute;
     top: 20px;
@@ -188,7 +208,11 @@ a {
     transform: translateX(26px);
 }
 
-/* Info Tooltip */
+/* =========================
+   Info Tooltip Styles
+   =========================
+   Styles for the information tooltip with a psychology icon.
+*/
 .info-tooltip {
     position: absolute;
     top: 20px;
@@ -250,7 +274,11 @@ a {
     z-index: 2;
 }
 
-/* Info Section */
+/* =========================
+   Info Section Styles
+   =========================
+   Styles for the main info section containing QR codes, lightning addresses, and donations box.
+*/
 .info-section {
     display: flex;
     flex-wrap: wrap;
@@ -268,7 +296,11 @@ a {
     min-width: 280px;
 }
 
-/* Card Styles */
+/* =========================
+   Card Styles
+   =========================
+   Generic styles for card elements used throughout the dashboard.
+*/
 .card {
     background: linear-gradient(135deg, var(--card-background-start), var(--card-background-end));
     border-radius: 1rem;
@@ -301,7 +333,11 @@ a {
     color: var(--secondary-color);
 }
 
-/* QR Card */
+/* =========================
+   QR Card Styles
+   =========================
+   Styles specific to the QR Code card, including hover effects.
+*/
 .qr-card img {
     max-width: 100%;
     border-radius: 0.75rem;
@@ -314,7 +350,11 @@ a {
     box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
 }
 
-/* Lightning Card */
+/* =========================
+   Lightning Card Styles
+   =========================
+   Styles for the lightning address copy field with hover effects.
+*/
 .lightning-card .copy-field {
     background: var(--copy-field-background);
     padding: 0.75rem;
@@ -338,7 +378,11 @@ a {
     font-size: 1.5rem;
 }
 
-/* Donations Box */
+/* =========================
+   Donations Box Styles
+   =========================
+   Styles for the donations summary box displaying total donations and latest patron.
+*/
 .donations-box {
     background: linear-gradient(145deg, var(--card-background-start), var(--card-background-end));
     padding: 1.25rem;
@@ -369,7 +413,11 @@ a {
     color: var(--text-color-light);
 }
 
-/* Logo */
+/* =========================
+   Logo Styles
+   =========================
+   Styles for the main logo image within the donations box.
+*/
 .main-logo {
     max-width: 300px;
     margin-top: 1rem;
@@ -378,7 +426,11 @@ a {
     margin-right: auto;
 }
 
-/* Transactions Table */
+/* =========================
+   Transactions Table Styles
+   =========================
+   Styles for the donations transactions table, including hover effects and action buttons.
+*/
 .transactions {
     background-color: var(--card-background-start);
     border-radius: 1rem;
@@ -424,7 +476,11 @@ table td.amount {
     color: var(--donation-amount-color);
 }
 
-/* Patron Badge for logged-in donors */
+/* =========================
+   Patron Badge Styles
+   =========================
+   Styles for the patron badge displayed next to logged-in donors.
+*/
 .patron-badge {
     display: inline-block;
     background-color: orange;
@@ -437,7 +493,11 @@ table td.amount {
     vertical-align: middle;
 }
 
-/* Like and Dislike Buttons */
+/* =========================
+   Like and Dislike Buttons Styles
+   =========================
+   Styles for the like and dislike action buttons within the transactions table.
+*/
 .like-button, .dislike-button { }
 
 .like-button .material-icons, .dislike-button .material-icons {
@@ -474,7 +534,11 @@ table td.actions {
     color: #555;
 }
 
-/* Highlight Class for Large Donations */
+/* =========================
+   Highlight Class for Large Donations
+   =========================
+   Styles to highlight large donations based on the defined threshold.
+*/
 .highlight {
     background-color: var(--highlight-background) !important;
     color: var(--highlight-text-color) !important;
@@ -482,7 +546,11 @@ table td.actions {
     border-left: 5px solid var(--highlight-border);
 }
 
-/* Pagination */
+/* =========================
+   Pagination Styles
+   =========================
+   Styles for the pagination controls below the transactions table.
+*/
 .pagination {
     text-align: center;
     margin-top: 1.25rem;
@@ -518,7 +586,11 @@ table td.actions {
     font-size: 1rem;
 }
 
-/* Modern Footer */
+/* =========================
+   Modern Footer Styles
+   =========================
+   Styles for the footer section, including about, links, social icons, and login buttons.
+*/
 footer.footer {
     background-color: var(--footer-background);
     color: var(--footer-text-color);
@@ -603,7 +675,11 @@ footer.footer {
     color: var(--social-icon-hover-color);
 }
 
-/* Footer Bottom */
+/* =========================
+   Footer Bottom Styles
+   =========================
+   Styles for the bottom part of the footer, including copyright.
+*/
 .footer-bottom {
     text-align: center;
     padding: 1rem 0;
@@ -614,7 +690,11 @@ footer.footer {
     font-family: 'Arial', sans-serif;
 }
 
-/* Toast Notifications */
+/* =========================
+   Toast Notifications Styles
+   =========================
+   Styles for toast notifications that appear for success and error messages.
+*/
 #toast-container {
     position: fixed;
     bottom: 20px;
@@ -659,12 +739,20 @@ footer.footer {
     }
 }
 
-/* Material Icons vertical alignment */
+/* =========================
+   Material Icons Vertical Alignment
+   =========================
+   Ensures that Material Icons are vertically aligned in text.
+*/
 .material-icons {
     vertical-align: middle;
 }
 
-/* Responsive Design */
+/* =========================
+   Responsive Design
+   =========================
+   Styles to ensure the layout is responsive and looks good on various screen sizes.
+*/
 @media (max-width: 768px) {
     .info-section {
         flex-direction: column;
@@ -699,7 +787,11 @@ footer.footer {
     }
 }
 
-/* Enhanced Login Button Styling for "Login" Section */
+/* =========================
+   Enhanced Login Button Styling for "Login" Section
+   =========================
+   Styles for the login buttons in the footer, including both Admin and Lightning login buttons.
+*/
 .footer-section.login .login-container {
     display: flex;
     gap: 1rem;
@@ -713,7 +805,7 @@ footer.footer {
     align-items: center;
     padding: 0.5rem 1rem;
     border: 1px solid #ccc;
-    border-radius: 0; /* no rounded corners */
+    border-radius: 0; /* No rounded corners */
     font-size: 1rem;
     cursor: pointer;
     text-decoration: none;
@@ -741,7 +833,11 @@ footer.footer {
     font-size: 20px;
 }
 
-/* Admin Login Button (silver-like) */
+/* =========================
+   Admin Login Button Styles
+   =========================
+   Specific styles for the Admin Login Button to differentiate it from other login buttons.
+*/
 .login-button.admin-login {
     background: linear-gradient(to bottom, #e0e0e0, #c0c0c0);
     color: #000;
@@ -752,18 +848,49 @@ footer.footer {
     background: linear-gradient(to bottom, #d0d0d0, #b0b0b0);
 }
 
-/* LN Login Button (yellow-like) */
-.login-button.ln-login {
-    background: linear-gradient(to bottom, #fff9d6, #ffe773);
-    color: #333;
-    border: 1px solid #ccb800;
+/* =========================
+   LN Login Button Styles
+   =========================
+   Specific styles for the Lightning Login Button to match the Admin Login Button's size and appearance.
+*/
+.ln-auth-button {
+    display: inline-flex; /* Aligns the button's content horizontally */
+    align-items: center; /* Vertically centers the content */
+    justify-content: center; /* Horizontally centers the content */
+    padding: 0.5rem 1rem; /* Same padding as admin login button */
+    border: 1px solid #aaa; /* Same border as admin login button */
+    background: linear-gradient(to bottom, #e0e0e0, #c0c0c0); /* Same background gradient as admin login button */
+    color: #000; /* Same text color as admin login button */
+    border-radius: 0; /* No rounded corners */
+    cursor: pointer;
+    text-decoration: none;
+    font-family: 'Arial', sans-serif;
+    font-weight: bold;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2) inset; /* Same box-shadow as admin login button */
+    transition: background var(--transition-speed), transform var(--transition-speed), box-shadow var(--transition-speed);
 }
 
-.login-button.ln-login:hover {
-    background: linear-gradient(to bottom, #fff5ba, #ffdf4d);
+.ln-auth-button:hover {
+    background: linear-gradient(to bottom, #d0d0d0, #b0b0b0); /* Same hover effect as admin login button */
+    transform: translateY(-1px); /* Slight upward movement on hover */
 }
 
-/* Dark Mode Adjustments for Login Buttons */
+.ln-auth-button:active {
+    background: linear-gradient(to bottom, #cfd7dc, #f0f0f0); /* Same active effect as admin login button */
+    box-shadow: none; /* Removes box-shadow when active */
+    transform: translateY(0); /* Resets position when active */
+}
+
+.ln-auth-button img {
+    max-width: 100%;
+    height: 24px; /* Adjust height to match the admin login button's text */
+}
+
+/* =========================
+   Dark Mode Adjustments for Login Buttons
+   =========================
+   Ensure that login buttons adapt appropriately in dark mode.
+*/
 body.dark-mode .login-button {
     background: linear-gradient(to bottom, #333, #444);
     color: #fff;
@@ -792,4 +919,19 @@ body.dark-mode .login-button.ln-login {
 
 body.dark-mode .login-button.ln-login:hover {
     background: linear-gradient(to bottom, #888000, #bbb500);
+}
+
+/* =========================
+   Dark Mode Adjustments for LN Auth Login Button
+   =========================
+   Ensure that the Lightning Login Button adapts appropriately in dark mode.
+*/
+body.dark-mode .ln-auth-button {
+    background: linear-gradient(to bottom, #666, #777);
+    border: 1px solid #555;
+    color: #fff;
+}
+
+body.dark-mode .ln-auth-button:hover {
+    background: linear-gradient(to bottom, #555, #666);
 }
