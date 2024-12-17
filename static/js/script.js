@@ -1,3 +1,5 @@
+// static/js/script.js
+
 let totalDonations = 0; 
 let transactionsData = [];
 const rowsPerPage = 17; 
@@ -126,15 +128,19 @@ function renderTable() {
 
             row.setAttribute('data-id', transaction.id);
 
-            // Insert patron badge if linking_key is present
-            let badgeHTML = '';
-            if (transaction.linking_key && window.users && window.users[transaction.linking_key] && window.users[transaction.linking_key].pseudonym) {
-                badgeHTML = `<span class="patron-badge">${window.users[transaction.linking_key].pseudonym}</span>`;
+            let pseudonymBadge = '';
+            // Check if the memo starts with a pseudonym (assume format "Pseudonym: Original Memo")
+            const pseudonymMatch = transaction.memo.match(/^([A-Za-z0-9]{1,13}):\s*(.*)$/);
+            if (pseudonymMatch) {
+                const pseudonym = pseudonymMatch[1];
+                const originalMemo = pseudonymMatch[2];
+                pseudonymBadge = `<span class="pseudonym-badge">${pseudonym}</span>`;
+                transaction.memo = originalMemo;
             }
 
             row.innerHTML = `
                 <td>${formatDate(transaction.date)}</td>
-                <td>${badgeHTML}${transaction.memo}</td>
+                <td>${pseudonymBadge} ${transaction.memo}</td>
                 <td>${transaction.amount} Sats</td>
                 <td class="actions">
                     <span class="like-button" onclick="voteDonation('${transaction.id}', 'like')">
@@ -186,11 +192,6 @@ async function fetchInitialDonations() {
         const donationsData = await donationsResponse.json();
         const updatesData = await updatesResponse.json();
 
-        // Store users globally so we can show the patron badge
-        // Assuming the server passes 'users' via a script tag if needed.
-        // If not available, you may need to fetch them or embed them in the template.
-        window.users = donationsData.users || {};
-
         updateDonations(donationsData);
         lastUpdate = new Date(updatesData.last_update);
 
@@ -217,7 +218,6 @@ async function checkForUpdates() {
                 throw new Error('Failed to fetch updated donations');
             }
             const donationsData = await donationsResponse.json();
-            window.users = donationsData.users || {};
             updateDonations(donationsData);
         }
 
@@ -292,8 +292,35 @@ function initializeDarkMode() {
     });
 }
 
+async function checkUserLogin() {
+    try {
+        const response = await fetch('/api/check_user_login');
+        const data = await response.json();
+        if (data.logged_in) {
+            // User is logged in, you can show user-specific UI elements
+            console.log('User is logged in:', data.pseudonym);
+            // Optionally, fetch user data or update UI accordingly
+            // For example, hide the LN-auth button and show a logout button
+            const lnAuthButton = document.querySelector('.ln-auth-button');
+            if (lnAuthButton) {
+                lnAuthButton.style.display = 'none';
+            }
+            // You can also display the user's pseudonym in the header or elsewhere
+            const donationHistory = document.getElementById('donationHistory');
+            if (donationHistory) {
+                donationHistory.textContent = `Latest Patron: ${data.pseudonym} - "${donationHistory.textContent.split(' - ')[1]}"`;
+            }
+        } else {
+            console.log('User is not logged in.');
+        }
+    } catch (error) {
+        console.error('Error checking user login:', error);
+    }
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     initializeDarkMode();
     fetchInitialDonations();
     checkForUpdates();
+    checkUserLogin();
 });
