@@ -24,6 +24,7 @@ from itsdangerous import URLSafeTimedSerializer
 import secrets
 import string
 import time
+from flask import Blueprint
 
 # --------------------- Configuration and Setup ---------------------
 
@@ -49,7 +50,7 @@ FORBIDDEN_WORDS_FILE = os.getenv("FORBIDDEN_WORDS_FILE", "forbidden_words.txt")
 PROCESSED_PAYMENTS_FILE = os.getenv("PROCESSED_PAYMENTS_FILE", "processed_payments.txt")
 CURRENT_BALANCE_FILE = os.getenv("CURRENT_BALANCE_FILE", "current-balance.txt")
 DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
-USERS_FILE = os.getenv("USERS_FILE", "users.json")  # New: Users data file
+USERS_FILE = os.getenv("USERS_FILE", "users.json")  # Users data file
 
 # Thresholds and Intervals
 BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))
@@ -126,6 +127,14 @@ app = Flask(__name__)
 app.secret_key = SECRET_KEY  # Secure Secret-Key for Sessions
 CORS(app)  # Enable CORS
 
+# --------------------- Blueprints Initialization ---------------------
+
+# Admin Blueprint
+admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
+
+# User Blueprint
+user_bp = Blueprint('user', __name__, url_prefix='/user')
+
 # --------------------- Global Variables ---------------------
 
 processed_payments = set()
@@ -146,17 +155,17 @@ latest_payments = []
 def get_main_inline_keyboard():
     balance_button = InlineKeyboardButton("💰 Balance", callback_data='balance')
     latest_transactions_button = InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline')
-    
+
     if DONATIONS_URL:
         live_ticker_button = InlineKeyboardButton("📡 Live Ticker", url=DONATIONS_URL)
     else:
         live_ticker_button = InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline')
-    
+
     if OVERWATCH_URL:
         overwatch_button = InlineKeyboardButton("📊 Overwatch", url=OVERWATCH_URL)
     else:
         overwatch_button = InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline')
-    
+
     if LNBITS_URL:
         lnbits_button = InlineKeyboardButton("⚡ LNBits", url=LNBITS_URL)
     else:
@@ -858,9 +867,9 @@ def handle_info_command(update, context):
 
     info_message = (
         f"ℹ️ *{INSTANCE_NAME}* - *Information*\n\n"
-        f"Here are some current settings:\n\n"
+        "Here are some current settings:\n\n"
         f"{interval_info}\n\n"
-        f"These settings affect how I notify you and highlight incoming payments."
+        "These settings affect how I notify you and highlight incoming payments."
     )
 
     try:
@@ -1028,178 +1037,12 @@ def start_scheduler():
     scheduler.start()
     logger.info("Scheduler started.")
 
-# --------------------- Flask Routes ---------------------
+# --------------------- Admin Blueprint Routes ---------------------
 
-@app.route('/')
-def home():
-    logger.debug("Home route accessed.")
-    return "🔍 Naughtify Wallet Monitor is running."
-
-@app.route('/status', methods=['GET'])
-def status_route():
-    donation_details = fetch_donation_details()
-    logger.debug("Status route accessed.")
-    return jsonify({
-        "latest_balance": latest_balance,
-        "latest_payments": latest_payments,
-        "total_donations": donation_details["total_donations"],
-        "donations": donation_details["donations"],
-        "lightning_address": donation_details["lightning_address"],
-        "lnurl": donation_details["lnurl"],
-        "highlight_threshold": HIGHLIGHT_THRESHOLD
-    })
-
-@app.route('/webhook', methods=['POST'])
-def webhook():
-    update = request.get_json()
-    if not update:
-        logger.warning("Empty update received in webhook.")
-        return "No update", 400
-
-    logger.debug(f"Update received in webhook: {update}")
-    threading.Thread(target=process_update, args=(update,)).start()
-    return "OK", 200
-
-@app.route('/donations')
-def donations_page():
-    if not DONATIONS_URL or not LNURLP_ID:
-        logger.warning("Donations not enabled or LNURLP_ID not set.")
-        return "Donations not enabled.", 404
-    lnurlp_id = LNURLP_ID
-    lnurlp_info = get_lnurlp_info(lnurlp_id)
-    if lnurlp_info is None:
-        logger.error("Error fetching LNURLP info in donations_page.")
-        return "Error fetching LNURLP info", 500
-
-    wallet_name = lnurlp_info.get('description', 'Unknown Wallet')
-    lightning_address = lnurlp_info.get('lightning_address', 'Unknown Lightning Address')
-    lnurl = lnurlp_info.get('lnurl', '')
-
-    try:
-        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
-        qr.add_data(lnurl)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-
-        img_io = io.BytesIO()
-        img.save(img_io, 'PNG')
-        img_io.seek(0)
-        img_base64 = base64.b64encode(img_io.getvalue()).decode()
-        logger.debug("QR code generated successfully.")
-    except Exception as e:
-        logger.error(f"Error generating QR code: {e}")
-        logger.debug(traceback.format_exc())
-        return "Error generating QR code.", 500
-
-    total_donations_current = sum(donation['amount'] for donation in donations)
-
-    return render_template(
-        'donations.html',
-        wallet_name=wallet_name,
-        lightning_address=lightning_address,
-        lnurl=lnurl,
-        qr_code_data=img_base64,
-        donations_url=DONATIONS_URL,
-        information_url=INFORMATION_URL,
-        total_donations=total_donations_current,
-        donations=donations,
-        highlight_threshold=HIGHLIGHT_THRESHOLD
-    )
-
-@app.route('/api/donations', methods=['GET'])
-def get_donations_data():
-    if not DONATIONS_URL or not LNURLP_ID:
-        logger.warning("Donations not enabled.")
-        return jsonify({"error": "Donations not enabled."}), 404
-    try:
-        donation_details = fetch_donation_details()
-        data = {
-            "total_donations": donation_details["total_donations"],
-            "donations": donation_details["donations"],
-            "lightning_address": donation_details["lightning_address"],
-            "lnurl": donation_details["lnurl"],
-            "highlight_threshold": HIGHLIGHT_THRESHOLD
-        }
-        logger.debug("Donations data fetched successfully via API.")
-        return jsonify(data), 200
-    except Exception as e:
-        logger.error(f"Error fetching donation data: {e}")
-        logger.debug(traceback.format_exc())
-        return jsonify({"error": "Error fetching donation data"}), 500
-
-@app.route('/api/vote', methods=['POST'])
-def vote_donation():
-    try:
-        data = request.get_json()
-        donation_id = data.get('donation_id')
-        vote_type = data.get('vote_type')
-
-        if not donation_id or not vote_type:
-            logger.warning("vote_donation called without donation_id or vote_type.")
-            return jsonify({"error": "donation_id and vote_type required."}), 400
-        if vote_type not in ['like', 'dislike']:
-            logger.warning(f"Invalid vote_type received: {vote_type}")
-            return jsonify({"error": "vote_type must be 'like' or 'dislike'."}), 400
-
-        voted_donations = request.cookies.get('voted_donations', '')
-        voted_set = set(voted_donations.split(',')) if voted_donations else set()
-        if donation_id in voted_set:
-            logger.info(f"Donation {donation_id} already voted by user.")
-            return jsonify({"error": "Already voted on this donation."}), 403
-
-        result, status_code = handle_vote_command(donation_id, vote_type)
-        if status_code != 200:
-            logger.warning(f"Vote command failed for donation_id {donation_id}: {result}")
-            return jsonify(result), status_code
-
-        response = make_response(jsonify(result), 200)
-        voted_set.add(donation_id)
-        new_voted_donations = ','.join(voted_set)
-        response.set_cookie('voted_donations', new_voted_donations, max_age=60*60*24*365)
-        logger.info(f"User voted on donation {donation_id}: {vote_type}")
-        return response
-    except Exception as e:
-        logger.error(f"Error processing vote: {e}")
-        logger.debug(traceback.format_exc())
-        return jsonify({"error": "Internal server error."}), 500
-
-@app.route('/donations_updates', methods=['GET'])
-def donations_updates():
-    global last_update
-    if not DONATIONS_URL or not LNURLP_ID:
-        logger.warning("Donations not enabled.")
-        return jsonify({"error": "Donations not enabled."}), 404
-    try:
-        logger.debug("Fetching last_update timestamp.")
-        return jsonify({"last_update": last_update.isoformat()}), 200
-    except Exception as e:
-        logger.error(f"Error fetching last_update: {e}")
-        logger.debug(traceback.format_exc())
-        return jsonify({"error": "Error fetching last_update"}), 500
-
-@app.route('/cinema')
-def cinema_page():
-    if not DONATIONS_URL or not LNURLP_ID:
-        logger.warning("Donations are not enabled for Cinema Mode.")
-        return "Donations are not enabled for Cinema Mode.", 404
-    logger.debug("Cinema page accessed.")
-    return render_template('cinema.html')
-
-# --------------------- Authentication Routes ---------------------
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
-            flash('Please log in to access this page.', 'warning')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if 'logged_in' in session:
-        return redirect(url_for('settings'))
+@admin_bp.route('/login', methods=['GET', 'POST'])
+def admin_login():
+    if 'admin_logged_in' in session:
+        return redirect(url_for('admin.settings'))
 
     if request.method == 'POST':
         password = request.form.get('password')
@@ -1207,29 +1050,29 @@ def login():
 
         if not ADMIN_PASSWORD:
             flash('Admin password not set. Please set ADMIN_PASSWORD in your .env file.', 'danger')
-            return render_template('login.html')
+            return render_template('admin_login.html')
 
         if password == ADMIN_PASSWORD:
-            session['logged_in'] = True
+            session['admin_logged_in'] = True
             flash('Successfully logged in!', 'success')
-            logger.info("User logged in successfully.")
-            return redirect(url_for('settings'))
+            logger.info("Admin logged in successfully.")
+            return redirect(url_for('admin.settings'))
         else:
             flash('Incorrect password. Please try again.', 'danger')
-            logger.warning("User attempted to log in with incorrect password.")
+            logger.warning("Admin attempted to log in with incorrect password.")
 
-    return render_template('login.html')
+    return render_template('admin_login.html')
 
-@app.route('/logout')
-@login_required
-def logout():
-    session.pop('logged_in', None)
+@admin_bp.route('/logout')
+@login_required = wraps(admin_login_required)
+def admin_logout():
+    session.pop('admin_logged_in', None)
     flash('Successfully logged out.', 'success')
-    logger.info("User logged out successfully.")
-    return redirect(url_for('login'))
+    logger.info("Admin logged out successfully.")
+    return redirect(url_for('admin.admin_login'))
 
-@app.route('/settings', methods=['GET', 'POST'])
-@login_required
+@admin_bp.route('/settings', methods=['GET', 'POST'])
+@wraps = login_required(admin_login_required)
 def settings():
     if request.method == 'POST':
         # List of environment variables to update
@@ -1296,7 +1139,7 @@ def settings():
 
             flash('Settings updated successfully.', 'success')
             logger.info("Settings updated via settings page.")
-            return redirect(url_for('settings'))
+            return redirect(url_for('admin.settings'))
         except Exception as e:
             flash(f'Error updating settings: {e}', 'danger')
             logger.error(f"Error updating settings: {e}")
@@ -1328,7 +1171,7 @@ def settings():
 
     return render_template('settings.html', env_vars=env_vars_current)
 
-# --------------------- User Authentication via LNURL-auth ---------------------
+# --------------------- User Blueprint Routes (LNURL-auth) ---------------------
 
 # In-memory cache for k1 challenges
 k1_cache = {}
@@ -1375,14 +1218,14 @@ def save_users(users):
         logger.error(f"Error saving users: {e}")
         logger.debug(traceback.format_exc())
 
-@app.route('/user_login')
+@user_bp.route('/login', methods=['GET'])
 def user_login():
     tag = 'login'
     k1 = secrets.token_hex(32)  # 32 bytes in hex
     action = 'login'  # As per LUD-04 spec
 
     # Construct the LNURL-auth URL
-    lnurl_auth_url = url_for('user_login_callback', _external=True)
+    lnurl_auth_url = url_for('user.user_login_callback', _external=True)
     lnurl_auth_url += f'?tag={tag}&k1={k1}&action={action}'
 
     # Store k1 with expiration
@@ -1390,16 +1233,41 @@ def user_login():
         k1_cache[k1] = time.time() + K1_EXPIRATION_SECONDS
         logger.debug(f"Generated k1: {k1} and stored in cache.")
 
-    # Encode LNURL-auth as a Bech32 string (for QR code)
-    # For simplicity, we'll skip Bech32 encoding and serve the URL directly as the QR code
-    # However, in a production environment, proper Bech32 encoding as per LNURL spec should be used
-
     # For this example, we'll return the LNURL-auth URL directly to be embedded in QR code
     return jsonify({
         "lnurl": lnurl_auth_url
     })
 
-@app.route('/user_login_callback', methods=['GET'])
+@user_bp.route('/login_qr', methods=['GET'])
+def user_login_qr():
+    lnurl_response = user_login()
+    if not lnurl_response:
+        flash('Failed to generate LNURL-auth.', 'danger')
+        return redirect(url_for('donations_page'))
+
+    lnurl = lnurl_response.json.get('lnurl')
+
+    # Generate QR code
+    try:
+        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
+        qr.add_data(lnurl)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        img_io = io.BytesIO()
+        img.save(img_io, 'PNG')
+        img_io.seek(0)
+        img_base64 = base64.b64encode(img_io.getvalue()).decode()
+        logger.debug("QR code generated for user login.")
+    except Exception as e:
+        logger.error(f"Error generating QR code for user login: {e}")
+        logger.debug(traceback.format_exc())
+        flash('Failed to generate QR code.', 'danger')
+        return redirect(url_for('donations_page'))
+
+    return render_template('user_login.html', qr_code_data=img_base64)
+
+@user_bp.route('/login_callback', methods=['GET'])
 def user_login_callback():
     tag = request.args.get('tag')
     k1 = request.args.get('k1')
@@ -1457,41 +1325,11 @@ def user_login_callback():
         logger.info(f"New user detected: {linking_key}")
         return jsonify({"status": "NEED_PSEUDONYM"}), 200
 
-@app.route('/user_login')
-def user_login():
-    # Fetch the LNURL-auth URL
-    lnurl_response = user_login()
-    if lnurl_response.status_code != 200:
-        flash('Failed to generate LNURL-auth.', 'danger')
-        return redirect(url_for('donations_page'))
-
-    lnurl = lnurl_response.json.get('lnurl')
-
-    # Generate QR code
-    try:
-        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
-        qr.add_data(lnurl)
-        qr.make(fit=True)
-        img = qr.make_image(fill_color="black", back_color="white")
-
-        img_io = io.BytesIO()
-        img.save(img_io, 'PNG')
-        img_io.seek(0)
-        img_base64 = base64.b64encode(img_io.getvalue()).decode()
-        logger.debug("QR code generated for user login.")
-    except Exception as e:
-        logger.error(f"Error generating QR code for user login: {e}")
-        logger.debug(traceback.format_exc())
-        flash('Failed to generate QR code.', 'danger')
-        return redirect(url_for('donations_page'))
-
-    return render_template('user_login.html', qr_code_data=img_base64)
-
-@app.route('/choose_pseudonym', methods=['GET', 'POST'])
+@user_bp.route('/choose_pseudonym', methods=['GET', 'POST'])
 def choose_pseudonym():
     if 'user_linking_key' not in session:
         flash('Unauthorized access.', 'danger')
-        return redirect(url_for('login'))
+        return redirect(url_for('user.user_login'))
 
     linking_key = session.get('user_linking_key')
 
@@ -1515,6 +1353,7 @@ def choose_pseudonym():
 
         # Log the user in
         session['user_logged_in'] = True
+        session['user_pseudonym'] = pseudonym  # Store pseudonym in session
         logger.info(f"New user registered: {linking_key} with pseudonym '{pseudonym}'")
 
         flash('Pseudonym set successfully!', 'success')
@@ -1522,7 +1361,7 @@ def choose_pseudonym():
 
     return render_template('choose_pseudonym.html')
 
-@app.route('/api/check_user_login', methods=['GET'])
+@user_bp.route('/api/check_user_login', methods=['GET'])
 def api_check_user_login():
     logged_in = session.get('user_logged_in', False)
     pseudonym = None
@@ -1614,8 +1453,125 @@ def initialize_processed_payments():
     logger.info("Initialization of processed payments completed.")
 
 # --------------------- User Authentication via LNURL-auth ---------------------
+# (Already included in User Blueprint above)
 
-# (Already included above)
+# --------------------- Flask Routes ---------------------
+
+@user_bp.route('/donations')
+def donations_page():
+    if not DONATIONS_URL or not LNURLP_ID:
+        logger.warning("Donations not enabled or LNURLP_ID not set.")
+        return "Donations not enabled.", 404
+    lnurlp_id = LNURLP_ID
+    lnurlp_info = get_lnurlp_info(lnurlp_id)
+    if lnurlp_info is None:
+        logger.error("Error fetching LNURLP info in donations_page.")
+        return "Error fetching LNURLP info", 500
+
+    wallet_name = lnurlp_info.get('description', 'Unknown Wallet')
+    lightning_address = lnurlp_info.get('lightning_address', 'Unknown Lightning Address')
+    lnurl = lnurlp_info.get('lnurl', '')
+
+    try:
+        qr = qrcode.QRCode(error_correction=qrcode.constants.ERROR_CORRECT_M)
+        qr.add_data(lnurl)
+        qr.make(fit=True)
+        img = qr.make_image(fill_color="black", back_color="white")
+
+        img_io = io.BytesIO()
+        img.save(img_io, 'PNG')
+        img_io.seek(0)
+        img_base64 = base64.b64encode(img_io.getvalue()).decode()
+        logger.debug("QR code generated successfully.")
+    except Exception as e:
+        logger.error(f"Error generating QR code: {e}")
+        logger.debug(traceback.format_exc())
+        return "Error generating QR code.", 500
+
+    total_donations_current = sum(donation['amount'] for donation in donations)
+
+    return render_template(
+        'donations.html',
+        wallet_name=wallet_name,
+        lightning_address=lightning_address,
+        lnurl=lnurl,
+        qr_code_data=img_base64,
+        donations_url=DONATIONS_URL,
+        information_url=INFORMATION_URL,
+        total_donations=total_donations_current,
+        donations=donations,
+        highlight_threshold=HIGHLIGHT_THRESHOLD
+    )
+
+@app.route('/')
+def home():
+    logger.debug("Home route accessed.")
+    return "🔍 Naughtify Wallet Monitor is running."
+
+@app.route('/status', methods=['GET'])
+def status_route():
+    donation_details = fetch_donation_details()
+    logger.debug("Status route accessed.")
+    return jsonify({
+        "latest_balance": latest_balance,
+        "latest_payments": latest_payments,
+        "total_donations": donation_details["total_donations"],
+        "donations": donation_details["donations"],
+        "lightning_address": donation_details["lightning_address"],
+        "lnurl": donation_details["lnurl"],
+        "highlight_threshold": HIGHLIGHT_THRESHOLD
+    })
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    update = request.get_json()
+    if not update:
+        logger.warning("Empty update received in webhook.")
+        return "No update", 400
+
+    logger.debug(f"Update received in webhook: {update}")
+    threading.Thread(target=process_update, args=(update,)).start()
+    return "OK", 200
+
+@user_bp.route('/cinema')
+def cinema_page():
+    if not DONATIONS_URL or not LNURLP_ID:
+        logger.warning("Donations are not enabled for Cinema Mode.")
+        return "Donations are not enabled for Cinema Mode.", 404
+    logger.debug("Cinema page accessed.")
+    return render_template('cinema.html')
+
+# --------------------- Authentication Routes ---------------------
+
+def admin_login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            flash('Please log in to access this page.', 'warning')
+            return redirect(url_for('admin.admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+# --------------------- Register Blueprints ---------------------
+
+app.register_blueprint(admin_bp)
+app.register_blueprint(user_bp)
+
+# --------------------- Core Functionality Continued ---------------------
+
+def handle_vote_command(donation_id, vote_type):
+    # (Already defined above)
+    pass  # Placeholder if needed
+
+# --------------------- Additional Functions ---------------------
+
+def run_flask_app():
+    try:
+        logger.info(f"Starting Flask app on {APP_HOST}:{APP_PORT}")
+        app.run(host=APP_HOST, port=APP_PORT, debug=False, use_reloader=False)
+    except Exception as e:
+        logger.error(f"Error running Flask app: {e}")
+        logger.debug(traceback.format_exc())
 
 # --------------------- Main Function ---------------------
 
@@ -1660,14 +1616,6 @@ def main():
     logger.info("Telegram Bot started.")
     send_main_inline_keyboard()
     updater.idle()
-
-def run_flask_app():
-    try:
-        logger.info(f"Starting Flask app on {APP_HOST}:{APP_PORT}")
-        app.run(host=APP_HOST, port=APP_PORT, debug=False, use_reloader=False)
-    except Exception as e:
-        logger.error(f"Error running Flask app: {e}")
-        logger.debug(traceback.format_exc())
 
 # --------------------- Application Entry Point ---------------------
 
