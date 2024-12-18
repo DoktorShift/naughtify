@@ -3,7 +3,7 @@ import logging
 from logging.handlers import RotatingFileHandler
 from flask import (
     Flask, jsonify, request, render_template, redirect, url_for,
-    session, flash, make_response, Blueprint
+    session, flash, make_response
 )
 from flask_cors import CORS
 from telegram import (
@@ -135,14 +135,6 @@ logging.getLogger('apscheduler').setLevel(logging.WARNING)  # Only WARNING and a
 app = Flask(__name__)
 app.secret_key = SECRET_KEY  # Secure Secret-Key for Sessions
 CORS(app)  # Enable CORS
-
-# --------------------- Blueprints Initialization ---------------------
-
-# Admin Blueprint
-admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
-
-# User Blueprint
-user_bp = Blueprint('user', __name__, url_prefix='/user')
 
 # --------------------- Global Variables ---------------------
 
@@ -1050,21 +1042,21 @@ def start_scheduler():
     scheduler.start()
     logger.info("Scheduler started.")
 
-# --------------------- Admin Blueprint Routes ---------------------
+# --------------------- Admin Routes ---------------------
 
 def admin_login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if not session.get('admin_logged_in'):
             flash('Please log in to access this page.', 'warning')
-            return redirect(url_for('admin.admin_login'))
+            return redirect(url_for('admin_login'))
         return f(*args, **kwargs)
     return decorated_function
 
-@admin_bp.route('/login', methods=['GET', 'POST'])
+@app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
     if 'admin_logged_in' in session:
-        return redirect(url_for('admin.settings'))
+        return redirect(url_for('settings'))
 
     if request.method == 'POST':
         password = request.form.get('password')
@@ -1078,22 +1070,22 @@ def admin_login():
             session['admin_logged_in'] = True
             flash('Successfully logged in!', 'success')
             logger.info("Admin logged in successfully.")
-            return redirect(url_for('admin.settings'))
+            return redirect(url_for('settings'))
         else:
             flash('Incorrect password. Please try again.', 'danger')
             logger.warning("Admin attempted to log in with incorrect password.")
 
     return render_template('admin_login.html')
 
-@admin_bp.route('/logout')
+@app.route('/admin/logout')
 @admin_login_required
 def admin_logout():
     session.pop('admin_logged_in', None)
     flash('Successfully logged out.', 'success')
     logger.info("Admin logged out successfully.")
-    return redirect(url_for('admin.admin_login'))
+    return redirect(url_for('admin_login'))
 
-@admin_bp.route('/settings', methods=['GET', 'POST'])
+@app.route('/admin/settings', methods=['GET', 'POST'])
 @admin_login_required
 def settings():
     if request.method == 'POST':
@@ -1161,7 +1153,7 @@ def settings():
 
             flash('Settings updated successfully.', 'success')
             logger.info("Settings updated via settings page.")
-            return redirect(url_for('admin.settings'))
+            return redirect(url_for('settings'))
         except Exception as e:
             flash(f'Error updating settings: {e}', 'danger')
             logger.error(f"Error updating settings: {e}")
@@ -1193,7 +1185,7 @@ def settings():
 
     return render_template('settings.html', env_vars=env_vars_current)
 
-# --------------------- User Blueprint Routes (LNURL-auth) ---------------------
+# --------------------- User Routes (LNURL-auth) ---------------------
 
 # In-memory cache for k1 challenges
 k1_cache = {}
@@ -1240,14 +1232,14 @@ def save_users(users):
         logger.error(f"Error saving users: {e}")
         logger.debug(traceback.format_exc())
 
-@user_bp.route('/login', methods=['GET'])
+@app.route('/user/login', methods=['GET'])
 def user_login():
     tag = 'login'
     k1 = secrets.token_hex(32)  # 32 bytes in hex
     action = 'login'  # As per LUD-04 spec
 
     # Construct the LNURL-auth URL
-    lnurl_auth_url = url_for('user.user_login_callback', _external=True)
+    lnurl_auth_url = url_for('user_login_callback', _external=True)
     lnurl_auth_url += f'?tag={tag}&k1={k1}&action={action}'
 
     # Store k1 with expiration
@@ -1260,7 +1252,7 @@ def user_login():
         "lnurl": lnurl_auth_url
     })
 
-@user_bp.route('/login_qr', methods=['GET'])
+@app.route('/user/login_qr', methods=['GET'])
 def user_login_qr():
     lnurl_response = user_login()
     if not lnurl_response:
@@ -1289,7 +1281,7 @@ def user_login_qr():
 
     return render_template('user_login.html', qr_code_data=img_base64)
 
-@user_bp.route('/login_callback', methods=['GET'])
+@app.route('/user/login_callback', methods=['GET'])
 def user_login_callback():
     tag = request.args.get('tag')
     k1 = request.args.get('k1')
@@ -1347,11 +1339,11 @@ def user_login_callback():
         logger.info(f"New user detected: {linking_key}")
         return jsonify({"status": "NEED_PSEUDONYM"}), 200
 
-@user_bp.route('/choose_pseudonym', methods=['GET', 'POST'])
+@app.route('/user/choose_pseudonym', methods=['GET', 'POST'])
 def choose_pseudonym():
     if 'user_linking_key' not in session:
         flash('Unauthorized access.', 'danger')
-        return redirect(url_for('user.user_login'))
+        return redirect(url_for('user_login'))
 
     linking_key = session.get('user_linking_key')
 
@@ -1383,7 +1375,7 @@ def choose_pseudonym():
 
     return render_template('choose_pseudonym.html')
 
-@user_bp.route('/api/check_user_login', methods=['GET'])
+@app.route('/user/api/check_user_login', methods=['GET'])
 def api_check_user_login():
     logged_in = session.get('user_logged_in', False)
     pseudonym = None
@@ -1474,12 +1466,9 @@ def initialize_processed_payments():
             logger.debug(f"Payment {payment_hash} marked as processed during initialization.")
     logger.info("Initialization of processed payments completed.")
 
-# --------------------- User Authentication via LNURL-auth ---------------------
-# (Already included in User Blueprint above)
-
 # --------------------- Flask Routes ---------------------
 
-@user_bp.route('/donations')
+@app.route('/user/donations')
 def donations_page():
     if not DONATIONS_URL or not LNURLP_ID:
         logger.warning("Donations not enabled or LNURLP_ID not set.")
@@ -1525,6 +1514,14 @@ def donations_page():
         highlight_threshold=HIGHLIGHT_THRESHOLD
     )
 
+@app.route('/user/cinema')
+def cinema_page():
+    if not DONATIONS_URL or not LNURLP_ID:
+        logger.warning("Donations are not enabled for Cinema Mode.")
+        return "Donations are not enabled for Cinema Mode.", 404
+    logger.debug("Cinema page accessed.")
+    return render_template('cinema.html')
+
 @app.route('/')
 def home():
     logger.debug("Home route accessed.")
@@ -1555,18 +1552,8 @@ def webhook():
     threading.Thread(target=process_update, args=(update,)).start()
     return "OK", 200
 
-@user_bp.route('/cinema')
-def cinema_page():
-    if not DONATIONS_URL or not LNURLP_ID:
-        logger.warning("Donations are not enabled for Cinema Mode.")
-        return "Donations are not enabled for Cinema Mode.", 404
-    logger.debug("Cinema page accessed.")
-    return render_template('cinema.html')
-
-# --------------------- Register Blueprints ---------------------
-
-app.register_blueprint(admin_bp)
-app.register_blueprint(user_bp)
+# --------------------- User Authentication via LNURL-auth ---------------------
+# (Already included in User Routes above)
 
 # --------------------- Additional Functions ---------------------
 
