@@ -4,41 +4,42 @@
 <head>
     <meta charset="UTF-8">
     <title>Settings - Naughtify</title>
+    <!-- Link to Settings CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
-    <!-- Bootstrap CSS (for styling and tabs) -->
+    <!-- Bootstrap CSS for styling and tabs -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <!-- Font Awesome for icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
 </head>
 <body>
-    <!-- Header -->
+    <!-- Header Section -->
     <header class="header">
         <div class="container d-flex justify-content-between align-items-center">
-            <!-- Title Section -->
+            <!-- Title and Description -->
             <div class="header-title">
                 <h1>Naughtify Settings</h1>
                 <p>Manage your configurations securely and easily</p>
             </div>
-            <!-- Actions Section -->
+            <!-- Actions: Dark Mode Toggle and Logout Button -->
             <div class="header-actions d-flex align-items-center">
-                <!-- Dark Mode Toggle -->
+                <!-- Dark Mode Toggle Switch -->
                 <div class="toggle-container mr-3">
                     <label class="switch">
                         <input type="checkbox" id="darkModeToggle">
                         <span class="slider"></span>
                     </label>
                 </div>
-                <!-- Logout Button -->
-                <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary" title="Logout">
+                <!-- Admin Logout Button -->
+                <a href="{{ url_for('admin.admin_logout') }}" class="btn btn-outline-secondary" title="Logout">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </a>
             </div>
         </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- Main Content Area -->
     <main class="container my-4">
-        <!-- Flash Messages -->
+        <!-- Flash Messages for Feedback -->
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -52,7 +53,9 @@
           {% endif %}
         {% endwith %}
 
+        <!-- Dashboard Container -->
         <div class="dashboard p-4 rounded shadow-sm">
+            <!-- Settings Form -->
             <form method="POST" class="settings-form">
                 <!-- Tabs Navigation -->
                 <ul class="nav nav-tabs" id="settingsTabs" role="tablist">
@@ -72,7 +75,7 @@
 
                 <!-- Tabs Content -->
                 <div class="tab-content" id="settingsTabsContent">
-                    <!-- Base Tab -->
+                    <!-- Base Tab Content -->
                     <div class="tab-pane fade show active" id="base" role="tabpanel" aria-labelledby="base-tab">
                         <fieldset class="form-group mt-3">
                             <legend>Telegram Settings <span class="text-danger">*</span></legend>
@@ -117,7 +120,7 @@
                         </fieldset>
                     </div>
 
-                    <!-- Optional Tab -->
+                    <!-- Optional Tab Content -->
                     <div class="tab-pane fade" id="optional" role="tabpanel" aria-labelledby="optional-tab">
                         <fieldset class="form-group mt-3">
                             <legend>Thresholds</legend>
@@ -160,7 +163,7 @@
                         </fieldset>
                     </div>
 
-                    <!-- Security Tab -->
+                    <!-- Security Tab Content -->
                     <div class="tab-pane fade" id="security" role="tabpanel" aria-labelledby="security-tab">
                         <fieldset class="form-group mt-3">
                             <legend>Admin Password <span class="text-danger">*</span></legend>
@@ -178,7 +181,7 @@
                         </fieldset>
                     </div>
 
-                    <!-- Configuration Tab -->
+                    <!-- Configuration Tab Content -->
                     <div class="tab-pane fade" id="configuration" role="tabpanel" aria-labelledby="configuration-tab">
                         <fieldset class="form-group mt-3">
                             <legend>Flask Server Configuration <span class="text-danger">*</span></legend>
@@ -214,7 +217,7 @@
                     </div>
                 </div>
 
-                <!-- Action Buttons -->
+                <!-- Action Buttons: Save Settings and Restart Server -->
                 <div class="form-group text-center">
                     <button type="submit" class="btn btn-success">Save Settings</button>
                     <button type="button" class="btn btn-danger ml-2" onclick="restartServer()">Restart Server</button>
@@ -223,11 +226,11 @@
         </div>
     </main>
 
-    <!-- Bootstrap JS and dependencies -->
+    <!-- Bootstrap JS and dependencies for tabs and alerts -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <!-- Settings JavaScript -->
+    <!-- Link to Settings JavaScript -->
     <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
 </body>
 </html>
