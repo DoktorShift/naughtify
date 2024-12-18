@@ -23,7 +23,7 @@
             {% endfor %}
           {% endif %}
         {% endwith %}
-        <form method="POST" class="login-form">
+        <form method="POST" class="login-form" action="{{ url_for('login_route') }}">
             <div class="form-group">
                 <label for="password">Passwort</label>
                 <input type="password" class="form-control" id="password" name="password" placeholder="Gib dein Passwort ein" required>
