@@ -1465,7 +1465,7 @@ def user_login():
         flash('Failed to generate LNURL-auth.', 'danger')
         return redirect(url_for('donations_page'))
 
-    lnurl = lnurl_response.json().get('lnurl')
+    lnurl = lnurl_response.json.get('lnurl')
 
     # Generate QR code
     try:
