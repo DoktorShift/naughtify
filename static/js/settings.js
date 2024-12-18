@@ -1,10 +1,17 @@
 // static/js/settings.js
 
-// Function to restart the server
+/**
+ * Sends a POST request to restart the server.
+ * This function should be secured on the backend to prevent unauthorized access.
+ */
 function restartServer() {
     if (confirm("Do you really want to restart the server?")) {
-        fetch('/restart', {
-            method: 'POST'
+        fetch('/admin/restart', { // Updated route under Admin Blueprint
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ action: 'restart' }) // Optional payload
         })
         .then(response => {
             if (response.redirected) {
@@ -23,28 +30,46 @@ function restartServer() {
         });
 }
 
-// Dark Mode Toggle Script and Toggle Password Visibility
-document.addEventListener('DOMContentLoaded', () => {
-    const toggle = document.getElementById('darkModeToggle');
-    const body = document.body;
+/**
+ * Toggles Dark Mode on the settings page.
+ * @param {boolean} isDark - Indicates whether to enable dark mode.
+ */
+function toggleDarkMode(isDark) {
+    if (isDark) {
+        document.body.classList.add('dark-mode');
+        localStorage.setItem('darkMode', 'enabled');
+    } else {
+        document.body.classList.remove('dark-mode');
+        localStorage.setItem('darkMode', 'disabled');
+    }
+}
 
-    // Initialize dark mode based on local storage
-    if (localStorage.getItem('darkMode') === 'enabled') {
-        body.classList.add('dark-mode');
-        toggle.checked = true;
+/**
+ * Initializes Dark Mode based on user's preference stored in localStorage.
+ * Also handles the toggle switch functionality.
+ */
+function initializeDarkMode() {
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    const darkModeSetting = localStorage.getItem('darkMode');
+
+    if (darkModeSetting === 'enabled') {
+        darkModeToggle.checked = true;
+        document.body.classList.add('dark-mode');
+    } else {
+        darkModeToggle.checked = false;
+        document.body.classList.remove('dark-mode');
     }
 
-    toggle.addEventListener('change', () => {
-        if (toggle.checked) {
-            body.classList.add('dark-mode');
-            localStorage.setItem('darkMode', 'enabled');
-        } else {
-            body.classList.remove('dark-mode');
-            localStorage.setItem('darkMode', 'disabled');
-        }
+    darkModeToggle.addEventListener('change', (e) => {
+        toggleDarkMode(e.target.checked);
     });
+}
 
-    // Toggle Password Visibility
+/**
+ * Toggles password visibility for password input fields.
+ * Adds event listeners to all buttons with the class 'toggle-password'.
+ */
+function togglePasswordVisibility() {
     const togglePasswordButtons = document.querySelectorAll('.toggle-password');
     togglePasswordButtons.forEach(button => {
         button.addEventListener('click', () => {
@@ -58,4 +83,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     });
+}
+
+/**
+ * Initializes event listeners when the DOM is fully loaded.
+ */
+document.addEventListener('DOMContentLoaded', () => {
+    initializeDarkMode();          // Initialize Dark Mode toggle
+    togglePasswordVisibility();    // Initialize password visibility toggles
 });
