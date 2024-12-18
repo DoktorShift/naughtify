@@ -1,10 +1,19 @@
 import os
 import logging
 from logging.handlers import RotatingFileHandler
-from flask import Flask, jsonify, request, render_template, redirect, url_for, session, flash, make_response
+from flask import (
+    Flask, jsonify, request, render_template, redirect, url_for,
+    session, flash, make_response, Blueprint
+)
 from flask_cors import CORS
-from telegram import Bot, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton, ReplyKeyboardMarkup
-from telegram.ext import Updater, CommandHandler, CallbackQueryHandler, MessageHandler, Filters
+from telegram import (
+    Bot, ParseMode, InlineKeyboardMarkup, InlineKeyboardButton,
+    ReplyKeyboardMarkup
+)
+from telegram.ext import (
+    Updater, CommandHandler, CallbackQueryHandler,
+    MessageHandler, Filters
+)
 from dotenv import load_dotenv, set_key
 import requests
 import traceback
@@ -24,10 +33,10 @@ from itsdangerous import URLSafeTimedSerializer
 import secrets
 import string
 import time
-from flask import Blueprint
 
 # --------------------- Configuration and Setup ---------------------
 
+# Load environment variables from .env file
 load_dotenv()
 
 # Essential Environment Variables
@@ -510,10 +519,13 @@ def notify_transaction(payment, direction):
         logger.error(f"Error sending transaction notification: {e}")
         logger.debug(traceback.format_exc())
 
+def fetch_payments():
+    return fetch_api("payments")
+
 def send_latest_payments():
     global total_donations, donations, last_update, latest_balance, latest_payments
     logger.info("Fetching latest payments...")
-    payments = fetch_api("payments")
+    payments = fetch_payments()
     if payments is None:
         logger.warning("No payments fetched.")
         return
@@ -680,6 +692,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
     start_index = (page - 1) * transactions_per_page
     end_index = start_index + transactions_per_page
     page_transactions = sorted_payments[start_index:end_index]
+
     if not page_transactions:
         bot.send_message(chat_id, text="❌ No transactions found on this page.")
         logger.info(f"No transactions found on page {page}.")
@@ -1039,6 +1052,15 @@ def start_scheduler():
 
 # --------------------- Admin Blueprint Routes ---------------------
 
+def admin_login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            flash('Please log in to access this page.', 'warning')
+            return redirect(url_for('admin.admin_login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def admin_login():
     if 'admin_logged_in' in session:
@@ -1064,7 +1086,7 @@ def admin_login():
     return render_template('admin_login.html')
 
 @admin_bp.route('/logout')
-@login_required = wraps(admin_login_required)
+@admin_login_required
 def admin_logout():
     session.pop('admin_logged_in', None)
     flash('Successfully logged out.', 'success')
@@ -1072,7 +1094,7 @@ def admin_logout():
     return redirect(url_for('admin.admin_login'))
 
 @admin_bp.route('/settings', methods=['GET', 'POST'])
-@wraps = login_required(admin_login_required)
+@admin_login_required
 def settings():
     if request.method == 'POST':
         # List of environment variables to update
@@ -1233,7 +1255,7 @@ def user_login():
         k1_cache[k1] = time.time() + K1_EXPIRATION_SECONDS
         logger.debug(f"Generated k1: {k1} and stored in cache.")
 
-    # For this example, we'll return the LNURL-auth URL directly to be embedded in QR code
+    # Return the LNURL-auth URL as JSON to be embedded in QR code
     return jsonify({
         "lnurl": lnurl_auth_url
     })
@@ -1541,27 +1563,10 @@ def cinema_page():
     logger.debug("Cinema page accessed.")
     return render_template('cinema.html')
 
-# --------------------- Authentication Routes ---------------------
-
-def admin_login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('admin_logged_in'):
-            flash('Please log in to access this page.', 'warning')
-            return redirect(url_for('admin.admin_login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
 # --------------------- Register Blueprints ---------------------
 
 app.register_blueprint(admin_bp)
 app.register_blueprint(user_bp)
-
-# --------------------- Core Functionality Continued ---------------------
-
-def handle_vote_command(donation_id, vote_type):
-    # (Already defined above)
-    pass  # Placeholder if needed
 
 # --------------------- Additional Functions ---------------------
 
@@ -1573,7 +1578,7 @@ def run_flask_app():
         logger.error(f"Error running Flask app: {e}")
         logger.debug(traceback.format_exc())
 
-# --------------------- Main Function ---------------------
+# --------------------- Application Entry Point ---------------------
 
 def main():
     # Start the Flask app in a separate thread
@@ -1617,7 +1622,7 @@ def main():
     send_main_inline_keyboard()
     updater.idle()
 
-# --------------------- Application Entry Point ---------------------
+# --------------------- Main Execution ---------------------
 
 if __name__ == "__main__":
     logger.info("🚀 Starting LNbits Balance Monitor.")
