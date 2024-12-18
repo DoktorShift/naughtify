@@ -18,7 +18,6 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/choose_pseudonym.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/user_login.css') }}">
 </head>
-</head>
 <body>
     <div class="dashboard">
         <!-- Header -->
@@ -130,7 +129,7 @@
                 <h3>Login</h3>
                 <div class="login-container">
                     <!-- Admin Login Button -->
-                    <a href="{{ url_for('login') }}" class="login-button admin-login">Login as Admin</a>
+                    <a href="{{ url_for('login_route') }}" class="login-button admin-login">Login as Admin</a>
                     <!-- New LN Auth Login Button -->
                     <a href="{{ url_for('user_login') }}" class="ln-auth-button" title="Login with Lightning" aria-label="Login with Lightning">
                         <img src="{{ url_for('static', filename='assets/black-on-yellow.svg') }}" alt="Login with Lightning">
