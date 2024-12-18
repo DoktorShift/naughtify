@@ -9,7 +9,7 @@
     <!-- Google Material Icons -->
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     
-    <!-- Font Awesome -->
+    <!-- Font Awesome for additional icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
     
     <!-- External CSS Files -->
@@ -20,12 +20,12 @@
 </head>
 <body>
     <div class="dashboard">
-        <!-- Header -->
+        <!-- Header Section -->
         <div class="header">
             <h1>Live⚡️Ticker</h1>
             <h5>Share payments in real-time.</h5>
             
-            <!-- Dark Mode Toggle -->
+            <!-- Dark Mode Toggle Switch -->
             <div class="toggle-container">
                 <label class="switch">
                     <input type="checkbox" id="darkModeToggle" aria-label="Toggle Dark Mode">
@@ -33,7 +33,7 @@
                 </label>
             </div>
 
-            <!-- Info Icon with Tooltip -->
+            <!-- Info Icon with Tooltip for More Information -->
             <div class="info-tooltip">
                 <i class="material-icons info-icon">psychology_alt</i>
                 <span class="tooltip-text">Our Mission</span>
@@ -41,18 +41,19 @@
             </div>
             
             <!-- Cinema Mode Launch Button -->
-            <a href="{{ url_for('cinema_page') }}" class="cinema-button" title="Open Cinema Mode" target="_blank">
+            <a href="{{ url_for('user.cinema_page') }}" class="cinema-button" title="Open Cinema Mode" target="_blank">
                 <i class="material-icons">theaters</i>
             </a>
         </div>
 
-        <!-- Info Section -->
+        <!-- Information Section -->
         <div class="info-section">
             <!-- QR Code and Lightning Address Container -->
             <div class="info-container">
                 <!-- QR Code Card -->
                 <div class="card qr-card">
                     <h5>Scan to send via Lightning Network.</h5>
+                    <!-- Display the LNURL-auth QR Code with onclick to copy LNURL -->
                     <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}" onclick="copyLnurl(this)" title="Click to copy the LNURL">
                 </div>
 
@@ -65,19 +66,20 @@
                 </div>
             </div>
 
-            <!-- Donations Box -->
+            <!-- Donations Box Displaying Total Donations -->
             <div class="donations-box">
                 <h2>Total Amount</h2>
                 <div class="donation-amount" id="totalDonations">{{ total_donations }} Sats</div>
                 
-                <!-- Logo -->
+                <!-- Logo Display -->
                 <img src="{{ url_for('static', filename='assets/main_logo.png') }}" alt="Main Logo" class="main-logo">
                 
+                <!-- Latest Donation History -->
                 <div class="donation-history" id="donationHistory">Latest Patron: None yet.</div>
             </div>
         </div>
 
-        <!-- Donations Table with Likes and Dislikes -->
+        <!-- Donations Table with Likes and Dislikes Functionality -->
         <div class="transactions">
             <h2>Donations</h2>
             <table>
@@ -95,25 +97,29 @@
                     </tr>
                 </tbody>
             </table>
+            <!-- Pagination Controls -->
             <div class="pagination" id="pagination"></div>
         </div>
     </div>
 
-    <!-- Footer -->
+    <!-- Footer Section -->
     <footer class="footer">
         <div class="footer-content">
+            <!-- About Us Section -->
             <div class="footer-section about">
                 <h3>About Us</h3>
                 <p>
                     We collect and save money to support our community and enhance our services. Learn more about our mission and values.
                 </p>
             </div>
+            <!-- Quick Links Section -->
             <div class="footer-section links">
                 <h3>Quick Links</h3>
                 <ul>
                     <li><a href="{{ information_url }}" target="_blank">Our Mission</a></li>
                 </ul>
             </div>
+            <!-- Social Media Section -->
             <div class="footer-section social">
                 <h3>Connect with Us</h3>
                 <div class="social-icons">
@@ -124,29 +130,34 @@
                     </a>
                 </div>
             </div>
-            <!-- New Login Section -->
+            <!-- Login Section for Admin and Users -->
             <div class="footer-section login">
                 <h3>Login</h3>
                 <div class="login-container">
                     <!-- Admin Login Button -->
-                    <a href="{{ url_for('login_route') }}" class="login-button admin-login">Login as Admin</a>
-                    <!-- New LN Auth Login Button -->
-                    <a href="{{ url_for('user_login') }}" class="ln-auth-button" title="Login with Lightning" aria-label="Login with Lightning">
+                    <a href="{{ url_for('admin.admin_login') }}" class="btn btn-primary admin-login" title="Login as Admin">
+                        <i class="fas fa-user-shield"></i> Login as Admin
+                    </a>
+                    <!-- User LNURL-auth Login Button -->
+                    <a href="{{ url_for('user.user_login_qr') }}" class="ln-auth-button ml-3" title="Login with Lightning" aria-label="Login with Lightning">
                         <img src="{{ url_for('static', filename='assets/black-on-yellow.svg') }}" alt="Login with Lightning">
                     </a>
                 </div>
             </div>
         </div>
+        <!-- Footer Bottom -->
         <div class="footer-bottom">
             &copy; 2024 Naughtify. MIT LICENSED.
         </div>
     </footer>
 
-    <!-- Toast Container -->
+    <!-- Toast Container for Notifications -->
     <div id="toast-container"></div>
 
     <!-- External JS Files -->
+    <!-- jQuery for AJAX and DOM Manipulation -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Link to Donations JavaScript -->
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 </body>
 </html>
