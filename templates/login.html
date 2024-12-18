@@ -1,16 +1,18 @@
 <!-- templates/login.html -->
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login - Naughtify Einstellungen</title>
+    <title>Login - Naughtify Settings</title>
+    <!-- Link to Login CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
-    <!-- Bootstrap CSS (optional, für einfachere Gestaltung) -->
+    <!-- Bootstrap CSS for styling -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
 </head>
 <body>
     <div class="login-container">
-        <h2 class="title">Naughtify Einstellungen - Login</h2>
+        <h2 class="title">Naughtify Settings - Login</h2>
+        <!-- Flash Messages for Feedback -->
         {% with messages = get_flashed_messages(with_categories=true) %}
           {% if messages %}
             {% for category, message in messages %}
@@ -23,16 +25,17 @@
             {% endfor %}
           {% endif %}
         {% endwith %}
-        <form method="POST" class="login-form" action="{{ url_for('login_route') }}">
+        <!-- Admin Login Form -->
+        <form method="POST" class="login-form" action="{{ url_for('admin.admin_login') }}">
             <div class="form-group">
-                <label for="password">Passwort</label>
-                <input type="password" class="form-control" id="password" name="password" placeholder="Gib dein Passwort ein" required>
+                <label for="password">Password</label>
+                <input type="password" class="form-control" id="password" name="password" placeholder="Enter your password" required>
             </div>
-            <button type="submit" class="btn btn-primary btn-block">Anmelden</button>
+            <button type="submit" class="btn btn-primary btn-block">Login</button>
         </form>
     </div>
 
-    <!-- Bootstrap JS und Abhängigkeiten -->
+    <!-- Bootstrap JS and dependencies for alerts -->
     <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
