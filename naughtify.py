@@ -1375,14 +1375,14 @@ def save_users(users):
         logger.error(f"Error saving users: {e}")
         logger.debug(traceback.format_exc())
 
-@app.route('/user_user_login')
-def user_user_login():
+@app.route('/user_login')
+def user_login():
     tag = 'login'
     k1 = secrets.token_hex(32)  # 32 bytes in hex
     action = 'login'  # As per LUD-04 spec
 
     # Construct the LNURL-auth URL
-    lnurl_auth_url = url_for('user_user_login_callback', _external=True)
+    lnurl_auth_url = url_for('user_login_callback', _external=True)
     lnurl_auth_url += f'?tag={tag}&k1={k1}&action={action}'
 
     # Store k1 with expiration
@@ -1399,8 +1399,8 @@ def user_user_login():
         "lnurl": lnurl_auth_url
     })
 
-@app.route('/user_user_login_callback', methods=['GET'])
-def user_user_login_callback():
+@app.route('/user_login_callback', methods=['GET'])
+def user_login_callback():
     tag = request.args.get('tag')
     k1 = request.args.get('k1')
     action = request.args.get('action')
@@ -1460,7 +1460,7 @@ def user_user_login_callback():
 @app.route('/user_login')
 def user_login():
     # Fetch the LNURL-auth URL
-    lnurl_response = user_user_login()
+    lnurl_response = user_login()
     if lnurl_response.status_code != 200:
         flash('Failed to generate LNURL-auth.', 'danger')
         return redirect(url_for('donations_page'))
