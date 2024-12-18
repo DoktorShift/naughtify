@@ -1,12 +1,18 @@
 // static/js/script.js
 
+// Initialize global variables
 let totalDonations = 0; 
 let transactionsData = [];
 const rowsPerPage = 17; 
 let currentPage = 1;
 let lastUpdate = null; 
-let highlightThreshold = 2100; 
+let highlightThreshold = 2100; // Default highlight threshold in sats
 
+/**
+ * Displays a toast notification.
+ * @param {string} message - The message to display.
+ * @param {boolean} isError - Indicates if the message is an error.
+ */
 function showToast(message, isError = false) {
     const toastContainer = document.getElementById('toast-container');
     if (!toastContainer) {
@@ -28,6 +34,10 @@ function showToast(message, isError = false) {
     }, 3000);
 }
 
+/**
+ * Copies the Lightning Address to the clipboard.
+ * @param {HTMLElement} element - The element containing the address.
+ */
 function copyText(element) {
     const address = element.getAttribute('data-address').trim();
     navigator.clipboard.writeText(address).then(() => {
@@ -38,6 +48,10 @@ function copyText(element) {
     });
 }
 
+/**
+ * Copies the LNURL to the clipboard.
+ * @param {HTMLElement} element - The element containing the LNURL.
+ */
 function copyLnurl(element) {
     const lnurl = element.getAttribute('data-lnurl');
     if (lnurl) {
@@ -53,6 +67,11 @@ function copyLnurl(element) {
     }
 }
 
+/**
+ * Formats the date string for display.
+ * @param {string} dateString - The ISO date string.
+ * @returns {string} - Formatted date string.
+ */
 function formatDate(dateString) {
     const currentDate = new Date();
     const givenDate = new Date(dateString);
@@ -64,6 +83,10 @@ function formatDate(dateString) {
     }
 }
 
+/**
+ * Updates the donations data and refreshes the UI.
+ * @param {Object} data - The donations data from the server.
+ */
 function updateDonations(data) {
     totalDonations = data.total_donations;
     document.getElementById('totalDonations').textContent = `${totalDonations} Sats`;
@@ -86,6 +109,11 @@ function updateDonations(data) {
     renderPagination();
 }
 
+/**
+ * Updates the Lightning Address and LNURL in the UI.
+ * @param {string} lightningAddress - The user's Lightning Address.
+ * @param {string} lnurl - The LNURL string.
+ */
 function updateLightningAddress(lightningAddress, lnurl) {
     const copyField = document.getElementById('lightning-address-container');
     const addressSpan = document.getElementById('lightning-address');
@@ -109,6 +137,9 @@ function updateLightningAddress(lightningAddress, lnurl) {
     }
 }
 
+/**
+ * Renders the donations table based on current page and data.
+ */
 function renderTable() {
     const tableBody = document.getElementById('transactions');
     tableBody.innerHTML = '';
@@ -156,6 +187,9 @@ function renderTable() {
     }
 }
 
+/**
+ * Renders the pagination controls based on the number of donations.
+ */
 function renderPagination() {
     const pagination = document.getElementById('pagination');
     pagination.innerHTML = '';
@@ -178,6 +212,9 @@ function renderPagination() {
     }
 }
 
+/**
+ * Fetches the initial donations data from the server.
+ */
 async function fetchInitialDonations() {
     try {
         const [donationsResponse, updatesResponse] = await Promise.all([
@@ -201,6 +238,9 @@ async function fetchInitialDonations() {
     }
 }
 
+/**
+ * Periodically checks for updates in donations data.
+ */
 async function checkForUpdates() {
     try {
         const response = await fetch('/donations_updates');
@@ -225,10 +265,15 @@ async function checkForUpdates() {
         console.error('Error checking for updates:', error);
         showToast('Error checking for updates.', true);
     } finally {
-        setTimeout(checkForUpdates, 5000);
+        setTimeout(checkForUpdates, 5000); // Check every 5 seconds
     }
 }
 
+/**
+ * Sends a vote (like/dislike) for a specific donation.
+ * @param {string} donationId - The unique ID of the donation.
+ * @param {string} voteType - The type of vote ('like' or 'dislike').
+ */
 async function voteDonation(donationId, voteType) {
     try {
         const response = await fetch('/api/vote', {
@@ -265,6 +310,10 @@ async function voteDonation(donationId, voteType) {
     }
 }
 
+/**
+ * Toggles Dark Mode on the webpage.
+ * @param {boolean} isDark - Indicates whether to enable dark mode.
+ */
 function toggleDarkMode(isDark) {
     if (isDark) {
         document.body.classList.add('dark-mode');
@@ -275,6 +324,9 @@ function toggleDarkMode(isDark) {
     }
 }
 
+/**
+ * Initializes Dark Mode based on user's preference stored in localStorage.
+ */
 function initializeDarkMode() {
     const darkModeToggle = document.getElementById('darkModeToggle');
     const darkModeSetting = localStorage.getItem('darkMode');
@@ -292,20 +344,22 @@ function initializeDarkMode() {
     });
 }
 
+/**
+ * Checks if the user is logged in via LNURL-auth.
+ * If logged in, updates the UI accordingly.
+ */
 async function checkUserLogin() {
     try {
-        const response = await fetch('/api/check_user_login');
+        const response = await fetch('/user/api/check_user_login'); // Updated route under User Blueprint
         const data = await response.json();
         if (data.logged_in) {
-            // User is logged in, you can show user-specific UI elements
+            // User is logged in, hide the LN-auth login button and show user-specific UI elements
             console.log('User is logged in:', data.pseudonym);
-            // Optionally, fetch user data or update UI accordingly
-            // For example, hide the LN-auth button and show a logout button
             const lnAuthButton = document.querySelector('.ln-auth-button');
             if (lnAuthButton) {
                 lnAuthButton.style.display = 'none';
             }
-            // You can also display the user's pseudonym in the header or elsewhere
+            // Optionally, display the user's pseudonym in the header or elsewhere
             const donationHistory = document.getElementById('donationHistory');
             if (donationHistory) {
                 donationHistory.textContent = `Latest Patron: ${data.pseudonym} - "${donationHistory.textContent.split(' - ')[1]}"`;
@@ -318,9 +372,12 @@ async function checkUserLogin() {
     }
 }
 
+/**
+ * Initializes event listeners and fetches initial data when the DOM is fully loaded.
+ */
 document.addEventListener("DOMContentLoaded", function() {
-    initializeDarkMode();
-    fetchInitialDonations();
-    checkForUpdates();
-    checkUserLogin();
+    initializeDarkMode();      // Initialize Dark Mode toggle
+    fetchInitialDonations();   // Fetch initial donations data
+    checkForUpdates();         // Start polling for updates
+    checkUserLogin();          // Check user login status
 });
