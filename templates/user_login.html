@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Login with Lightning</title>
+    <!-- Link to User Login CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/user_login.css') }}">
 </head>
 <body>
@@ -11,6 +12,7 @@
         <h1>Login with Lightning</h1>
         <p>Scan this QR code with your Lightning wallet to log in. Remember which wallet you used as this will act as your password.</p>
         <div class="qr-section">
+            <!-- Display the LNURL-auth QR Code -->
             <img src="data:image/png;base64,{{ qr_code_data }}" alt="LNURL Auth QR">
         </div>
         <div class="info-section">
