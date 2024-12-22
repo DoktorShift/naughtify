@@ -74,9 +74,11 @@ The bot offers:
 ---
 
 ## Screenshots <!-- omit from toc -->
-|                                 Balance Notification                                 |                                 Transaction Summary                                  |
-| :----------------------------------------------------------------------------------: | :----------------------------------------------------------------------------------: |
-| ![](https://github.com/user-attachments/assets/dc52e9e5-17a8-4016-ad1f-3e4c4f5b18c0) | ![](https://github.com/user-attachments/assets/abd4269a-c137-40e9-bfda-5b322befa8df) |
+
+| Start Message & Payment Notification | Balance und Transaction History | Info & Help Section |
+| :----: | :----: | :----: |
+| ![Bild3](https://github.com/user-attachments/assets/d5f56b85-ea49-4897-a1e2-c7b9545d2168) | ![Bild2](https://github.com/user-attachments/assets/5204ebff-5bdc-445d-bc69-c3a08b19bc19) | ![Bild1](https://github.com/user-attachments/assets/29199dd9-9f22-4ee6-bbdc-17f3f1db497f) |
+
 
 ---
 
