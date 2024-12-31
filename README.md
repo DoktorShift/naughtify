@@ -397,7 +397,7 @@ If you now call up your domain `liveticker.yourdomain.com`, you should see your 
 
 #### Personalize page
 
-The structure of the Live⚡Ticker page is fixed. However, you can customize the content. The template for this is a simple html file that can be called up with the following command: `nano ~/naughtify/templates/donations.html`. You can find the template [here](https://github.com/DoktorShift/naughtify/blob/main/templates/donations.html). With a little searching and comparing you will find the appropriate places where you can adjust the files from the text or the link path. Once the changes have been made, simply restart the server once `sudo systemctl start naughtify` and call up the website again.
+The structure of the Live⚡Ticker page is fixed. However, you can customize the content. The template for this is a simple html file that can be called up with the following command: `nano ~/naughtify/templates/donations.html`. You can find the template [here](https://github.com/DoktorShift/naughtify/blob/main/templates/donations.html). With a little searching and comparing you will find the appropriate places where you can adjust the files from the text or the link path. Once the changes have been made, simply restart the server once `sudo systemctl restart naughtify` and call up the website again.
 
 #### Good etiquette care
 
