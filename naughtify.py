@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import os
 import logging
 from logging.handlers import RotatingFileHandler
@@ -31,6 +32,9 @@ LNBITS_READONLY_API_KEY = os.getenv("LNBITS_READONLY_API_KEY")
 LNBITS_URL = os.getenv("LNBITS_URL")
 INSTANCE_NAME = os.getenv("INSTANCE_NAME", "LNbits Instance")
 
+# (Optional) multiple LNbits read-only API keys
+MULTI_LNBITS_API_KEYS = os.getenv("MULTI_LNBITS_API_KEYS", "").strip()
+
 # Optional URLs
 OVERWATCH_URL = os.getenv("OVERWATCH_URL")
 DONATIONS_URL = os.getenv("DONATIONS_URL")
@@ -46,10 +50,10 @@ CURRENT_BALANCE_FILE = os.getenv("CURRENT_BALANCE_FILE", "current-balance.txt")
 DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
 
 # Thresholds and Intervals
-BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "10"))
+BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "1"))
 HIGHLIGHT_THRESHOLD = int(os.getenv("HIGHLIGHT_THRESHOLD", "2100"))
 LATEST_TRANSACTIONS_COUNT = int(os.getenv("LATEST_TRANSACTIONS_COUNT", "21"))
-PAYMENTS_FETCH_INTERVAL = int(os.getenv("PAYMENTS_FETCH_INTERVAL", "60"))  # in seconds
+PAYMENTS_FETCH_INTERVAL = int(os.getenv("PAYMENTS_FETCH_INTERVAL", "60"))
 
 # Server Configuration
 APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
@@ -65,7 +69,6 @@ required_vars = {
     "LNBITS_READONLY_API_KEY": LNBITS_READONLY_API_KEY,
     "LNBITS_URL": LNBITS_URL
 }
-
 missing_vars = [var for var, value in required_vars.items() if not value]
 if missing_vars:
     raise EnvironmentError(f"Essential environment variables missing: {', '.join(missing_vars)}")
@@ -73,7 +76,7 @@ if missing_vars:
 if DONATIONS_URL and not LNURLP_ID:
     raise EnvironmentError("LNURLP_ID must be set when DONATIONS_URL is provided.")
 
-# Define LNBITS_DOMAIN by parsing LNBITS_URL
+# Parse LNbits domain
 parsed_url = urlparse(LNBITS_URL)
 LNBITS_DOMAIN = parsed_url.netloc
 if not LNBITS_DOMAIN:
@@ -84,41 +87,34 @@ bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 # --------------------- Logging Configuration ---------------------
 
-# Create a custom logger
 logger = logging.getLogger("lnbits_logger")
-logger.setLevel(logging.DEBUG)  # Capture all levels; handlers will filter
+logger.setLevel(logging.DEBUG)
 
-# Formatter for log messages
 formatter = logging.Formatter('[%(asctime)s] [%(levelname)s] %(message)s')
 
-# Handler for general logs (INFO and above)
 info_handler = RotatingFileHandler("app.log", maxBytes=2 * 1024 * 1024, backupCount=3)
 info_handler.setLevel(logging.INFO)
 info_handler.setFormatter(formatter)
 
-# Handler for debug logs (DEBUG and above)
 debug_handler = RotatingFileHandler("debug.log", maxBytes=5 * 1024 * 1024, backupCount=3)
 debug_handler.setLevel(logging.DEBUG)
 debug_handler.setFormatter(formatter)
 
-# Handler for console output (INFO and above)
 console_handler = logging.StreamHandler()
 console_handler.setLevel(logging.INFO)
 console_handler.setFormatter(formatter)
 
-# Add handlers to the logger
 logger.addHandler(info_handler)
 logger.addHandler(debug_handler)
 logger.addHandler(console_handler)
 
-# Reduce verbosity for specific modules (e.g., apscheduler)
-logging.getLogger('apscheduler').setLevel(logging.WARNING)  # Only WARNING and above
+logging.getLogger('apscheduler').setLevel(logging.WARNING)
 
 # --------------------- Flask App Initialization ---------------------
 
 app = Flask(__name__)
-app.secret_key = SECRET_KEY  # Secure Secret-Key for Sessions
-CORS(app)  # Enable CORS
+app.secret_key = SECRET_KEY
+CORS(app)
 
 # --------------------- Global Variables ---------------------
 
@@ -127,12 +123,14 @@ donations = []
 total_donations = 0
 last_update = datetime.utcnow()
 
+# We'll track the "latest_balance" for the MAIN wallet
 latest_balance = {
     "balance_sats": None,
     "last_change": None,
     "memo": None
 }
 
+# We'll hold the last known transactions (MAIN wallet) for /status route
 latest_payments = []
 
 # --------------------- Helper Functions ---------------------
@@ -229,36 +227,18 @@ def load_processed_payments():
         logger.info("Processed payments file does not exist. Starting fresh.")
     return processed
 
-def add_processed_payment(payment_hash):
+def add_processed_payment(payment_hash_with_key):
+    """
+    We store payment hashes with a wallet identifier to avoid collisions if two wallets share the same hash.
+    E.g., 'KEY1_paymenthash'.
+    """
     try:
         with open(PROCESSED_PAYMENTS_FILE, 'a') as f:
-            f.write(f"{payment_hash}\n")
-        logger.debug(f"Payment hash {payment_hash} added to processed list.")
+            f.write(f"{payment_hash_with_key}\n")
+        logger.debug(f"Payment {payment_hash_with_key} added to processed list.")
     except Exception as e:
         logger.error(f"Error adding processed payment: {e}")
         logger.debug(traceback.format_exc())
-
-def load_last_balance():
-    if not os.path.exists(CURRENT_BALANCE_FILE):
-        logger.info("Balance file does not exist. Initializing with current balance.")
-        return None
-    try:
-        with open(CURRENT_BALANCE_FILE, 'r') as f:
-            content = f.read().strip()
-            if not content:
-                logger.warning("Balance file is empty. Last balance set to 0.")
-                return 0.0
-            try:
-                balance = float(content)
-                logger.debug(f"Last balance loaded: {balance} sats.")
-                return balance
-            except ValueError:
-                logger.error(f"Invalid balance value in file: {content}. Last balance set to 0.")
-                return 0.0
-    except Exception as e:
-        logger.error(f"Error loading last balance: {e}")
-        logger.debug(traceback.format_exc())
-        return 0.0
 
 def load_donations():
     global donations, total_donations
@@ -295,7 +275,6 @@ def save_donations():
             logger.error(f"Error saving donations: {e}")
             logger.debug(traceback.format_exc())
 
-# Initialize processed payments and donations
 processed_payments = load_processed_payments()
 load_donations()
 
@@ -337,10 +316,9 @@ def handle_ticker_ban(update, context):
                     added_words.append(word)
         logger.debug(f"Words to ban processed: Added {added_words}, Duplicates {duplicate_words}.")
 
-        # After banning, sanitize existing donations
         sanitize_donations()
         global last_update
-        last_update = datetime.utcnow()  # This triggers automatic refresh in the frontend
+        last_update = datetime.utcnow()
 
         if added_words:
             if len(added_words) == 1:
@@ -363,14 +341,21 @@ def handle_ticker_ban(update, context):
         bot.send_message(chat_id, text="❌ An error occurred while banning words. Please try again.")
         logger.debug(traceback.format_exc())
 
-def fetch_api(endpoint):
+def fetch_api(endpoint, custom_api_key=None):
+    """
+    Generic function to fetch LNbits endpoints.
+    If 'custom_api_key' is provided, that key is used instead of the global LNBITS_READONLY_API_KEY.
+    """
+    if custom_api_key is None:
+        custom_api_key = LNBITS_READONLY_API_KEY
+
     url = f"{LNBITS_URL}/api/v1/{endpoint}"
-    headers = {"X-Api-Key": LNBITS_READONLY_API_KEY}
+    headers = {"X-Api-Key": custom_api_key}
     try:
         response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
             data = response.json()
-            logger.debug(f"Data fetched from {endpoint}: {data}")
+            logger.debug(f"Data fetched from {endpoint} with key {custom_api_key[:5]}...: {data}")
             return data
         else:
             logger.error(f"Error fetching {endpoint}. Status Code: {response.status_code}")
@@ -427,7 +412,6 @@ def fetch_donation_details():
             "lnurl": "Unavailable",
             "highlight_threshold": HIGHLIGHT_THRESHOLD
         }
-
     lnurlp_info = get_lnurlp_info(LNURLP_ID)
     if lnurlp_info is None:
         logger.error("No LNURLp info found.")
@@ -470,129 +454,6 @@ def updateDonations(data):
         logger.info('Latest donation: None yet.')
     save_donations()
 
-def notify_transaction(payment, direction):
-    try:
-        amount = payment["amount"]
-        memo = payment["memo"]
-        date = payment["date"]
-        emoji = "🟢" if direction == "incoming" else "🔴"
-        sign = "+" if direction == "incoming" else "-"
-        transaction_type = "Incoming Payment" if direction == "incoming" else "Outgoing Payment"
-
-        message = (
-            f"{emoji} *{transaction_type}*\n"
-            f"💰 Amount: {sign}{amount} sats\n"
-            f"✉️ Memo: {memo}"
-        )
-
-        bot.send_message(
-            chat_id=CHAT_ID,
-            text=message,
-            parse_mode=ParseMode.MARKDOWN
-        )
-        logger.info(f"Notification for {transaction_type} sent successfully.")
-    except Exception as e:
-        logger.error(f"Error sending transaction notification: {e}")
-        logger.debug(traceback.format_exc())
-
-def send_latest_payments():
-    global total_donations, donations, last_update, latest_balance, latest_payments
-    logger.info("Fetching latest payments...")
-    payments = fetch_api("payments")
-    if payments is None:
-        logger.warning("No payments fetched.")
-        return
-    if not isinstance(payments, list):
-        logger.error("Unexpected data format for payments.")
-        return
-
-    sorted_payments = sorted(payments, key=lambda x: x.get("time", ""), reverse=True)
-    latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]
-    latest_payments = latest.copy()  # Update latest_payments for /status route
-
-    if not latest:
-        logger.info("No payments found.")
-        return
-
-    incoming_payments = []
-    outgoing_payments = []
-    new_processed_hashes = []
-
-    for payment in latest:
-        payment_hash = payment.get("payment_hash")
-        if payment_hash in processed_payments:
-            logger.debug(f"Payment {payment_hash} already processed. Skipping.")
-            continue
-        amount_msat = payment.get("amount", 0)
-        memo = sanitize_memo(payment.get("memo", "No memo provided."))
-        status = payment.get("status", "completed")
-        time_str = payment.get("time", None)
-        date = parse_time(time_str)
-        formatted_date = date.isoformat()  # Use ISO format for consistency
-        try:
-            amount_sats = int(abs(amount_msat) / 1000)
-        except ValueError:
-            amount_sats = 0
-            logger.warning(f"Invalid amount_msat value: {amount_msat}")
-
-        if status.lower() == "pending":
-            logger.debug(f"Payment {payment_hash} is pending. Skipping.")
-            continue
-
-        if amount_msat > 0:
-            incoming_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
-        elif amount_msat < 0:
-            outgoing_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
-
-        if DONATIONS_URL and LNURLP_ID:
-            extra_data = payment.get("extra", {})
-            lnurlp_id_payment = extra_data.get("link")
-            if lnurlp_id_payment == LNURLP_ID:
-                donation_memo = sanitize_memo(extra_data.get("comment", "No memo provided."))
-                try:
-                    donation_amount_msat = int(extra_data.get("extra", 0))
-                    donation_amount_sats = donation_amount_msat / 1000
-                except (ValueError, TypeError):
-                    donation_amount_sats = amount_sats
-                    logger.warning(f"Invalid donation amount_msat: {extra_data.get('extra', 0)}. Using amount_sats: {amount_sats}")
-                donation = {
-                    "id": str(uuid.uuid4()),
-                    "date": formatted_date,
-                    "memo": donation_memo,
-                    "amount": donation_amount_sats,
-                    "likes": 0,
-                    "dislikes": 0
-                }
-                donations.append(donation)
-                total_donations += donation_amount_sats
-                last_update = datetime.utcnow()
-                logger.info(f"New donation detected: {donation_amount_sats} sats - {donation_memo}")
-                updateDonations({"total_donations": total_donations, "donations": donations})
-
-        processed_payments.add(payment_hash)
-        new_processed_hashes.append(payment_hash)
-        add_processed_payment(payment_hash)
-        logger.debug(f"Payment {payment_hash} processed and added to processed payments.")
-
-    # Update latest_balance
-    wallet_info = fetch_api("wallet")
-    if wallet_info:
-        current_balance_msat = wallet_info.get("balance", 0)
-        current_balance_sats = current_balance_msat / 1000
-        latest_balance = {
-            "balance_sats": int(current_balance_sats),
-            "last_change": datetime.utcnow().isoformat(),
-            "memo": "Latest balance fetched."
-        }
-        logger.debug(f"Updated latest_balance: {latest_balance}")
-
-    # Send notifications
-    for payment in incoming_payments:
-        notify_transaction(payment, "incoming")
-
-    for payment in outgoing_payments:
-        notify_transaction(payment, "outgoing")
-
 def parse_time(time_input):
     if not time_input:
         logger.warning("No 'time' field found, using current time.")
@@ -620,16 +481,347 @@ def parse_time(time_input):
         date = datetime.utcnow()
     return date
 
+def notify_transaction(payment, direction, wallet_name=""):
+    """
+    Sends a Telegram notification for an incoming or outgoing payment.
+    wallet_name is used to indicate which wallet triggered the transaction.
+    """
+    try:
+        amount = payment["amount"]
+        memo = payment["memo"]
+        date = payment["date"]
+        emoji = "🟢" if direction == "incoming" else "🔴"
+        sign = "+" if direction == "incoming" else "-"
+        transaction_type = "Incoming Payment" if direction == "incoming" else "Outgoing Payment"
+
+        name_str = f" (Wallet: {wallet_name})" if wallet_name else ""
+        message = (
+            f"{emoji} *{transaction_type}{name_str}*\n"
+            f"💰 Amount: {sign}{amount} sats\n"
+            f"✉️ Memo: {memo}"
+        )
+
+        bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=ParseMode.MARKDOWN)
+        logger.info(f"Notification for {transaction_type} from {wallet_name} sent successfully.")
+    except Exception as e:
+        logger.error(f"Error sending transaction notification: {e}")
+        logger.debug(traceback.format_exc())
+
+# --------------------- Single-Wallet Payment Checker (Legacy for Donations) ---------------------
+def send_latest_payments_singlewallet():
+    """
+    For the MAIN wallet (LNBITS_READONLY_API_KEY), fetch transactions
+    and do the donation logic, plus single "latest_payments" update.
+    """
+    global total_donations, donations, last_update, latest_balance, latest_payments
+    logger.info("Fetching latest payments for the main (default) wallet...")
+
+    payments = fetch_api("payments", custom_api_key=LNBITS_READONLY_API_KEY)
+    if payments is None or not isinstance(payments, list):
+        logger.warning("No payments fetched (or invalid format) for main wallet.")
+        return
+
+    sorted_payments = sorted(payments, key=lambda x: x.get("time", ""), reverse=True)
+    latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]
+    latest_payments = latest.copy()  # For /status
+
+    if not latest:
+        logger.info("No payments found for main wallet.")
+        return
+
+    incoming_payments = []
+    outgoing_payments = []
+
+    for payment in latest:
+        payment_hash = payment.get("payment_hash")
+        # Store processed key as "MAIN_<hash>"
+        payment_hash_with_key = f"MAIN_{payment_hash}"
+
+        if payment_hash_with_key in processed_payments:
+            logger.debug(f"Payment {payment_hash_with_key} already processed. Skipping.")
+            continue
+
+        amount_msat = payment.get("amount", 0)
+        memo = sanitize_memo(payment.get("memo", "No memo provided."))
+        status = payment.get("status", "completed")
+        time_str = payment.get("time", None)
+        date = parse_time(time_str)
+        formatted_date = date.isoformat()
+
+        try:
+            amount_sats = int(abs(amount_msat) / 1000)
+        except ValueError:
+            amount_sats = 0
+            logger.warning(f"Invalid amount_msat value: {amount_msat}")
+
+        if status.lower() == "pending":
+            logger.debug(f"Payment {payment_hash_with_key} is pending. Skipping.")
+            continue
+
+        if amount_msat > 0:
+            incoming_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
+        elif amount_msat < 0:
+            outgoing_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
+
+        # Donation logic (only for main wallet)
+        if DONATIONS_URL and LNURLP_ID:
+            extra_data = payment.get("extra", {})
+            lnurlp_id_payment = extra_data.get("link")
+            if lnurlp_id_payment == LNURLP_ID:
+                donation_memo = sanitize_memo(extra_data.get("comment", "No memo provided."))
+                try:
+                    donation_amount_msat = int(extra_data.get("extra", 0))
+                    donation_amount_sats = donation_amount_msat / 1000
+                except (ValueError, TypeError):
+                    donation_amount_sats = amount_sats
+                    logger.warning(f"Invalid donation amount_msat: {extra_data.get('extra', 0)}. Using amount_sats: {amount_sats}")
+                donation = {
+                    "id": str(uuid.uuid4()),
+                    "date": formatted_date,
+                    "memo": donation_memo,
+                    "amount": donation_amount_sats,
+                    "likes": 0,
+                    "dislikes": 0
+                }
+                donations.append(donation)
+                total_donations += donation_amount_sats
+                last_update = datetime.utcnow()
+                logger.info(f"New donation detected: {donation_amount_sats} sats - {donation_memo}")
+                updateDonations({"total_donations": total_donations, "donations": donations})
+
+        processed_payments.add(payment_hash_with_key)
+        add_processed_payment(payment_hash_with_key)
+        logger.debug(f"Payment {payment_hash_with_key} processed and added to processed payments.")
+
+    # Update latest_balance for the main wallet
+    wallet_info = fetch_api("wallet", custom_api_key=LNBITS_READONLY_API_KEY)
+    if wallet_info:
+        current_balance_msat = wallet_info.get("balance", 0)
+        current_balance_sats = current_balance_msat / 1000
+        latest_balance = {
+            "balance_sats": int(current_balance_sats),
+            "last_change": datetime.utcnow().isoformat(),
+            "memo": "Latest balance fetched."
+        }
+        logger.debug(f"Updated latest_balance: {latest_balance}")
+
+    # Send notifications for main wallet transactions
+    for payment in incoming_payments:
+        notify_transaction(payment, "incoming", wallet_name="MainWallet")
+    for payment in outgoing_payments:
+        notify_transaction(payment, "outgoing", wallet_name="MainWallet")
+
+
+# --------------------- Multi-Wallet Payment Checker ---------------------
+def send_latest_payments_multiwallet():
+    """
+    For each LNbits API key in MULTI_LNBITS_API_KEYS, fetch recent payments
+    and notify Telegram for new incoming/outgoing payments. 
+    DOES NOT handle donation logic; that remains on the main wallet above.
+    """
+    if not MULTI_LNBITS_API_KEYS:
+        logger.debug("MULTI_LNBITS_API_KEYS is empty; skipping multiwallet payments.")
+        return
+
+    keys = [k.strip() for k in MULTI_LNBITS_API_KEYS.split(",") if k.strip()]
+    if not keys:
+        logger.debug("No valid keys in MULTI_LNBITS_API_KEYS.")
+        return
+
+    for key in keys:
+        # Try to retrieve the wallet name
+        w_info = fetch_api("wallet", custom_api_key=key)
+        wallet_name = w_info.get("name", "UnknownWallet") if w_info else "UnknownWallet"
+
+        logger.info(f"Fetching latest payments for wallet '{wallet_name}'...")
+
+        payments = fetch_api("payments", custom_api_key=key)
+        if payments is None or not isinstance(payments, list):
+            logger.warning(f"No payments or invalid format for wallet '{wallet_name}'.")
+            continue
+
+        sorted_payments = sorted(payments, key=lambda x: x.get("time", ""), reverse=True)
+        relevant_payments = sorted_payments[:LATEST_TRANSACTIONS_COUNT]
+
+        if not relevant_payments:
+            logger.info(f"No recent payments found for wallet '{wallet_name}'.")
+            continue
+
+        incoming_payments = []
+        outgoing_payments = []
+
+        for payment in relevant_payments:
+            payment_hash = payment.get("payment_hash")
+            # Tag the payment hash with the wallet key or name to keep them unique
+            payment_hash_with_key = f"{wallet_name}_{payment_hash}"
+
+            if payment_hash_with_key in processed_payments:
+                logger.debug(f"Payment {payment_hash_with_key} already processed. Skipping.")
+                continue
+
+            amount_msat = payment.get("amount", 0)
+            memo = sanitize_memo(payment.get("memo", "No memo provided."))
+            status = payment.get("status", "completed")
+            time_str = payment.get("time", None)
+            date = parse_time(time_str)
+            formatted_date = date.isoformat()
+
+            try:
+                amount_sats = int(abs(amount_msat) / 1000)
+            except ValueError:
+                amount_sats = 0
+                logger.warning(f"Invalid amount_msat value: {amount_msat} for wallet '{wallet_name}'")
+
+            if status.lower() == "pending":
+                logger.debug(f"Payment {payment_hash_with_key} is pending. Skipping.")
+                continue
+
+            if amount_msat > 0:
+                incoming_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
+            elif amount_msat < 0:
+                outgoing_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
+
+            processed_payments.add(payment_hash_with_key)
+            add_processed_payment(payment_hash_with_key)
+            logger.debug(f"Payment {payment_hash_with_key} processed for wallet '{wallet_name}'.")
+
+        # Send notifications for multi-wallet
+        for inc in incoming_payments:
+            notify_transaction(inc, "incoming", wallet_name=wallet_name)
+        for out in outgoing_payments:
+            notify_transaction(out, "outgoing", wallet_name=wallet_name)
+
+# --------------------- Multi-Wallet Balance Checker ---------------------
+def check_multi_wallet_balances():
+    """
+    Periodically checks the balances of all LNbits wallets listed in MULTI_LNBITS_API_KEYS
+    + the main wallet as well, in case we want direct balance-change notifications 
+    for each wallet. 
+    """
+    # 1) Check main wallet
+    try:
+        logger.debug("Checking main wallet balance for changes...")
+        main_wallet_info = fetch_api("wallet", custom_api_key=LNBITS_READONLY_API_KEY)
+        if main_wallet_info:
+            current_balance_msat = main_wallet_info.get("balance", 0)
+            name = main_wallet_info.get("name", "MainWallet")
+
+            # We store last balance in a separate file
+            tmp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tmp')
+            os.makedirs(tmp_dir, exist_ok=True)
+            main_file_path = os.path.join(tmp_dir, f"lnbits_wallet_{name.replace(' ', '_')}.txt")
+
+            if not os.path.exists(main_file_path):
+                last_balance_msat = 0
+                with open(main_file_path, 'w') as f:
+                    f.write(str(current_balance_msat))
+            else:
+                with open(main_file_path, 'r') as f:
+                    content = f.read().strip()
+                if content == '':
+                    last_balance_msat = 0
+                else:
+                    try:
+                        last_balance_msat = float(content)
+                    except ValueError:
+                        last_balance_msat = 0
+
+            if current_balance_msat != last_balance_msat:
+                diff = current_balance_msat - last_balance_msat
+                with open(main_file_path, 'w') as f:
+                    f.write(str(current_balance_msat))
+
+                diff_sat = f"{diff / 1000:,.3f}"
+                old_sat = f"{last_balance_msat / 1000:,.3f}" if last_balance_msat != 0 else "0"
+                new_sat = f"{current_balance_msat / 1000:,.3f}"
+
+                msg = (
+                    f"₿💰₿ ➽ Balance change for *{name}* (main wallet)!\n"
+                    f"Difference: {diff_sat} sats – from {old_sat} to {new_sat}."
+                )
+                bot.send_message(chat_id=CHAT_ID, text=msg, parse_mode=ParseMode.MARKDOWN)
+                logger.info(f"Balance change for main wallet '{name}' was notified.")
+            else:
+                logger.debug(f"No balance change for main wallet '{name}'.")
+        else:
+            logger.warning("Could not fetch main wallet info for balance check.")
+    except Exception as e:
+        logger.error(f"Error checking main wallet balance: {e}")
+        logger.debug(traceback.format_exc())
+
+    # 2) Check additional wallets from MULTI_LNBITS_API_KEYS
+    if not MULTI_LNBITS_API_KEYS:
+        logger.debug("MULTI_LNBITS_API_KEYS is empty; no additional balances to check.")
+        return
+
+    keys = [k.strip() for k in MULTI_LNBITS_API_KEYS.split(",") if k.strip()]
+    if not keys:
+        logger.debug("No valid keys in MULTI_LNBITS_API_KEYS for balance checks.")
+        return
+
+    for key in keys:
+        try:
+            w_info = fetch_api("wallet", custom_api_key=key)
+            if not w_info:
+                logger.warning(f"Could not fetch wallet info for key: {key[:5]}...")
+                continue
+
+            balance_msat = w_info.get("balance", 0)
+            wallet_name = w_info.get("name", "UnknownWallet")
+
+            tmp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tmp')
+            os.makedirs(tmp_dir, exist_ok=True)
+            file_path = os.path.join(tmp_dir, f"lnbits_wallet_{wallet_name.replace(' ', '_')}.txt")
+
+            if not os.path.exists(file_path):
+                last_balance_msat = 0
+                with open(file_path, 'w') as f:
+                    f.write(str(balance_msat))
+            else:
+                with open(file_path, 'r') as f:
+                    content = f.read().strip()
+                if content == '':
+                    last_balance_msat = 0
+                else:
+                    try:
+                        last_balance_msat = float(content)
+                    except ValueError:
+                        last_balance_msat = 0
+
+            if balance_msat != last_balance_msat:
+                difference = balance_msat - last_balance_msat
+                with open(file_path, 'w') as f:
+                    f.write(str(balance_msat))
+
+                diff_sat = f"{difference / 1000:,.3f}"
+                old_sat = f"{last_balance_msat / 1000:,.3f}" if last_balance_msat != 0 else "0"
+                new_sat = f"{balance_msat / 1000:,.3f}"
+
+                message = (
+                    f"₿💰₿ ➽ Yippee, wallet *{wallet_name}* changed!\n"
+                    f"Balance shifted by {diff_sat} sats – from {old_sat} to {new_sat}."
+                )
+                bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=ParseMode.MARKDOWN)
+                logger.info(f"Balance change for wallet '{wallet_name}' was notified.")
+            else:
+                logger.debug(f"No balance change for wallet '{wallet_name}'.")
+        except Exception as e:
+            logger.error(f"Error checking balance for multi wallet key {key[:5]}: {e}")
+            logger.debug(traceback.format_exc())
+
+# --------------------- Commands and Handlers ---------------------
+
 def send_balance_message(chat_id):
-    logger.info(f"Fetching balance for chat_id: {chat_id}")
-    wallet_info = fetch_api("wallet")
+    logger.info(f"Fetching MAIN wallet balance for chat_id: {chat_id}")
+    wallet_info = fetch_api("wallet", custom_api_key=LNBITS_READONLY_API_KEY)
     if wallet_info is None:
         bot.send_message(chat_id, text="❌ Unable to fetch balance at the moment. Please try again.")
-        logger.error("Failed to fetch wallet balance.")
+        logger.error("Failed to fetch main wallet balance.")
         return
     current_balance_msat = wallet_info.get("balance", 0)
-    current_balance_sats = current_balance_msat / 1000
-    balance_text = f"💰 *Current Balance:* {int(current_balance_sats)} sats"
+    current_balance_sats = int(current_balance_msat / 1000)
+    balance_text = f"💰 *Current Balance (Main Wallet):* {current_balance_sats} sats"
+
     try:
         bot.send_message(
             chat_id=chat_id,
@@ -637,17 +829,17 @@ def send_balance_message(chat_id):
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=get_main_keyboard()
         )
-        logger.info(f"Balance message sent to chat_id: {chat_id}")
+        logger.info(f"Balance message (main wallet) sent to chat_id: {chat_id}")
     except Exception as telegram_error:
         logger.error(f"Error sending balance message: {telegram_error}")
         logger.debug(traceback.format_exc())
 
 def send_transactions_message(chat_id, page=1, message_id=None):
-    logger.info(f"Fetching transactions for chat_id: {chat_id}, page: {page}")
-    payments = fetch_api("payments")
+    logger.info(f"Fetching transactions for MAIN wallet, page: {page}")
+    payments = fetch_api("payments", custom_api_key=LNBITS_READONLY_API_KEY)
     if payments is None:
         bot.send_message(chat_id, text="❌ Unable to fetch transactions right now.")
-        logger.error("Failed to fetch transactions.")
+        logger.error("Failed to fetch transactions for MAIN wallet.")
         return
 
     filtered_payments = [p for p in payments if p.get("status", "").lower() != "pending"]
@@ -670,7 +862,7 @@ def send_transactions_message(chat_id, page=1, message_id=None):
         logger.info(f"No transactions found on page {page}.")
         return
 
-    message_lines = [f"📜 *Latest Transactions - Page {page}/{total_pages}* 📜\n"]
+    message_lines = [f"📜 *Latest Transactions (Main Wallet) - Page {page}/{total_pages}* 📜\n"]
     for payment in page_transactions:
         amount_msat = payment.get("amount", 0)
         memo = sanitize_memo(payment.get("memo", "No memo provided."))
@@ -875,12 +1067,13 @@ def handle_help_command(update, context):
     help_message = (
         f"ℹ️ *{INSTANCE_NAME}* - *Help*\n\n"
         "Hello! Here is what I can do for you:\n\n"
-        "- /balance - Show your current LNbits wallet balance.\n"
-        "- /transactions - Show your latest transactions with pagination.\n"
+        "- /balance - Show your current LNbits wallet balance (main wallet).\n"
+        "- /transactions - Show your latest transactions with pagination (main wallet).\n"
         "- /info - Display current settings and thresholds.\n"
         "- /help - Display this help message.\n"
         "- /ticker_ban words - Add forbidden words that will be censored in the Live Ticker.\n\n"
-        "You can also use the buttons below to quickly navigate through features!"
+        "You can also use the buttons below to quickly navigate through features!\n\n"
+        "_Note: If MULTI_LNBITS_API_KEYS is set, you will also receive notifications for additional wallets._"
     )
 
     try:
@@ -897,12 +1090,12 @@ def handle_help_command(update, context):
 
 def handle_balance(update, context):
     chat_id = update.effective_chat.id
-    logger.debug(f"Handling balance request for chat_id: {chat_id}")
+    logger.debug(f"Handling /balance request for chat_id: {chat_id}")
     send_balance_message(chat_id)
 
 def handle_latest_transactions(update, context):
     chat_id = update.effective_chat.id
-    logger.debug(f"Handling latest transactions request for chat_id: {chat_id}")
+    logger.debug(f"Handling /transactions request for chat_id: {chat_id}")
     send_transactions_message(chat_id, page=1)
 
 def handle_live_ticker(update, context):
@@ -973,31 +1166,23 @@ def process_update(update):
             text = message.get('text', '').strip()
             logger.debug(f"Received message from chat_id {chat_id}: {text}")
 
-            # Only handle specific buttons/text; other inputs are handled by CommandHandlers
             if text == "💰 Balance":
                 handle_balance(None, None)
-                logger.debug("Handled 💰 Balance button press.")
             elif text == "📜 Latest Transactions":
                 handle_latest_transactions(None, None)
-                logger.debug("Handled 📜 Latest Transactions button press.")
             elif text == "📡 Live Ticker":
                 handle_live_ticker(None, None)
-                logger.debug("Handled 📡 Live Ticker button press.")
             elif text == "📊 Overwatch":
                 handle_overwatch(None, None)
-                logger.debug("Handled 📊 Overwatch button press.")
             elif text == "⚡ LNBits":
                 handle_lnbits(None, None)
-                logger.debug("Handled ⚡ LNBits button press.")
             else:
-                # Unknown input
                 bot.send_message(
                     chat_id=chat_id,
                     text="❓ I didn't recognize that command. Use /help to see what I can do."
                 )
                 logger.warning(f"Unknown message received from chat_id {chat_id}: {text}")
         elif 'callback_query' in update:
-            # Handled by CallbackQueryHandler
             logger.debug("Received callback_query in update.")
             pass
         else:
@@ -1006,28 +1191,171 @@ def process_update(update):
         logger.error(f"Error processing update: {e}")
         logger.debug(traceback.format_exc())
 
-def start_scheduler():
-    scheduler = BackgroundScheduler(timezone='UTC')
-    if PAYMENTS_FETCH_INTERVAL > 0:
-        scheduler.add_job(
-            send_latest_payments,
-            'interval',
-            seconds=PAYMENTS_FETCH_INTERVAL,
-            id='latest_payments_fetch',
-            next_run_time=datetime.utcnow() + timedelta(seconds=1)
-        )
-        logger.info(f"Latest Payments Fetch scheduled every {PAYMENTS_FETCH_INTERVAL} seconds.")
-    else:
-        logger.info("Latest Payments Fetch disabled.")
-    scheduler.start()
-    logger.info("Scheduler started.")
+# --------------------- Authentication & Settings ---------------------
+
+def login_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('logged_in'):
+            flash('Please log in to access this page.', 'warning')
+            return redirect(url_for('login'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if 'logged_in' in session:
+        return redirect(url_for('settings'))
+
+    if request.method == 'POST':
+        password = request.form.get('password')
+        ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+
+        if not ADMIN_PASSWORD:
+            flash('Admin password not set. Please set ADMIN_PASSWORD in your .env file.', 'danger')
+            return render_template('login.html')
+
+        if password == ADMIN_PASSWORD:
+            session['logged_in'] = True
+            flash('Successfully logged in!', 'success')
+            logger.info("User logged in successfully.")
+            return redirect(url_for('settings'))
+        else:
+            flash('Incorrect password. Please try again.', 'danger')
+            logger.warning("User attempted to log in with incorrect password.")
+
+    return render_template('login.html')
+
+@app.route('/logout')
+@login_required
+def logout():
+    session.pop('logged_in', None)
+    flash('Successfully logged out.', 'success')
+    logger.info("User logged out successfully.")
+    return redirect(url_for('login'))
+
+@app.route('/settings', methods=['GET', 'POST'])
+@login_required
+def settings():
+    if request.method == 'POST':
+        env_vars = [
+            'TELEGRAM_BOT_TOKEN',
+            'CHAT_ID',
+            'LNBITS_READONLY_API_KEY',
+            'LNBITS_URL',
+            'INSTANCE_NAME',
+            'BALANCE_CHANGE_THRESHOLD',
+            'LATEST_TRANSACTIONS_COUNT',
+            'PAYMENTS_FETCH_INTERVAL',
+            'OVERWATCH_URL',
+            'DONATIONS_URL',
+            'LNURLP_ID',
+            'HIGHLIGHT_THRESHOLD',
+            'INFORMATION_URL',
+            'APP_HOST',
+            'APP_PORT',
+            'PROCESSED_PAYMENTS_FILE',
+            'CURRENT_BALANCE_FILE',
+            'DONATIONS_FILE',
+            'FORBIDDEN_WORDS_FILE',
+            'ADMIN_PASSWORD',
+            'MULTI_LNBITS_API_KEYS'
+        ]
+
+        required_fields = [
+            'TELEGRAM_BOT_TOKEN',
+            'CHAT_ID',
+            'LNBITS_READONLY_API_KEY',
+            'LNBITS_URL',
+            'APP_HOST',
+            'APP_PORT',
+            'PROCESSED_PAYMENTS_FILE',
+            'CURRENT_BALANCE_FILE',
+            'DONATIONS_FILE',
+            'FORBIDDEN_WORDS_FILE'
+        ]
+
+        errors = []
+        try:
+            for var in required_fields:
+                value = request.form.get(var)
+                if not value or value.strip() == '':
+                    errors.append(f"{var.replace('_', ' ').title()} is required.")
+
+            if errors:
+                for error in errors:
+                    flash(error, 'danger')
+                logger.warning(f"Settings update failed due to missing fields: {errors}")
+                env_vars_current = {var: request.form.get(var, '') for var in env_vars}
+                return render_template('settings.html', env_vars=env_vars_current)
+
+            for var in env_vars:
+                value = request.form.get(var)
+                if value is not None:
+                    set_key('.env', var, value)
+                    os.environ[var] = value
+
+            flash('Settings updated successfully.', 'success')
+            logger.info("Settings updated via settings page.")
+            return redirect(url_for('settings'))
+        except Exception as e:
+            flash(f'Error updating settings: {e}', 'danger')
+            logger.error(f"Error updating settings: {e}")
+            logger.debug("".join(traceback.format_exception(None, e, e.__traceback__)))
+
+    env_vars_current = {
+        'TELEGRAM_BOT_TOKEN': os.getenv('TELEGRAM_BOT_TOKEN', ''),
+        'CHAT_ID': os.getenv('CHAT_ID', ''),
+        'LNBITS_READONLY_API_KEY': os.getenv('LNBITS_READONLY_API_KEY', ''),
+        'LNBITS_URL': os.getenv('LNBITS_URL', ''),
+        'INSTANCE_NAME': os.getenv('INSTANCE_NAME', ''),
+        'BALANCE_CHANGE_THRESHOLD': os.getenv('BALANCE_CHANGE_THRESHOLD', ''),
+        'LATEST_TRANSACTIONS_COUNT': os.getenv('LATEST_TRANSACTIONS_COUNT', ''),
+        'PAYMENTS_FETCH_INTERVAL': os.getenv('PAYMENTS_FETCH_INTERVAL', ''),
+        'OVERWATCH_URL': os.getenv('OVERWATCH_URL', ''),
+        'DONATIONS_URL': os.getenv('DONATIONS_URL', ''),
+        'LNURLP_ID': os.getenv('LNURLP_ID', ''),
+        'HIGHLIGHT_THRESHOLD': os.getenv('HIGHLIGHT_THRESHOLD', ''),
+        'INFORMATION_URL': os.getenv('INFORMATION_URL', ''),
+        'APP_HOST': os.getenv('APP_HOST', ''),
+        'APP_PORT': os.getenv('APP_PORT', ''),
+        'PROCESSED_PAYMENTS_FILE': os.getenv('PROCESSED_PAYMENTS_FILE', ''),
+        'CURRENT_BALANCE_FILE': os.getenv('CURRENT_BALANCE_FILE', ''),
+        'DONATIONS_FILE': os.getenv('DONATIONS_FILE', ''),
+        'FORBIDDEN_WORDS_FILE': os.getenv('FORBIDDEN_WORDS_FILE', ''),
+        'ADMIN_PASSWORD': os.getenv('ADMIN_PASSWORD', ''),
+        'MULTI_LNBITS_API_KEYS': os.getenv('MULTI_LNBITS_API_KEYS', '')
+    }
+
+    return render_template('settings.html', env_vars=env_vars_current)
+
+def handle_vote_command(donation_id, vote_type):
+    try:
+        for donation in donations:
+            if donation.get("id") == donation_id:
+                if vote_type == 'like':
+                    donation["likes"] += 1
+                elif vote_type == 'dislike':
+                    donation["dislikes"] += 1
+                else:
+                    logger.warning(f"Invalid vote_type received: {vote_type}")
+                    return {"error": "Invalid vote type."}, 400
+                save_donations()
+                logger.info(f"Donation {donation_id} voted: {vote_type}. Total likes: {donation['likes']}, dislikes: {donation['dislikes']}")
+                return {"success": True, "likes": donation["likes"], "dislikes": donation["dislikes"]}, 200
+        logger.warning(f"Donation {donation_id} not found.")
+        return {"error": "Donation not found."}, 404
+    except Exception as e:
+        logger.error(f"Error handling vote: {e}")
+        logger.debug(traceback.format_exc())
+        return {"error": "Internal server error."}, 500
 
 # --------------------- Flask Routes ---------------------
 
 @app.route('/')
 def home():
     logger.debug("Home route accessed.")
-    return "🔍 LNbits Monitor is running."
+    return "🔍 LNbits Multi-Wallet Monitor is running."
 
 @app.route('/status', methods=['GET'])
 def status_route():
@@ -1179,171 +1507,63 @@ def cinema_page():
     logger.debug("Cinema page accessed.")
     return render_template('cinema.html')
 
-# --------------------- Authentication Routes ---------------------
+# --------------------- Initialization & Scheduler ---------------------
 
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not session.get('logged_in'):
-            flash('Please log in to access this page.', 'warning')
-            return redirect(url_for('login'))
-        return f(*args, **kwargs)
-    return decorated_function
+def initialize_processed_payments():
+    """
+    Mark all existing payments from the MAIN wallet as processed
+    so we don't spam old transactions. 
+    For multiwallet, we only do this for the main wallet on startup.
+    The additional wallets can also be similarly 'initialized' if desired.
+    """
+    logger.info("Initializing processed payments (main wallet) to prevent old notifications.")
+    payments = fetch_api("payments", custom_api_key=LNBITS_READONLY_API_KEY)
+    if payments is None or not isinstance(payments, list):
+        logger.error("Failed to initialize processed payments: Unable to fetch main wallet payments.")
+        return
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if 'logged_in' in session:
-        return redirect(url_for('settings'))
+    for payment in payments:
+        payment_hash = payment.get("payment_hash")
+        if payment_hash:
+            hash_with_key = f"MAIN_{payment_hash}"
+            if hash_with_key not in processed_payments:
+                processed_payments.add(hash_with_key)
+                add_processed_payment(hash_with_key)
+                logger.debug(f"Payment {hash_with_key} marked as processed during initialization.")
+    logger.info("Initialization of processed payments for main wallet completed.")
 
-    if request.method == 'POST':
-        password = request.form.get('password')
-        ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD")
+def start_scheduler():
+    scheduler = BackgroundScheduler(timezone='UTC')
 
-        if not ADMIN_PASSWORD:
-            flash('Admin password not set. Please set ADMIN_PASSWORD in your .env file.', 'danger')
-            return render_template('login.html')
+    # 1) Periodic job to fetch main wallet payments + multiwallet payments
+    if PAYMENTS_FETCH_INTERVAL > 0:
+        scheduler.add_job(
+            func=lambda: [
+                send_latest_payments_singlewallet(),
+                send_latest_payments_multiwallet()  # fetch from all other wallets
+            ],
+            trigger='interval',
+            seconds=PAYMENTS_FETCH_INTERVAL,
+            id='all_payments_fetch',
+            next_run_time=datetime.utcnow() + timedelta(seconds=2)
+        )
+        logger.info(f"Payments fetch scheduled every {PAYMENTS_FETCH_INTERVAL} seconds.")
+    else:
+        logger.info("Payments fetch disabled (PAYMENTS_FETCH_INTERVAL=0).")
 
-        if password == ADMIN_PASSWORD:
-            session['logged_in'] = True
-            flash('Successfully logged in!', 'success')
-            logger.info("User logged in successfully.")
-            return redirect(url_for('settings'))
-        else:
-            flash('Incorrect password. Please try again.', 'danger')
-            logger.warning("User attempted to log in with incorrect password.")
+    # 2) Periodic job to check each wallet's balance
+    #    Adjust the interval as desired (e.g., 120 seconds).
+    scheduler.add_job(
+        check_multi_wallet_balances,
+        'interval',
+        seconds=60,
+        id='multi_wallet_balance_check',
+        next_run_time=datetime.utcnow() + timedelta(seconds=3)
+    )
+    logger.info("Multi-wallet balance check scheduled every 60 seconds.")
 
-    return render_template('login.html')
-
-@app.route('/logout')
-@login_required
-def logout():
-    session.pop('logged_in', None)
-    flash('Successfully logged out.', 'success')
-    logger.info("User logged out successfully.")
-    return redirect(url_for('login'))
-
-@app.route('/settings', methods=['GET', 'POST'])
-@login_required
-def settings():
-    if request.method == 'POST':
-        # List of environment variables to update
-        env_vars = [
-            'TELEGRAM_BOT_TOKEN',
-            'CHAT_ID',
-            'LNBITS_READONLY_API_KEY',
-            'LNBITS_URL',
-            'INSTANCE_NAME',
-            'BALANCE_CHANGE_THRESHOLD',
-            'LATEST_TRANSACTIONS_COUNT',
-            'PAYMENTS_FETCH_INTERVAL',
-            'OVERWATCH_URL',
-            'DONATIONS_URL',
-            'LNURLP_ID',
-            'HIGHLIGHT_THRESHOLD',
-            'INFORMATION_URL',
-            'APP_HOST',
-            'APP_PORT',
-            'PROCESSED_PAYMENTS_FILE',
-            'CURRENT_BALANCE_FILE',
-            'DONATIONS_FILE',
-            'FORBIDDEN_WORDS_FILE',
-            'ADMIN_PASSWORD'
-        ]
-
-        # Define required fields
-        required_fields = [
-            'TELEGRAM_BOT_TOKEN',
-            'CHAT_ID',
-            'LNBITS_READONLY_API_KEY',
-            'LNBITS_URL',
-            'APP_HOST',
-            'APP_PORT',
-            'PROCESSED_PAYMENTS_FILE',
-            'CURRENT_BALANCE_FILE',
-            'DONATIONS_FILE',
-            'FORBIDDEN_WORDS_FILE'
-        ]
-
-        errors = []
-
-        try:
-            # Validate required fields
-            for var in required_fields:
-                value = request.form.get(var)
-                if not value or value.strip() == '':
-                    errors.append(f"{var.replace('_', ' ').title()} is required.")
-
-            if errors:
-                for error in errors:
-                    flash(error, 'danger')
-                logger.warning(f"Settings update failed due to missing fields: {errors}")
-                # Preserve user input
-                env_vars_current = {var: request.form.get(var, '') for var in env_vars}
-                return render_template('settings.html', env_vars=env_vars_current)
-
-            # Update environment variables
-            for var in env_vars:
-                value = request.form.get(var)
-                if value is not None:
-                    set_key('.env', var, value)
-                    os.environ[var] = value  # Update the current environment
-
-            flash('Settings updated successfully.', 'success')
-            logger.info("Settings updated via settings page.")
-            return redirect(url_for('settings'))
-        except Exception as e:
-            flash(f'Error updating settings: {e}', 'danger')
-            logger.error(f"Error updating settings: {e}")
-            logger.debug("".join(traceback.format_exception(None, e, e.__traceback__)))
-
-    # GET method: Show current values
-    env_vars_current = {
-        'TELEGRAM_BOT_TOKEN': os.getenv('TELEGRAM_BOT_TOKEN', ''),
-        'CHAT_ID': os.getenv('CHAT_ID', ''),
-        'LNBITS_READONLY_API_KEY': os.getenv('LNBITS_READONLY_API_KEY', ''),
-        'LNBITS_URL': os.getenv('LNBITS_URL', ''),
-        'INSTANCE_NAME': os.getenv('INSTANCE_NAME', ''),
-        'BALANCE_CHANGE_THRESHOLD': os.getenv('BALANCE_CHANGE_THRESHOLD', ''),
-        'LATEST_TRANSACTIONS_COUNT': os.getenv('LATEST_TRANSACTIONS_COUNT', ''),
-        'PAYMENTS_FETCH_INTERVAL': os.getenv('PAYMENTS_FETCH_INTERVAL', ''),
-        'OVERWATCH_URL': os.getenv('OVERWATCH_URL', ''),
-        'DONATIONS_URL': os.getenv('DONATIONS_URL', ''),
-        'LNURLP_ID': os.getenv('LNURLP_ID', ''),
-        'HIGHLIGHT_THRESHOLD': os.getenv('HIGHLIGHT_THRESHOLD', ''),
-        'INFORMATION_URL': os.getenv('INFORMATION_URL', ''),
-        'APP_HOST': os.getenv('APP_HOST', ''),
-        'APP_PORT': os.getenv('APP_PORT', ''),
-        'PROCESSED_PAYMENTS_FILE': os.getenv('PROCESSED_PAYMENTS_FILE', ''),
-        'CURRENT_BALANCE_FILE': os.getenv('CURRENT_BALANCE_FILE', ''),
-        'DONATIONS_FILE': os.getenv('DONATIONS_FILE', ''),
-        'FORBIDDEN_WORDS_FILE': os.getenv('FORBIDDEN_WORDS_FILE', ''),
-        'ADMIN_PASSWORD': os.getenv('ADMIN_PASSWORD', '')
-    }
-
-    return render_template('settings.html', env_vars=env_vars_current)
-
-# --------------------- Core Functionality ---------------------
-
-def handle_vote_command(donation_id, vote_type):
-    try:
-        for donation in donations:
-            if donation.get("id") == donation_id:
-                if vote_type == 'like':
-                    donation["likes"] += 1
-                elif vote_type == 'dislike':
-                    donation["dislikes"] += 1
-                else:
-                    logger.warning(f"Invalid vote_type received: {vote_type}")
-                    return {"error": "Invalid vote type."}, 400
-                save_donations()
-                logger.info(f"Donation {donation_id} voted: {vote_type}. Total likes: {donation['likes']}, dislikes: {donation['dislikes']}")
-                return {"success": True, "likes": donation["likes"], "dislikes": donation["dislikes"]}, 200
-        logger.warning(f"Donation {donation_id} not found.")
-        return {"error": "Donation not found."}, 404
-    except Exception as e:
-        logger.error(f"Error handling vote: {e}")
-        logger.debug(traceback.format_exc())
-        return {"error": "Internal server error."}, 500
+    scheduler.start()
+    logger.info("Scheduler started.")
 
 def send_main_inline_keyboard():
     inline_reply_markup = get_main_inline_keyboard()
@@ -1367,7 +1587,7 @@ def send_main_inline_keyboard():
 def send_start_message(update, context):
     chat_id = update.effective_chat.id
     welcome_message = (
-        "👋 Welcome to Naughtify your LNBits Wallet Monitor!\n\n"
+        "👋 Welcome to your LNbits Multi-Wallet Monitor!\n\n"
         "Use the buttons below for quick access to various features."
     )
     reply_markup = get_main_keyboard()
@@ -1384,34 +1604,13 @@ def send_start_message(update, context):
         logger.error(f"Error sending the start message: {e}")
         logger.debug(traceback.format_exc())
 
-def initialize_processed_payments():
-    """
-    Fetch all existing payments and mark them as processed to prevent sending Telegram messages
-    for old donations when the server starts.
-    """
-    logger.info("Initializing processed payments to prevent old notifications.")
-    payments = fetch_api("payments")
-    if payments is None:
-        logger.error("Failed to initialize processed payments: Unable to fetch payments.")
-        return
-
-    for payment in payments:
-        payment_hash = payment.get("payment_hash")
-        if payment_hash and payment_hash not in processed_payments:
-            processed_payments.add(payment_hash)
-            add_processed_payment(payment_hash)
-            logger.debug(f"Payment {payment_hash} marked as processed during initialization.")
-    logger.info("Initialization of processed payments completed.")
-
-# --------------------- Main Function ---------------------
-
 def main():
-    # Start the Flask app in a separate thread
+    # Start Flask in a separate thread
     flask_thread = threading.Thread(target=run_flask_app, daemon=True)
     flask_thread.start()
     logger.debug("Flask app thread started.")
 
-    # Initialize processed payments to prevent old notifications
+    # Initialize processed payments for the main wallet
     initialize_processed_payments()
 
     # Start the scheduler in a separate thread
@@ -1419,11 +1618,9 @@ def main():
     scheduler_thread.start()
     logger.debug("Scheduler thread started.")
 
-    # Set up Telegram Bot handlers
     updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
 
-    # Command Handlers
     dispatcher.add_handler(CommandHandler('balance', lambda update, context: send_balance_message(update.effective_chat.id)))
     dispatcher.add_handler(CommandHandler('transactions', lambda update, context: send_transactions_message(update.effective_chat.id, page=1)))
     dispatcher.add_handler(CommandHandler('info', handle_info_command))
@@ -1431,17 +1628,17 @@ def main():
     dispatcher.add_handler(CommandHandler('start', send_start_message))
     dispatcher.add_handler(CommandHandler('ticker_ban', handle_ticker_ban, pass_args=True))
 
-    # Callback Query Handler
-    dispatcher.add_handler(CallbackQueryHandler(handle_transactions_callback, pattern='^(balance|transactions_inline|prev_\\d+|next_\\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'))
+    dispatcher.add_handler(CallbackQueryHandler(
+        handle_transactions_callback,
+        pattern='^(balance|transactions_inline|prev_\\d+|next_\\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'
+    ))
 
-    # Message Handlers for Button Presses
     dispatcher.add_handler(MessageHandler(Filters.regex('^💰 Balance$'), handle_balance))
     dispatcher.add_handler(MessageHandler(Filters.regex('^📜 Latest Transactions$'), handle_latest_transactions))
     dispatcher.add_handler(MessageHandler(Filters.regex('^📡 Live Ticker$'), handle_live_ticker))
     dispatcher.add_handler(MessageHandler(Filters.regex('^📊 Overwatch$'), handle_overwatch))
     dispatcher.add_handler(MessageHandler(Filters.regex('^⚡ LNBits$'), handle_lnbits))
 
-    # Start Telegram Bot
     updater.start_polling()
     logger.info("Telegram Bot started.")
     send_main_inline_keyboard()
@@ -1455,19 +1652,15 @@ def run_flask_app():
         logger.error(f"Error running Flask app: {e}")
         logger.debug(traceback.format_exc())
 
-# --------------------- Application Entry Point ---------------------
-
 if __name__ == "__main__":
-    logger.info("🚀 Starting LNbits Balance Monitor.")
+    logger.info("🚀 Starting LNbits Multi-Wallet Monitor.")
     logger.info(f"🔔 Balance Change Threshold: {BALANCE_CHANGE_THRESHOLD} sats")
     logger.info(f"🔔 Highlight Threshold: {HIGHLIGHT_THRESHOLD} sats")
-    logger.info(f"📊 Fetching the latest {LATEST_TRANSACTIONS_COUNT} transactions")
+    logger.info(f"📊 Fetching the latest {LATEST_TRANSACTIONS_COUNT} transactions.")
     if PAYMENTS_FETCH_INTERVAL > 0:
         logger.info(f"⏲️ Interval: every {PAYMENTS_FETCH_INTERVAL} seconds")
     else:
         logger.info("⏲️ Fetch Interval disabled")
 
-    # Load existing donations and mark their payments as processed
     load_donations()
-
     main()
