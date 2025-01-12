@@ -25,17 +25,17 @@ from functools import wraps
 
 load_dotenv()
 
-# Essential Environment Variables
+# These environment variables are mandatory:
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
 LNBITS_READONLY_API_KEY = os.getenv("LNBITS_READONLY_API_KEY")
 LNBITS_URL = os.getenv("LNBITS_URL")
 INSTANCE_NAME = os.getenv("INSTANCE_NAME", "LNbits Instance")
 
-# (Optional) multiple LNbits read-only API keys
+# Optional: Additional LNbits read-only API keys for multi-wallet
 MULTI_LNBITS_API_KEYS = os.getenv("MULTI_LNBITS_API_KEYS", "").strip()
 
-# Optional URLs
+# Optional: Overwatch / Donations / Info
 OVERWATCH_URL = os.getenv("OVERWATCH_URL")
 DONATIONS_URL = os.getenv("DONATIONS_URL")
 INFORMATION_URL = os.getenv("INFORMATION_URL")
@@ -43,26 +43,25 @@ INFORMATION_URL = os.getenv("INFORMATION_URL")
 # LNURLP ID (Required if Donations are enabled)
 LNURLP_ID = os.getenv("LNURLP_ID") if DONATIONS_URL else None
 
-# Files
+# File settings
 FORBIDDEN_WORDS_FILE = os.getenv("FORBIDDEN_WORDS_FILE", "forbidden_words.txt")
 PROCESSED_PAYMENTS_FILE = os.getenv("PROCESSED_PAYMENTS_FILE", "processed_payments.txt")
 CURRENT_BALANCE_FILE = os.getenv("CURRENT_BALANCE_FILE", "current-balance.txt")
 DONATIONS_FILE = os.getenv("DONATIONS_FILE", "donations.json")
 
-# Thresholds and Intervals
+# Thresholds, intervals, and other settings
 BALANCE_CHANGE_THRESHOLD = int(os.getenv("BALANCE_CHANGE_THRESHOLD", "1"))
 HIGHLIGHT_THRESHOLD = int(os.getenv("HIGHLIGHT_THRESHOLD", "2100"))
 LATEST_TRANSACTIONS_COUNT = int(os.getenv("LATEST_TRANSACTIONS_COUNT", "21"))
 PAYMENTS_FETCH_INTERVAL = int(os.getenv("PAYMENTS_FETCH_INTERVAL", "60"))
 
-# Server Configuration
 APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
 APP_PORT = int(os.getenv("APP_PORT", "5009"))
 
-# Secret Key for Flask Sessions
+# Flask secret key
 SECRET_KEY = os.getenv("SECRET_KEY", os.urandom(24))
 
-# Validate Essential Variables
+# Check mandatory environment variables
 required_vars = {
     "TELEGRAM_BOT_TOKEN": TELEGRAM_BOT_TOKEN,
     "CHAT_ID": CHAT_ID,
@@ -73,10 +72,11 @@ missing_vars = [var for var, value in required_vars.items() if not value]
 if missing_vars:
     raise EnvironmentError(f"Essential environment variables missing: {', '.join(missing_vars)}")
 
+# If donations are enabled, LNURLP_ID must be set
 if DONATIONS_URL and not LNURLP_ID:
     raise EnvironmentError("LNURLP_ID must be set when DONATIONS_URL is provided.")
 
-# Parse LNbits domain
+# Parse LNbits domain for convenience
 parsed_url = urlparse(LNBITS_URL)
 LNBITS_DOMAIN = parsed_url.netloc
 if not LNBITS_DOMAIN:
@@ -123,60 +123,22 @@ donations = []
 total_donations = 0
 last_update = datetime.utcnow()
 
-# We'll track the "latest_balance" for the MAIN wallet
+# We'll track the "latest_balance" for the MAIN wallet (for /status)
 latest_balance = {
     "balance_sats": None,
     "last_change": None,
     "memo": None
 }
 
-# We'll hold the last known transactions (MAIN wallet) for /status route
+# We'll store the last known transactions from the main wallet
 latest_payments = []
 
 # --------------------- Helper Functions ---------------------
 
-def get_main_inline_keyboard():
-    balance_button = InlineKeyboardButton("💰 Balance", callback_data='balance')
-    latest_transactions_button = InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline')
-    
-    if DONATIONS_URL:
-        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", url=DONATIONS_URL)
-    else:
-        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline')
-    
-    if OVERWATCH_URL:
-        overwatch_button = InlineKeyboardButton("📊 Overwatch", url=OVERWATCH_URL)
-    else:
-        overwatch_button = InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline')
-    
-    if LNBITS_URL:
-        lnbits_button = InlineKeyboardButton("⚡ LNBits", url=LNBITS_URL)
-    else:
-        lnbits_button = InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
-
-    inline_keyboard = [
-        [balance_button],
-        [latest_transactions_button, live_ticker_button],
-        [overwatch_button, lnbits_button]
-    ]
-    logger.debug("Main inline keyboard created.")
-    return InlineKeyboardMarkup(inline_keyboard)
-
-def get_main_keyboard():
-    balance_button = ["💰 Balance"]
-    main_options_row_1 = ["📊 Overwatch", "📡 Live Ticker"]
-    main_options_row_2 = ["📜 Latest Transactions", "⚡ LNBits"]
-
-    keyboard = [
-        balance_button,
-        main_options_row_1,
-        main_options_row_2
-    ]
-
-    logger.debug("Main reply keyboard created.")
-    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
-
 def load_forbidden_words(file_path):
+    """
+    Loads forbidden words from a text file, one word per line.
+    """
     forbidden = set()
     try:
         with open(file_path, 'r') as f:
@@ -195,6 +157,9 @@ def load_forbidden_words(file_path):
 FORBIDDEN_WORDS = load_forbidden_words(FORBIDDEN_WORDS_FILE)
 
 def sanitize_memo(memo):
+    """
+    Replaces any forbidden word inside the 'memo' with asterisks. 
+    """
     if not memo:
         logger.debug("No memo provided to sanitize.")
         return "No memo provided."
@@ -207,12 +172,16 @@ def sanitize_memo(memo):
     if not FORBIDDEN_WORDS:
         logger.debug("No forbidden words to sanitize.")
         return memo
+
     pattern = re.compile(r'\b(' + '|'.join(map(re.escape, FORBIDDEN_WORDS)) + r')\b', re.IGNORECASE)
     sanitized_memo = pattern.sub(replace_match, memo)
     logger.debug(f"Sanitized memo: Original: '{memo}' -> Sanitized: '{sanitized_memo}'")
     return sanitized_memo
 
 def load_processed_payments():
+    """
+    Loads processed payment hashes from file so we don't resend notifications for old payments.
+    """
     processed = set()
     if os.path.exists(PROCESSED_PAYMENTS_FILE):
         try:
@@ -229,8 +198,8 @@ def load_processed_payments():
 
 def add_processed_payment(payment_hash_with_key):
     """
-    We store payment hashes with a wallet identifier to avoid collisions if two wallets share the same hash.
-    E.g., 'KEY1_paymenthash'.
+    Appends the processed payment hash to the file so it won't be notified again.
+    For multi-wallet usage, we store something like "walletName_paymentHash".
     """
     try:
         with open(PROCESSED_PAYMENTS_FILE, 'a') as f:
@@ -241,6 +210,9 @@ def add_processed_payment(payment_hash_with_key):
         logger.debug(traceback.format_exc())
 
 def load_donations():
+    """
+    Loads the donation data from the JSON file if donations are enabled.
+    """
     global donations, total_donations
     if os.path.exists(DONATIONS_FILE) and DONATIONS_URL and LNURLP_ID:
         try:
@@ -263,6 +235,9 @@ def load_donations():
         logger.info("Donations file does not exist or donations not enabled.")
 
 def save_donations():
+    """
+    Saves the current state of donations (if donations are enabled).
+    """
     if DONATIONS_URL and LNURLP_ID:
         try:
             with open(DONATIONS_FILE, 'w') as f:
@@ -279,6 +254,9 @@ processed_payments = load_processed_payments()
 load_donations()
 
 def sanitize_donations():
+    """
+    Goes through each donation and sanitizes the memo field. 
+    """
     global donations
     try:
         for donation in donations:
@@ -289,7 +267,66 @@ def sanitize_donations():
         logger.error(f"Error sanitizing donations: {e}")
         logger.debug(traceback.format_exc())
 
+def fetch_api(endpoint, custom_api_key=None):
+    """
+    Generic function to fetch an LNbits API endpoint.
+    If 'custom_api_key' is given, that key is used. Otherwise, use the main LNbits read-only key.
+    """
+    if custom_api_key is None:
+        custom_api_key = LNBITS_READONLY_API_KEY
+
+    url = f"{LNBITS_URL}/api/v1/{endpoint}"
+    headers = {"X-Api-Key": custom_api_key}
+    try:
+        response = requests.get(url, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            logger.debug(f"Data fetched from {endpoint} with key {custom_api_key[:5]}...: {data}")
+            return data
+        else:
+            logger.error(f"Error fetching {endpoint}. Status Code: {response.status_code}")
+            return None
+    except Exception as e:
+        logger.error(f"Error fetching {endpoint}: {e}")
+        logger.debug(traceback.format_exc())
+        return None
+
+def parse_time(time_input):
+    """
+    Attempts to parse the LNbits date/time field into a Python datetime.
+    Falls back to 'now' if it cannot parse.
+    """
+    if not time_input:
+        logger.warning("No 'time' field found, using current time.")
+        return datetime.utcnow()
+    if isinstance(time_input, str):
+        try:
+            date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%S.%fZ")
+            logger.debug(f"Parsed time string: {time_input} -> {date}")
+        except ValueError:
+            try:
+                date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%SZ")
+                logger.debug(f"Parsed time string: {time_input} -> {date}")
+            except ValueError:
+                logger.error(f"Unable to parse time string: {time_input}. Using current time.")
+                date = datetime.utcnow()
+    elif isinstance(time_input, (int, float)):
+        try:
+            date = datetime.fromtimestamp(time_input)
+            logger.debug(f"Parsed timestamp: {time_input} -> {date}")
+        except Exception as e:
+            logger.error(f"Unable to parse timestamp: {time_input}, error: {e}. Using current time.")
+            date = datetime.utcnow()
+    else:
+        logger.error(f"Unsupported time format: {time_input}. Using current time.")
+        date = datetime.utcnow()
+    return date
+
 def handle_ticker_ban(update, context):
+    """
+    /ticker_ban <words>
+    Bans the given words from donation memos.
+    """
     chat_id = update.effective_chat.id
     if len(context.args) == 0:
         bot.send_message(chat_id, text="❌ Please provide at least one word to ban. Example: /ticker_ban badword")
@@ -328,6 +365,7 @@ def handle_ticker_ban(update, context):
                 success_message = f"✅ Great! I've added these words to the banned list: '{words_formatted}'. The Live Ticker will update shortly!"
             bot.send_message(chat_id, text=success_message)
             logger.info(f"Added forbidden words: {added_words}")
+
         if duplicate_words:
             if len(duplicate_words) == 1:
                 duplicate_message = f"⚠️ The word '{duplicate_words[0]}' was already banned."
@@ -336,36 +374,18 @@ def handle_ticker_ban(update, context):
                 duplicate_message = f"⚠️ The following words were already banned: '{words_formatted}'."
             bot.send_message(chat_id, text=duplicate_message)
             logger.info(f"Duplicate forbidden words attempted to add: {duplicate_words}")
+
     except Exception as e:
         logger.error(f"Error adding words to forbidden list: {e}")
         bot.send_message(chat_id, text="❌ An error occurred while banning words. Please try again.")
         logger.debug(traceback.format_exc())
 
-def fetch_api(endpoint, custom_api_key=None):
-    """
-    Generic function to fetch LNbits endpoints.
-    If 'custom_api_key' is provided, that key is used instead of the global LNBITS_READONLY_API_KEY.
-    """
-    if custom_api_key is None:
-        custom_api_key = LNBITS_READONLY_API_KEY
-
-    url = f"{LNBITS_URL}/api/v1/{endpoint}"
-    headers = {"X-Api-Key": custom_api_key}
-    try:
-        response = requests.get(url, headers=headers, timeout=10)
-        if response.status_code == 200:
-            data = response.json()
-            logger.debug(f"Data fetched from {endpoint} with key {custom_api_key[:5]}...: {data}")
-            return data
-        else:
-            logger.error(f"Error fetching {endpoint}. Status Code: {response.status_code}")
-            return None
-    except Exception as e:
-        logger.error(f"Error fetching {endpoint}: {e}")
-        logger.debug(traceback.format_exc())
-        return None
+# --------------------- Donation-related / LNURLp fetchers ---------------------
 
 def fetch_pay_links():
+    """
+    Fetch LNURLp links if donations are enabled.
+    """
     if not DONATIONS_URL or not LNURLP_ID:
         logger.debug("Donations not enabled. Skipping fetch_pay_links.")
         return None
@@ -386,6 +406,9 @@ def fetch_pay_links():
         return None
 
 def get_lnurlp_info(lnurlp_id):
+    """
+    Finds a specific LNURLp link by ID.
+    """
     if not DONATIONS_URL or not LNURLP_ID:
         logger.debug("Donations not enabled. Skipping get_lnurlp_info.")
         return None
@@ -403,6 +426,9 @@ def get_lnurlp_info(lnurlp_id):
     return None
 
 def fetch_donation_details():
+    """
+    Returns donation-related info, including LNURL or lightning_address.
+    """
     if not DONATIONS_URL or not LNURLP_ID:
         logger.debug("Donations not enabled. Returning basic data.")
         return {
@@ -412,6 +438,7 @@ def fetch_donation_details():
             "lnurl": "Unavailable",
             "highlight_threshold": HIGHLIGHT_THRESHOLD
         }
+
     lnurlp_info = get_lnurlp_info(LNURLP_ID)
     if lnurlp_info is None:
         logger.error("No LNURLp info found.")
@@ -437,6 +464,9 @@ def fetch_donation_details():
     }
 
 def update_donations_with_details(data):
+    """
+    Merges the LNURL / lightning address info into the donation object.
+    """
     donation_details = fetch_donation_details()
     data.update({
         "lightning_address": donation_details.get("lightning_address"),
@@ -446,6 +476,9 @@ def update_donations_with_details(data):
     return data
 
 def updateDonations(data):
+    """
+    Called whenever we detect a new donation. Saves the donation file.
+    """
     updated_data = update_donations_with_details(data)
     if updated_data["donations"]:
         latestDonation = updated_data["donations"][-1]
@@ -454,37 +487,12 @@ def updateDonations(data):
         logger.info('Latest donation: None yet.')
     save_donations()
 
-def parse_time(time_input):
-    if not time_input:
-        logger.warning("No 'time' field found, using current time.")
-        return datetime.utcnow()
-    if isinstance(time_input, str):
-        try:
-            date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%S.%fZ")
-            logger.debug(f"Parsed time string: {time_input} -> {date}")
-        except ValueError:
-            try:
-                date = datetime.strptime(time_input, "%Y-%m-%dT%H:%M:%SZ")
-                logger.debug(f"Parsed time string: {time_input} -> {date}")
-            except ValueError:
-                logger.error(f"Unable to parse time string: {time_input}. Using current time.")
-                date = datetime.utcnow()
-    elif isinstance(time_input, (int, float)):
-        try:
-            date = datetime.fromtimestamp(time_input)
-            logger.debug(f"Parsed timestamp: {time_input} -> {date}")
-        except Exception as e:
-            logger.error(f"Unable to parse timestamp: {time_input}, error: {e}. Using current time.")
-            date = datetime.utcnow()
-    else:
-        logger.error(f"Unsupported time format: {time_input}. Using current time.")
-        date = datetime.utcnow()
-    return date
+# --------------------- Telegram Notification Helpers ---------------------
 
 def notify_transaction(payment, direction, wallet_name=""):
     """
-    Sends a Telegram notification for an incoming or outgoing payment.
-    wallet_name is used to indicate which wallet triggered the transaction.
+    Sends a Telegram message about an incoming or outgoing transaction.
+    Includes an optional wallet_name to distinguish multiple wallets.
     """
     try:
         amount = payment["amount"]
@@ -507,11 +515,12 @@ def notify_transaction(payment, direction, wallet_name=""):
         logger.error(f"Error sending transaction notification: {e}")
         logger.debug(traceback.format_exc())
 
-# --------------------- Single-Wallet Payment Checker (Legacy for Donations) ---------------------
+# --------------------- MAIN Wallet Payment Checker ---------------------
+
 def send_latest_payments_singlewallet():
     """
-    For the MAIN wallet (LNBITS_READONLY_API_KEY), fetch transactions
-    and do the donation logic, plus single "latest_payments" update.
+    Fetches the most recent transactions from the MAIN wallet (LNBITS_READONLY_API_KEY)
+    to detect incoming/outgoing payments. Also handles donation logic for LNURLp.
     """
     global total_donations, donations, last_update, latest_balance, latest_payments
     logger.info("Fetching latest payments for the main (default) wallet...")
@@ -521,9 +530,10 @@ def send_latest_payments_singlewallet():
         logger.warning("No payments fetched (or invalid format) for main wallet.")
         return
 
+    # Sort descending by time
     sorted_payments = sorted(payments, key=lambda x: x.get("time", ""), reverse=True)
     latest = sorted_payments[:LATEST_TRANSACTIONS_COUNT]
-    latest_payments = latest.copy()  # For /status
+    latest_payments = latest.copy()  # For /status route
 
     if not latest:
         logger.info("No payments found for main wallet.")
@@ -534,7 +544,7 @@ def send_latest_payments_singlewallet():
 
     for payment in latest:
         payment_hash = payment.get("payment_hash")
-        # Store processed key as "MAIN_<hash>"
+        # Tag with "MAIN_" so we don't mix them with multi-wallet payments
         payment_hash_with_key = f"MAIN_{payment_hash}"
 
         if payment_hash_with_key in processed_payments:
@@ -545,8 +555,8 @@ def send_latest_payments_singlewallet():
         memo = sanitize_memo(payment.get("memo", "No memo provided."))
         status = payment.get("status", "completed")
         time_str = payment.get("time", None)
-        date = parse_time(time_str)
-        formatted_date = date.isoformat()
+        date_obj = parse_time(time_str)
+        formatted_date = date_obj.isoformat()
 
         try:
             amount_sats = int(abs(amount_msat) / 1000)
@@ -558,12 +568,13 @@ def send_latest_payments_singlewallet():
             logger.debug(f"Payment {payment_hash_with_key} is pending. Skipping.")
             continue
 
+        # Determine direction
         if amount_msat > 0:
             incoming_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
         elif amount_msat < 0:
             outgoing_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
 
-        # Donation logic (only for main wallet)
+        # Donations logic (only on the main wallet)
         if DONATIONS_URL and LNURLP_ID:
             extra_data = payment.get("extra", {})
             lnurlp_id_payment = extra_data.get("link")
@@ -593,7 +604,7 @@ def send_latest_payments_singlewallet():
         add_processed_payment(payment_hash_with_key)
         logger.debug(f"Payment {payment_hash_with_key} processed and added to processed payments.")
 
-    # Update latest_balance for the main wallet
+    # Update the main wallet's balance in global state
     wallet_info = fetch_api("wallet", custom_api_key=LNBITS_READONLY_API_KEY)
     if wallet_info:
         current_balance_msat = wallet_info.get("balance", 0)
@@ -605,31 +616,30 @@ def send_latest_payments_singlewallet():
         }
         logger.debug(f"Updated latest_balance: {latest_balance}")
 
-    # Send notifications for main wallet transactions
-    for payment in incoming_payments:
-        notify_transaction(payment, "incoming", wallet_name="MainWallet")
-    for payment in outgoing_payments:
-        notify_transaction(payment, "outgoing", wallet_name="MainWallet")
+    # Telegram notifications for new incoming/outgoing (main wallet)
+    for inc in incoming_payments:
+        notify_transaction(inc, "incoming", wallet_name="MainWallet")
+    for out in outgoing_payments:
+        notify_transaction(out, "outgoing", wallet_name="MainWallet")
 
+# --------------------- MULTI-Wallet Payment Checker ---------------------
 
-# --------------------- Multi-Wallet Payment Checker ---------------------
 def send_latest_payments_multiwallet():
     """
-    For each LNbits API key in MULTI_LNBITS_API_KEYS, fetch recent payments
-    and notify Telegram for new incoming/outgoing payments. 
-    DOES NOT handle donation logic; that remains on the main wallet above.
+    For each LNbits API key in MULTI_LNBITS_API_KEYS, fetch recent payments 
+    and send Telegram notifications for new incoming/outgoing transactions.
     """
     if not MULTI_LNBITS_API_KEYS:
         logger.debug("MULTI_LNBITS_API_KEYS is empty; skipping multiwallet payments.")
         return
 
-    keys = [k.strip() for k in MULTI_LNBITS_API_KEYS.split(",") if k.strip()]
-    if not keys:
-        logger.debug("No valid keys in MULTI_LNBITS_API_KEYS.")
+    mw_keys = [k.strip() for k in MULTI_LNBITS_API_KEYS.split(",") if k.strip()]
+    if not mw_keys:
+        logger.debug("No valid multiwallet keys found. Skipping.")
         return
 
-    for key in keys:
-        # Try to retrieve the wallet name
+    for key in mw_keys:
+        # Attempt to fetch the wallet's name for better logs
         w_info = fetch_api("wallet", custom_api_key=key)
         wallet_name = w_info.get("name", "UnknownWallet") if w_info else "UnknownWallet"
 
@@ -637,23 +647,24 @@ def send_latest_payments_multiwallet():
 
         payments = fetch_api("payments", custom_api_key=key)
         if payments is None or not isinstance(payments, list):
-            logger.warning(f"No payments or invalid format for wallet '{wallet_name}'.")
+            logger.warning(f"No payments or invalid data for wallet '{wallet_name}'.")
             continue
 
+        # Sort descending
         sorted_payments = sorted(payments, key=lambda x: x.get("time", ""), reverse=True)
-        relevant_payments = sorted_payments[:LATEST_TRANSACTIONS_COUNT]
+        relevant = sorted_payments[:LATEST_TRANSACTIONS_COUNT]
 
-        if not relevant_payments:
+        if not relevant:
             logger.info(f"No recent payments found for wallet '{wallet_name}'.")
             continue
 
         incoming_payments = []
         outgoing_payments = []
 
-        for payment in relevant_payments:
-            payment_hash = payment.get("payment_hash")
-            # Tag the payment hash with the wallet key or name to keep them unique
-            payment_hash_with_key = f"{wallet_name}_{payment_hash}"
+        for payment in relevant:
+            p_hash = payment.get("payment_hash")
+            # Use walletName as an identifier
+            payment_hash_with_key = f"{wallet_name}_{p_hash}"
 
             if payment_hash_with_key in processed_payments:
                 logger.debug(f"Payment {payment_hash_with_key} already processed. Skipping.")
@@ -662,51 +673,50 @@ def send_latest_payments_multiwallet():
             amount_msat = payment.get("amount", 0)
             memo = sanitize_memo(payment.get("memo", "No memo provided."))
             status = payment.get("status", "completed")
-            time_str = payment.get("time", None)
-            date = parse_time(time_str)
-            formatted_date = date.isoformat()
+            t_str = payment.get("time", None)
+            dt_obj = parse_time(t_str)
+            f_date = dt_obj.isoformat()
 
             try:
                 amount_sats = int(abs(amount_msat) / 1000)
             except ValueError:
                 amount_sats = 0
-                logger.warning(f"Invalid amount_msat value: {amount_msat} for wallet '{wallet_name}'")
+                logger.warning(f"Invalid amount_msat: {amount_msat} for '{wallet_name}'")
 
             if status.lower() == "pending":
                 logger.debug(f"Payment {payment_hash_with_key} is pending. Skipping.")
                 continue
 
             if amount_msat > 0:
-                incoming_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
+                incoming_payments.append({"amount": amount_sats, "memo": memo, "date": f_date})
             elif amount_msat < 0:
-                outgoing_payments.append({"amount": amount_sats, "memo": memo, "date": formatted_date})
+                outgoing_payments.append({"amount": amount_sats, "memo": memo, "date": f_date})
 
             processed_payments.add(payment_hash_with_key)
             add_processed_payment(payment_hash_with_key)
-            logger.debug(f"Payment {payment_hash_with_key} processed for wallet '{wallet_name}'.")
+            logger.debug(f"Payment {payment_hash_with_key} processed for '{wallet_name}'.")
 
-        # Send notifications for multi-wallet
+        # Notify Telegram
         for inc in incoming_payments:
             notify_transaction(inc, "incoming", wallet_name=wallet_name)
         for out in outgoing_payments:
             notify_transaction(out, "outgoing", wallet_name=wallet_name)
 
-# --------------------- Multi-Wallet Balance Checker ---------------------
+# --------------------- MULTI-Wallet Balance Checker ---------------------
+
 def check_multi_wallet_balances():
     """
-    Periodically checks the balances of all LNbits wallets listed in MULTI_LNBITS_API_KEYS
-    + the main wallet as well, in case we want direct balance-change notifications 
-    for each wallet. 
+    Periodically checks the balance of both the main wallet and the multi-wallets, 
+    notifying Telegram if the balance changed since last time.
     """
-    # 1) Check main wallet
+    # 1) Check the main wallet
     try:
         logger.debug("Checking main wallet balance for changes...")
-        main_wallet_info = fetch_api("wallet", custom_api_key=LNBITS_READONLY_API_KEY)
-        if main_wallet_info:
-            current_balance_msat = main_wallet_info.get("balance", 0)
-            name = main_wallet_info.get("name", "MainWallet")
+        main_info = fetch_api("wallet", custom_api_key=LNBITS_READONLY_API_KEY)
+        if main_info:
+            c_balance_msat = main_info.get("balance", 0)
+            name = main_info.get("name", "MainWallet")
 
-            # We store last balance in a separate file
             tmp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tmp')
             os.makedirs(tmp_dir, exist_ok=True)
             main_file_path = os.path.join(tmp_dir, f"lnbits_wallet_{name.replace(' ', '_')}.txt")
@@ -714,7 +724,7 @@ def check_multi_wallet_balances():
             if not os.path.exists(main_file_path):
                 last_balance_msat = 0
                 with open(main_file_path, 'w') as f:
-                    f.write(str(current_balance_msat))
+                    f.write(str(c_balance_msat))
             else:
                 with open(main_file_path, 'r') as f:
                     content = f.read().strip()
@@ -726,14 +736,14 @@ def check_multi_wallet_balances():
                     except ValueError:
                         last_balance_msat = 0
 
-            if current_balance_msat != last_balance_msat:
-                diff = current_balance_msat - last_balance_msat
+            if c_balance_msat != last_balance_msat:
+                diff = c_balance_msat - last_balance_msat
                 with open(main_file_path, 'w') as f:
-                    f.write(str(current_balance_msat))
+                    f.write(str(c_balance_msat))
 
                 diff_sat = f"{diff / 1000:,.3f}"
                 old_sat = f"{last_balance_msat / 1000:,.3f}" if last_balance_msat != 0 else "0"
-                new_sat = f"{current_balance_msat / 1000:,.3f}"
+                new_sat = f"{c_balance_msat / 1000:,.3f}"
 
                 msg = (
                     f"₿💰₿ ➽ Balance change for *{name}* (main wallet)!\n"
@@ -749,9 +759,9 @@ def check_multi_wallet_balances():
         logger.error(f"Error checking main wallet balance: {e}")
         logger.debug(traceback.format_exc())
 
-    # 2) Check additional wallets from MULTI_LNBITS_API_KEYS
+    # 2) Check additional multi-wallets
     if not MULTI_LNBITS_API_KEYS:
-        logger.debug("MULTI_LNBITS_API_KEYS is empty; no additional balances to check.")
+        logger.debug("MULTI_LNBITS_API_KEYS is empty; skipping additional balances.")
         return
 
     keys = [k.strip() for k in MULTI_LNBITS_API_KEYS.split(",") if k.strip()]
@@ -767,11 +777,11 @@ def check_multi_wallet_balances():
                 continue
 
             balance_msat = w_info.get("balance", 0)
-            wallet_name = w_info.get("name", "UnknownWallet")
+            w_name = w_info.get("name", "UnknownWallet")
 
             tmp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tmp')
             os.makedirs(tmp_dir, exist_ok=True)
-            file_path = os.path.join(tmp_dir, f"lnbits_wallet_{wallet_name.replace(' ', '_')}.txt")
+            file_path = os.path.join(tmp_dir, f"lnbits_wallet_{w_name.replace(' ', '_')}.txt")
 
             if not os.path.exists(file_path):
                 last_balance_msat = 0
@@ -789,29 +799,301 @@ def check_multi_wallet_balances():
                         last_balance_msat = 0
 
             if balance_msat != last_balance_msat:
-                difference = balance_msat - last_balance_msat
+                diff = balance_msat - last_balance_msat
                 with open(file_path, 'w') as f:
                     f.write(str(balance_msat))
 
-                diff_sat = f"{difference / 1000:,.3f}"
+                diff_sat = f"{diff / 1000:,.3f}"
                 old_sat = f"{last_balance_msat / 1000:,.3f}" if last_balance_msat != 0 else "0"
                 new_sat = f"{balance_msat / 1000:,.3f}"
 
                 message = (
-                    f"₿💰₿ ➽ Yippee, wallet *{wallet_name}* changed!\n"
+                    f"₿💰₿ ➽ Yippee, wallet *{w_name}* changed!\n"
                     f"Balance shifted by {diff_sat} sats – from {old_sat} to {new_sat}."
                 )
                 bot.send_message(chat_id=CHAT_ID, text=message, parse_mode=ParseMode.MARKDOWN)
-                logger.info(f"Balance change for wallet '{wallet_name}' was notified.")
+                logger.info(f"Balance change for wallet '{w_name}' was notified.")
             else:
-                logger.debug(f"No balance change for wallet '{wallet_name}'.")
+                logger.debug(f"No balance change for wallet '{w_name}'.")
         except Exception as e:
             logger.error(f"Error checking balance for multi wallet key {key[:5]}: {e}")
             logger.debug(traceback.format_exc())
 
-# --------------------- Commands and Handlers ---------------------
+# --------------------- Telegram Bot UI: Keyboards & Callbacks ---------------------
 
+def get_main_inline_keyboard():
+    """
+    The main inline keyboard shown to the user, including multi-wallet additions.
+    """
+    balance_button = InlineKeyboardButton("💰 Balance", callback_data='balance')
+    transactions_button = InlineKeyboardButton("📜 Latest Transactions", callback_data='transactions_inline')
+
+    # Overwatch, Live Ticker, LNbits
+    if DONATIONS_URL:
+        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", url=DONATIONS_URL)
+    else:
+        live_ticker_button = InlineKeyboardButton("📡 Live Ticker", callback_data='liveticker_inline')
+
+    if OVERWATCH_URL:
+        overwatch_button = InlineKeyboardButton("📊 Overwatch", url=OVERWATCH_URL)
+    else:
+        overwatch_button = InlineKeyboardButton("📊 Overwatch", callback_data='overwatch_inline')
+
+    if LNBITS_URL:
+        lnbits_button = InlineKeyboardButton("⚡ LNBits", url=LNBITS_URL)
+    else:
+        lnbits_button = InlineKeyboardButton("⚡ LNBits", callback_data='lnbits_inline')
+
+    # NEW: Buttons for multi-wallet actions
+    mw_balance_button = InlineKeyboardButton("🔀 MW Balance", callback_data='multiwallet_balance')
+    mw_transactions_button = InlineKeyboardButton("🔀 MW Transactions", callback_data='multiwallet_transactions')
+
+    inline_keyboard = [
+        [balance_button],
+        [transactions_button, live_ticker_button],
+        [overwatch_button, lnbits_button],
+        # Below row has the new multi-wallet buttons
+        [mw_balance_button, mw_transactions_button]
+    ]
+    logger.debug("Main inline keyboard created with multi-wallet buttons.")
+    return InlineKeyboardMarkup(inline_keyboard)
+
+def get_main_keyboard():
+    """
+    Reply keyboard with a few textual buttons. (User sees them in Telegram.)
+    """
+    balance_button = ["💰 Balance"]
+    row1 = ["📊 Overwatch", "📡 Live Ticker"]
+    row2 = ["📜 Latest Transactions", "⚡ LNBits"]
+
+    keyboard = [
+        balance_button,
+        row1,
+        row2
+    ]
+    return ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=False)
+
+# 1) Show a list of all multi-wallets after user clicks "🔀 MW Balance" or "🔀 MW Transactions"
+def show_multiwallet_list(query, action):
+    """
+    Presents the user with an inline keyboard listing all multi-wallets by name.
+    'action' can be 'balance' or 'transactions' to decide the callback approach.
+    """
+    chat_id = query.message.chat.id
+
+    mw_keys_str = MULTI_LNBITS_API_KEYS
+    if not mw_keys_str:
+        bot.send_message(chat_id, text="No multiwallet API keys configured.")
+        return
+
+    mw_keys = [k.strip() for k in mw_keys_str.split(",") if k.strip()]
+    if not mw_keys:
+        bot.send_message(chat_id, text="No valid multiwallet API keys found.")
+        return
+
+    # For each key, fetch the wallet name quickly
+    buttons = []
+    for key in mw_keys:
+        w_info = fetch_api("wallet", custom_api_key=key)
+        if w_info:
+            wallet_name = w_info.get("name", "UnnamedWallet")
+        else:
+            wallet_name = "UnknownWallet"
+
+        if action == 'balance':
+            callback_data = f"mw_balance_{key}"
+        else:
+            callback_data = f"mw_tx_{key}"
+
+        # Each row is a single button with the wallet's name
+        buttons.append([InlineKeyboardButton(wallet_name, callback_data=callback_data)])
+
+    reply_markup = InlineKeyboardMarkup(buttons)
+
+    if action == 'balance':
+        text_msg = "Select a multi-wallet to see its balance:"
+    else:
+        text_msg = "Select a multi-wallet to see its latest transactions:"
+
+    try:
+        bot.send_message(chat_id=chat_id, text=text_msg, reply_markup=reply_markup)
+    except Exception as e:
+        logger.error(f"Error showing multiwallet list: {e}")
+        logger.debug(traceback.format_exc())
+
+def show_balance_for_wallet(query, wallet_api_key):
+    """
+    Retrieves and shows the balance for a specific multi-wallet.
+    """
+    chat_id = query.message.chat.id
+    w_info = fetch_api("wallet", custom_api_key=wallet_api_key)
+    if not w_info:
+        bot.send_message(chat_id, text="❌ Failed to fetch this wallet's info.")
+        return
+
+    name = w_info.get("name", "UnnamedWallet")
+    balance_msat = w_info.get("balance", 0)
+    balance_sats = balance_msat // 1000
+    msg = f"💰 *Balance for {name}:* {balance_sats} sats"
+
+    try:
+        bot.send_message(chat_id, text=msg, parse_mode=ParseMode.MARKDOWN)
+    except Exception as e:
+        logger.error(f"Error sending multiwallet balance: {e}")
+        logger.debug(traceback.format_exc())
+
+def show_transactions_for_wallet(query, wallet_api_key, page=1):
+    """
+    Retrieves and shows the latest transactions for a specific multi-wallet.
+    For brevity, no advanced pagination is implemented here. 
+    You could replicate your main wallet approach if you want multiple pages.
+    """
+    chat_id = query.message.chat.id
+    payments = fetch_api("payments", custom_api_key=wallet_api_key)
+    if payments is None or not isinstance(payments, list):
+        bot.send_message(chat_id, text="❌ Unable to fetch transactions for this wallet.")
+        return
+
+    # Filter out pending
+    filtered = [p for p in payments if p.get("status", "").lower() != "pending"]
+    # Sort descending
+    sorted_payments = sorted(filtered, key=lambda x: x.get("time", ""), reverse=True)
+
+    # We'll show up to 13 transactions for example, just like the main approach
+    transactions_per_page = 13
+    total_transactions = len(sorted_payments)
+    total_pages = (total_transactions + transactions_per_page - 1) // transactions_per_page
+    if total_pages == 0:
+        total_pages = 1
+    if page < 1 or page > total_pages:
+        bot.send_message(chat_id, text="❌ Invalid page number.")
+        return
+
+    start_idx = (page - 1) * transactions_per_page
+    end_idx = start_idx + transactions_per_page
+    page_transactions = sorted_payments[start_idx:end_idx]
+
+    w_info = fetch_api("wallet", custom_api_key=wallet_api_key)
+    wallet_name = w_info.get("name", "UnnamedWallet") if w_info else "UnknownWallet"
+
+    lines = [f"📜 *Latest Transactions for {wallet_name} - Page {page}/{total_pages}*"]
+    for pay in page_transactions:
+        msat = pay.get("amount", 0)
+        memo = sanitize_memo(pay.get("memo", "No memo"))
+        dt = parse_time(pay.get("time", None))
+        dt_str = dt.strftime("%b %d, %Y %H:%M")
+        try:
+            sats = abs(msat) // 1000
+        except:
+            sats = 0
+        sign = "+" if msat > 0 else "-"
+        emoji = "🟢" if msat > 0 else "🔴"
+        lines.append(f"\n{emoji} {dt_str} {sign}{sats} sats")
+        lines.append(f"✉️ Memo: {memo}")
+
+    msg_full = "\n".join(lines)
+
+    # For simplicity, no pagination callback is implemented. 
+    # We either edit the same message or send a new one:
+    try:
+        # Attempt to edit the same message
+        bot.edit_message_text(
+            chat_id=chat_id,
+            message_id=query.message.message_id,
+            text=msg_full,
+            parse_mode=ParseMode.MARKDOWN
+        )
+    except Exception:
+        # If editing fails (e.g., message is older or can't be edited), just send a new one.
+        bot.send_message(chat_id, text=msg_full, parse_mode=ParseMode.MARKDOWN)
+
+# 2) The main callback query handler
+def handle_transactions_callback(update, context):
+    """
+    This processes the user's taps on the inline keyboards.
+    """
+    query = update.callback_query
+    data = query.data
+    logger.debug(f"Handling callback data: {data}")
+
+    if data == 'balance':
+        # Show the main wallet balance
+        handle_balance_callback(query)
+
+    elif data == 'transactions_inline':
+        # Show the main wallet transactions
+        handle_transactions_inline_callback(query)
+
+    elif data.startswith('prev_'):
+        handle_prev_page(update, context)
+
+    elif data.startswith('next_'):
+        handle_next_page(update, context)
+
+    elif data in ['overwatch_inline', 'liveticker_inline', 'lnbits_inline']:
+        handle_donations_inline_callback(query)
+
+    # NEW: handle multiwallet selection
+    elif data == 'multiwallet_balance':
+        # Step 1: Show the user a list of wallets to pick from
+        show_multiwallet_list(query, action='balance')
+
+    elif data == 'multiwallet_transactions':
+        # Step 1: Show the user a list of wallets to pick from
+        show_multiwallet_list(query, action='transactions')
+
+    elif data.startswith("mw_balance_"):
+        # Step 2: The user picked a specific wallet for balance
+        key = data.replace("mw_balance_", "")
+        show_balance_for_wallet(query, key)
+
+    elif data.startswith("mw_tx_"):
+        # Step 2: The user picked a specific wallet for transactions
+        key = data.replace("mw_tx_", "")
+        show_transactions_for_wallet(query, key, page=1)
+
+    else:
+        handle_other_inline_callbacks(data, query)
+        logger.warning(f"Unhandled callback data: {data}")
+
+    query.answer()
+
+def handle_balance_callback(query):
+    """
+    Called when the user taps the '💰 Balance' button for the main wallet.
+    """
+    try:
+        chat_id = query.message.chat.id
+        send_balance_message(chat_id)
+        logger.debug("Handled balance callback.")
+    except Exception as e:
+        logger.error(f"Error handling balance callback: {e}")
+        logger.debug(traceback.format_exc())
+
+def handle_transactions_inline_callback(query):
+    """
+    Called when the user taps the '📜 Latest Transactions' button for the main wallet.
+    """
+    try:
+        chat_id = query.message.chat.id
+        send_transactions_message(chat_id, page=1, message_id=query.message.message_id)
+        logger.debug("Handled transactions_inline callback.")
+    except Exception as e:
+        logger.error(f"Error handling transactions_inline callback: {e}")
+        logger.debug(traceback.format_exc())
+
+def handle_other_inline_callbacks(data, query):
+    """
+    Fallback for unknown callbacks.
+    """
+    bot.answer_callback_query(callback_query_id=query.id, text="❓ Unknown action.")
+    logger.warning(f"Unknown callback data received: {data}")
+
+# 3) The main wallet: show balance or transactions upon user commands
 def send_balance_message(chat_id):
+    """
+    Sends the main wallet's balance to the user.
+    """
     logger.info(f"Fetching MAIN wallet balance for chat_id: {chat_id}")
     wallet_info = fetch_api("wallet", custom_api_key=LNBITS_READONLY_API_KEY)
     if wallet_info is None:
@@ -819,22 +1101,20 @@ def send_balance_message(chat_id):
         logger.error("Failed to fetch main wallet balance.")
         return
     current_balance_msat = wallet_info.get("balance", 0)
-    current_balance_sats = int(current_balance_msat / 1000)
-    balance_text = f"💰 *Current Balance (Main Wallet):* {current_balance_sats} sats"
+    current_balance_sats = current_balance_msat // 1000
+    msg = f"💰 *Current Balance (Main Wallet):* {current_balance_sats} sats"
 
     try:
-        bot.send_message(
-            chat_id=chat_id,
-            text=balance_text,
-            parse_mode=ParseMode.MARKDOWN,
-            reply_markup=get_main_keyboard()
-        )
+        bot.send_message(chat_id, text=msg, parse_mode=ParseMode.MARKDOWN, reply_markup=get_main_keyboard())
         logger.info(f"Balance message (main wallet) sent to chat_id: {chat_id}")
-    except Exception as telegram_error:
-        logger.error(f"Error sending balance message: {telegram_error}")
+    except Exception as e:
+        logger.error(f"Error sending balance message: {e}")
         logger.debug(traceback.format_exc())
 
 def send_transactions_message(chat_id, page=1, message_id=None):
+    """
+    Sends the main wallet's transactions (with pagination) to the user.
+    """
     logger.info(f"Fetching transactions for MAIN wallet, page: {page}")
     payments = fetch_api("payments", custom_api_key=LNBITS_READONLY_API_KEY)
     if payments is None:
@@ -842,9 +1122,9 @@ def send_transactions_message(chat_id, page=1, message_id=None):
         logger.error("Failed to fetch transactions for MAIN wallet.")
         return
 
-    filtered_payments = [p for p in payments if p.get("status", "").lower() != "pending"]
-    sorted_payments = sorted(filtered_payments, key=lambda x: x.get("time", ""), reverse=True)
-    total_transactions = len(sorted_payments)
+    filtered = [p for p in payments if p.get("status", "").lower() != "pending"]
+    sorted_pays = sorted(filtered, key=lambda x: x.get("time", ""), reverse=True)
+    total_transactions = len(sorted_pays)
     transactions_per_page = 13
     total_pages = (total_transactions + transactions_per_page - 1) // transactions_per_page
     if total_pages == 0:
@@ -854,21 +1134,21 @@ def send_transactions_message(chat_id, page=1, message_id=None):
         logger.warning(f"Invalid page number requested: {page}")
         return
 
-    start_index = (page - 1) * transactions_per_page
-    end_index = start_index + transactions_per_page
-    page_transactions = sorted_payments[start_index:end_index]
+    start_i = (page - 1) * transactions_per_page
+    end_i = start_i + transactions_per_page
+    page_transactions = sorted_pays[start_i:end_i]
     if not page_transactions:
         bot.send_message(chat_id, text="❌ No transactions found on this page.")
         logger.info(f"No transactions found on page {page}.")
         return
 
-    message_lines = [f"📜 *Latest Transactions (Main Wallet) - Page {page}/{total_pages}* 📜\n"]
-    for payment in page_transactions:
-        amount_msat = payment.get("amount", 0)
-        memo = sanitize_memo(payment.get("memo", "No memo provided."))
-        time_str = payment.get("time", None)
-        date = parse_time(time_str)
-        formatted_date = date.strftime("%b %d, %Y %H:%M")
+    lines = [f"📜 *Latest Transactions (Main Wallet) - Page {page}/{total_pages}* 📜\n"]
+    for pay in page_transactions:
+        amount_msat = pay.get("amount", 0)
+        memo = sanitize_memo(pay.get("memo", "No memo provided."))
+        time_str = pay.get("time", None)
+        dt_obj = parse_time(time_str)
+        date_str = dt_obj.strftime("%b %d, %Y %H:%M")
         try:
             amount_sats = int(abs(amount_msat) / 1000)
         except ValueError:
@@ -876,10 +1156,10 @@ def send_transactions_message(chat_id, page=1, message_id=None):
             logger.warning(f"Invalid amount_msat value in transaction: {amount_msat}")
         sign = "+" if amount_msat > 0 else "-"
         emoji = "🟢" if amount_msat > 0 else "🔴"
-        message_lines.append(f"{emoji} {formatted_date} {sign}{amount_sats} sats")
-        message_lines.append(f"✉️ Memo: {memo}")
+        lines.append(f"{emoji} {date_str} {sign}{amount_sats} sats")
+        lines.append(f"✉️ Memo: {memo}")
 
-    full_message = "\n".join(message_lines)
+    full_message = "\n".join(lines)
     inline_keyboard = []
     if total_pages > 1:
         buttons = []
@@ -909,11 +1189,14 @@ def send_transactions_message(chat_id, page=1, message_id=None):
                 reply_markup=inline_reply_markup
             )
             logger.info(f"Transactions page {page} sent to chat_id: {chat_id}")
-    except Exception as telegram_error:
-        logger.error(f"Error sending/editing transactions: {telegram_error}")
+    except Exception as e:
+        logger.error(f"Error sending/editing transactions: {e}")
         logger.debug(traceback.format_exc())
 
 def handle_prev_page(update, context):
+    """
+    Callback for '⬅️ Previous' in main wallet pagination.
+    """
     query = update.callback_query
     if not query:
         logger.warning("Callback query not found for previous page.")
@@ -932,6 +1215,9 @@ def handle_prev_page(update, context):
     query.answer()
 
 def handle_next_page(update, context):
+    """
+    Callback for '➡️ Next' in main wallet pagination.
+    """
     query = update.callback_query
     if not query:
         logger.warning("Callback query not found for next page.")
@@ -947,93 +1233,12 @@ def handle_next_page(update, context):
         logger.debug(f"Navigating to next page: {new_page}")
     query.answer()
 
-def handle_balance_callback(query):
-    try:
-        chat_id = query.message.chat.id
-        send_balance_message(chat_id)
-        logger.debug("Handled balance callback.")
-    except Exception as e:
-        logger.error(f"Error handling balance callback: {e}")
-        logger.debug(traceback.format_exc())
-
-def handle_transactions_inline_callback(query):
-    try:
-        chat_id = query.message.chat.id
-        send_transactions_message(chat_id, page=1, message_id=query.message.message_id)
-        logger.debug("Handled transactions_inline callback.")
-    except Exception as e:
-        logger.error(f"Error handling transactions_inline callback: {e}")
-        logger.debug(traceback.format_exc())
-
-def handle_donations_inline_callback(query):
-    data = query.data
-    try:
-        if data == 'overwatch_inline' and OVERWATCH_URL:
-            bot.send_message(
-                chat_id=query.message.chat.id,
-                text="🔗 *Overwatch Details:*",
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🔗 Open Overwatch", url=OVERWATCH_URL)]
-                ])
-            )
-            logger.debug("Handled overwatch_inline callback.")
-        elif data == 'liveticker_inline' and DONATIONS_URL:
-            bot.send_message(
-                chat_id=query.message.chat.id,
-                text="🔗 *Live Ticker Details:*",
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🔗 Open Live Ticker", url=DONATIONS_URL)]
-                ])
-            )
-            logger.debug("Handled liveticker_inline callback.")
-        elif data == 'lnbits_inline' and LNBITS_URL:
-            bot.send_message(
-                chat_id=query.message.chat.id,
-                text="🔗 *LNBits Details:*",
-                parse_mode=ParseMode.MARKDOWN,
-                reply_markup=InlineKeyboardMarkup([
-                    [InlineKeyboardButton("🔗 Open LNBits", url=LNBITS_URL)]
-                ])
-            )
-            logger.debug("Handled lnbits_inline callback.")
-        else:
-            bot.send_message(
-                chat_id=query.message.chat.id,
-                text="❌ No URL configured."
-            )
-            logger.warning("No URL configured for the callback data received.")
-    except Exception as e:
-        logger.error(f"Error handling donations_inline callback: {e}")
-        logger.debug(traceback.format_exc())
-
-def handle_other_inline_callbacks(data, query):
-    bot.answer_callback_query(callback_query_id=query.id, text="❓ Unknown action.")
-    logger.warning(f"Unknown callback data received: {data}")
-
-def handle_transactions_callback(update, context):
-    query = update.callback_query
-    data = query.data
-    logger.debug(f"Handling callback data: {data}")
-
-    if data == 'balance':
-        handle_balance_callback(query)
-    elif data == 'transactions_inline':
-        handle_transactions_inline_callback(query)
-    elif data.startswith('prev_'):
-        handle_prev_page(update, context)
-    elif data.startswith('next_'):
-        handle_next_page(update, context)
-    elif data in ['overwatch_inline', 'liveticker_inline', 'lnbits_inline']:
-        handle_donations_inline_callback(query)
-    else:
-        handle_other_inline_callbacks(data, query)
-        logger.warning(f"Unhandled callback data: {data}")
-
-    query.answer()
+# --------------------- Standard Bot Commands ---------------------
 
 def handle_info_command(update, context):
+    """
+    /info command shows the user some current settings.
+    """
     chat_id = update.effective_chat.id
     logger.info(f"Handling /info command for chat_id: {chat_id}")
     interval_info = (
@@ -1057,11 +1262,14 @@ def handle_info_command(update, context):
             reply_markup=get_main_keyboard()
         )
         logger.info(f"Info message sent to chat_id: {chat_id}")
-    except Exception as telegram_error:
-        logger.error(f"Error sending /info message: {telegram_error}")
+    except Exception as e:
+        logger.error(f"Error sending /info message: {e}")
         logger.debug(traceback.format_exc())
 
 def handle_help_command(update, context):
+    """
+    /help command to show user what commands are available.
+    """
     chat_id = update.effective_chat.id
     logger.info(f"Handling /help command for chat_id: {chat_id}")
     help_message = (
@@ -1071,9 +1279,10 @@ def handle_help_command(update, context):
         "- /transactions - Show your latest transactions with pagination (main wallet).\n"
         "- /info - Display current settings and thresholds.\n"
         "- /help - Display this help message.\n"
-        "- /ticker_ban words - Add forbidden words that will be censored in the Live Ticker.\n\n"
-        "You can also use the buttons below to quickly navigate through features!\n\n"
-        "_Note: If MULTI_LNBITS_API_KEYS is set, you will also receive notifications for additional wallets._"
+        "- /ticker_ban <words> - Add forbidden words that will be censored in the Live Ticker.\n\n"
+        "For multiple wallets, you can now use the new Inline Keyboard buttons:\n"
+        "🔀 MW Balance / 🔀 MW Transactions to see other wallets.\n\n"
+        "You can also use the buttons below to quickly navigate through features!"
     )
 
     try:
@@ -1084,21 +1293,30 @@ def handle_help_command(update, context):
             reply_markup=get_main_keyboard()
         )
         logger.info(f"Help message sent to chat_id: {chat_id}")
-    except Exception as telegram_error:
-        logger.error(f"Error sending /help message: {telegram_error}")
+    except Exception as e:
+        logger.error(f"Error sending /help message: {e}")
         logger.debug(traceback.format_exc())
 
 def handle_balance(update, context):
+    """
+    Called when user types /balance. Shows main wallet's balance.
+    """
     chat_id = update.effective_chat.id
     logger.debug(f"Handling /balance request for chat_id: {chat_id}")
     send_balance_message(chat_id)
 
 def handle_latest_transactions(update, context):
+    """
+    Called when user types /transactions. Shows main wallet's transactions.
+    """
     chat_id = update.effective_chat.id
     logger.debug(f"Handling /transactions request for chat_id: {chat_id}")
     send_transactions_message(chat_id, page=1)
 
 def handle_live_ticker(update, context):
+    """
+    For the textual '📡 Live Ticker' button in the reply keyboard. 
+    """
     chat_id = update.effective_chat.id
     if DONATIONS_URL:
         try:
@@ -1119,6 +1337,9 @@ def handle_live_ticker(update, context):
         logger.warning("Live Ticker URL not configured.")
 
 def handle_overwatch(update, context):
+    """
+    For the textual '📊 Overwatch' button in the reply keyboard.
+    """
     chat_id = update.effective_chat.id
     if OVERWATCH_URL:
         try:
@@ -1139,6 +1360,9 @@ def handle_overwatch(update, context):
         logger.warning("Overwatch URL not configured.")
 
 def handle_lnbits(update, context):
+    """
+    For the textual '⚡ LNBits' button in the reply keyboard.
+    """
     chat_id = update.effective_chat.id
     if LNBITS_URL:
         try:
@@ -1159,6 +1383,10 @@ def handle_lnbits(update, context):
         logger.warning("LNBits URL not configured.")
 
 def process_update(update):
+    """
+    This function is triggered by /webhook POST calls or by polling. 
+    It looks for 'message' or 'callback_query' in 'update'.
+    """
     try:
         if 'message' in update:
             message = update['message']
@@ -1166,6 +1394,7 @@ def process_update(update):
             text = message.get('text', '').strip()
             logger.debug(f"Received message from chat_id {chat_id}: {text}")
 
+            # Handle known text (from the reply keyboard)
             if text == "💰 Balance":
                 handle_balance(None, None)
             elif text == "📜 Latest Transactions":
@@ -1177,11 +1406,13 @@ def process_update(update):
             elif text == "⚡ LNBits":
                 handle_lnbits(None, None)
             else:
+                # Unknown
                 bot.send_message(
                     chat_id=chat_id,
                     text="❓ I didn't recognize that command. Use /help to see what I can do."
                 )
                 logger.warning(f"Unknown message received from chat_id {chat_id}: {text}")
+
         elif 'callback_query' in update:
             logger.debug("Received callback_query in update.")
             pass
@@ -1238,6 +1469,7 @@ def logout():
 @login_required
 def settings():
     if request.method == 'POST':
+        # List all environment variables we allow to be updated.
         env_vars = [
             'TELEGRAM_BOT_TOKEN',
             'CHAT_ID',
@@ -1286,7 +1518,7 @@ def settings():
                 for error in errors:
                     flash(error, 'danger')
                 logger.warning(f"Settings update failed due to missing fields: {errors}")
-                env_vars_current = {var: request.form.get(var, '') for var in env_vars}
+                env_vars_current = {v: request.form.get(v, '') for v in env_vars}
                 return render_template('settings.html', env_vars=env_vars_current)
 
             for var in env_vars:
@@ -1329,7 +1561,12 @@ def settings():
 
     return render_template('settings.html', env_vars=env_vars_current)
 
+# --------------------- Voting for donations (frontend) ---------------------
+
 def handle_vote_command(donation_id, vote_type):
+    """
+    Increase like or dislike count for a donation by donation_id.
+    """
     try:
         for donation in donations:
             if donation.get("id") == donation_id:
@@ -1359,6 +1596,10 @@ def home():
 
 @app.route('/status', methods=['GET'])
 def status_route():
+    """
+    Returns some simple JSON with the main wallet's balance and the latest transactions, 
+    plus donation info if enabled.
+    """
     donation_details = fetch_donation_details()
     logger.debug("Status route accessed.")
     return jsonify({
@@ -1373,6 +1614,10 @@ def status_route():
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
+    """
+    If you set a webhook for the Telegram Bot, updates go here.
+    We spin off a thread so we don't block returning "OK".
+    """
     update = request.get_json()
     if not update:
         logger.warning("Empty update received in webhook.")
@@ -1384,6 +1629,9 @@ def webhook():
 
 @app.route('/donations')
 def donations_page():
+    """
+    Renders a donation page if donations are enabled. 
+    """
     if not DONATIONS_URL or not LNURLP_ID:
         logger.warning("Donations not enabled or LNURLP_ID not set.")
         return "Donations not enabled.", 404
@@ -1430,6 +1678,9 @@ def donations_page():
 
 @app.route('/api/donations', methods=['GET'])
 def get_donations_data():
+    """
+    Returns the list of donations as JSON for a web frontend (if enabled).
+    """
     if not DONATIONS_URL or not LNURLP_ID:
         logger.warning("Donations not enabled.")
         return jsonify({"error": "Donations not enabled."}), 404
@@ -1451,6 +1702,10 @@ def get_donations_data():
 
 @app.route('/api/vote', methods=['POST'])
 def vote_donation():
+    """
+    Endpoint to cast a 'like' or 'dislike' for a donation, 
+    sets a cookie so each user can only vote once.
+    """
     try:
         data = request.get_json()
         donation_id = data.get('donation_id')
@@ -1487,6 +1742,10 @@ def vote_donation():
 
 @app.route('/donations_updates', methods=['GET'])
 def donations_updates():
+    """
+    For a frontend to know if donations changed. 
+    Returns last_update in JSON if donations are enabled.
+    """
     global last_update
     if not DONATIONS_URL or not LNURLP_ID:
         logger.warning("Donations not enabled.")
@@ -1501,6 +1760,9 @@ def donations_updates():
 
 @app.route('/cinema')
 def cinema_page():
+    """
+    Renders a 'cinema mode' page if donations are enabled.
+    """
     if not DONATIONS_URL or not LNURLP_ID:
         logger.warning("Donations are not enabled for Cinema Mode.")
         return "Donations are not enabled for Cinema Mode.", 404
@@ -1511,10 +1773,9 @@ def cinema_page():
 
 def initialize_processed_payments():
     """
-    Mark all existing payments from the MAIN wallet as processed
-    so we don't spam old transactions. 
-    For multiwallet, we only do this for the main wallet on startup.
-    The additional wallets can also be similarly 'initialized' if desired.
+    Marks all existing main-wallet payments as processed so we don't
+    send old notifications on startup. 
+    (You could do the same for multi-wallet keys if you want.)
     """
     logger.info("Initializing processed payments (main wallet) to prevent old notifications.")
     payments = fetch_api("payments", custom_api_key=LNBITS_READONLY_API_KEY)
@@ -1533,14 +1794,19 @@ def initialize_processed_payments():
     logger.info("Initialization of processed payments for main wallet completed.")
 
 def start_scheduler():
+    """
+    Starts the APScheduler. Schedules:
+      - main wallet + multiwallet transaction fetch 
+      - multi-wallet balance checks
+    """
     scheduler = BackgroundScheduler(timezone='UTC')
 
-    # 1) Periodic job to fetch main wallet payments + multiwallet payments
+    # 1) Periodic job to fetch MAIN + multi-wallet payments
     if PAYMENTS_FETCH_INTERVAL > 0:
         scheduler.add_job(
             func=lambda: [
                 send_latest_payments_singlewallet(),
-                send_latest_payments_multiwallet()  # fetch from all other wallets
+                send_latest_payments_multiwallet()  # Additional wallets
             ],
             trigger='interval',
             seconds=PAYMENTS_FETCH_INTERVAL,
@@ -1552,11 +1818,10 @@ def start_scheduler():
         logger.info("Payments fetch disabled (PAYMENTS_FETCH_INTERVAL=0).")
 
     # 2) Periodic job to check each wallet's balance
-    #    Adjust the interval as desired (e.g., 120 seconds).
     scheduler.add_job(
         check_multi_wallet_balances,
         'interval',
-        seconds=60,
+        seconds=60,  # Adjust as you wish
         id='multi_wallet_balance_check',
         next_run_time=datetime.utcnow() + timedelta(seconds=3)
     )
@@ -1566,6 +1831,10 @@ def start_scheduler():
     logger.info("Scheduler started.")
 
 def send_main_inline_keyboard():
+    """
+    Optionally send the main inline keyboard to the user upon startup 
+    (so they see the new multi-wallet buttons).
+    """
     inline_reply_markup = get_main_inline_keyboard()
     try:
         welcome_message = (
@@ -1579,19 +1848,23 @@ def send_main_inline_keyboard():
             parse_mode=ParseMode.MARKDOWN,
             reply_markup=inline_reply_markup
         )
-        logger.info("Main inline keyboard successfully sent.")
-    except Exception as telegram_error:
-        logger.error(f"Error sending the main inline keyboard: {telegram_error}")
+        logger.info("Main inline keyboard successfully sent on startup.")
+    except Exception as e:
+        logger.error(f"Error sending the main inline keyboard: {e}")
         logger.debug(traceback.format_exc())
 
 def send_start_message(update, context):
+    """
+    This is triggered by the /start command, 
+    sends a textual welcome + main keyboard.
+    """
     chat_id = update.effective_chat.id
     welcome_message = (
         "👋 Welcome to your LNbits Multi-Wallet Monitor!\n\n"
         "Use the buttons below for quick access to various features."
     )
     reply_markup = get_main_keyboard()
-    
+
     try:
         bot.send_message(
             chat_id=chat_id,
@@ -1605,15 +1878,24 @@ def send_start_message(update, context):
         logger.debug(traceback.format_exc())
 
 def main():
-    # Start Flask in a separate thread
+    """
+    The application's main entry point:
+      - Runs Flask in a background thread
+      - Initializes processed payments
+      - Starts the scheduler
+      - Sets up the Telegram bot handlers
+      - Sends the main keyboard
+      - Waits for idle
+    """
+    # Start Flask in a thread
     flask_thread = threading.Thread(target=run_flask_app, daemon=True)
     flask_thread.start()
     logger.debug("Flask app thread started.")
 
-    # Initialize processed payments for the main wallet
+    # Mark all main-wallet payments as processed
     initialize_processed_payments()
 
-    # Start the scheduler in a separate thread
+    # Start the scheduler
     scheduler_thread = threading.Thread(target=start_scheduler, daemon=True)
     scheduler_thread.start()
     logger.debug("Scheduler thread started.")
@@ -1621,6 +1903,7 @@ def main():
     updater = Updater(TELEGRAM_BOT_TOKEN, use_context=True)
     dispatcher = updater.dispatcher
 
+    # Basic commands
     dispatcher.add_handler(CommandHandler('balance', lambda update, context: send_balance_message(update.effective_chat.id)))
     dispatcher.add_handler(CommandHandler('transactions', lambda update, context: send_transactions_message(update.effective_chat.id, page=1)))
     dispatcher.add_handler(CommandHandler('info', handle_info_command))
@@ -1628,29 +1911,41 @@ def main():
     dispatcher.add_handler(CommandHandler('start', send_start_message))
     dispatcher.add_handler(CommandHandler('ticker_ban', handle_ticker_ban, pass_args=True))
 
+    # Callback query pattern for our inline keyboards
     dispatcher.add_handler(CallbackQueryHandler(
         handle_transactions_callback,
-        pattern='^(balance|transactions_inline|prev_\\d+|next_\\d+|overwatch_inline|liveticker_inline|lnbits_inline)$'
+        pattern='^(balance|transactions_inline|prev_\\d+|next_\\d+|overwatch_inline|liveticker_inline|lnbits_inline|multiwallet_balance|multiwallet_transactions|mw_balance_.*|mw_tx_.*)$'
     ))
 
+    # Text message handlers from the reply keyboard
     dispatcher.add_handler(MessageHandler(Filters.regex('^💰 Balance$'), handle_balance))
     dispatcher.add_handler(MessageHandler(Filters.regex('^📜 Latest Transactions$'), handle_latest_transactions))
     dispatcher.add_handler(MessageHandler(Filters.regex('^📡 Live Ticker$'), handle_live_ticker))
     dispatcher.add_handler(MessageHandler(Filters.regex('^📊 Overwatch$'), handle_overwatch))
     dispatcher.add_handler(MessageHandler(Filters.regex('^⚡ LNBits$'), handle_lnbits))
 
+    # Start the bot
     updater.start_polling()
     logger.info("Telegram Bot started.")
+    
+    # Optionally send the main inline keyboard right now
     send_main_inline_keyboard()
+
     updater.idle()
 
 def run_flask_app():
+    """
+    Runs the Flask application, serving on APP_HOST:APP_PORT 
+    unless there's an exception.
+    """
     try:
         logger.info(f"Starting Flask app on {APP_HOST}:{APP_PORT}")
         app.run(host=APP_HOST, port=APP_PORT, debug=False, use_reloader=False)
     except Exception as e:
         logger.error(f"Error running Flask app: {e}")
         logger.debug(traceback.format_exc())
+
+# --------------------- Entry Point ---------------------
 
 if __name__ == "__main__":
     logger.info("🚀 Starting LNbits Multi-Wallet Monitor.")
@@ -1662,5 +1957,6 @@ if __name__ == "__main__":
     else:
         logger.info("⏲️ Fetch Interval disabled")
 
+    # Load donations (if enabled) and launch
     load_donations()
     main()
