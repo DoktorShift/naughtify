@@ -1,0 +1,364 @@
+/* 
+  1. Basic Page Styles 
+  Palette:
+    - Background Dark: #0C0C0C
+    - Lightning Gold: #FFC300
+    - Deep Gray: #2A2A2A
+    - Off-White Text: #F2F2F2
+    - Subtle Gray Text: #BFBFBF
+--------------------------------------- */
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #0C0C0C;  /* Primary Dark */
+  color: #F2F2F2;       /* Off-White Text */
+  font-family: 'Arial', sans-serif;
+  overflow: hidden;
+}
+
+/* 
+ * 2. "Go Back" Button (Top-Left)
+ *    - Transparent until hover, uses #FFC300 for arrow
+ */
+.back-button-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 48px;
+  height: 48px;
+  z-index: 999;
+  cursor: pointer;
+}
+
+.back-button {
+  /* Start slightly hidden and smaller */
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+
+  /* Round button style */
+  background: rgba(0,0,0,0.3);
+  border: 1px solid #FFC300; /* Use lightning gold border */
+  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFC300; /* Arrow color */
+}
+
+/* Show fully on hover */
+.back-button-container:hover .back-button {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Slightly darker overlay on hover */
+.back-button:hover {
+  background: rgba(0,0,0,0.5);
+}
+
+.back-button svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor; /* inherits button text color */
+}
+
+/* 
+  3. Main Container 
+  Splits screen: left & right
+*/
+.cinema-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  background: #0C0C0C; /* same as body background */
+}
+
+/* Left & Right Sections */
+.cinema-left, .cinema-right {
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* 
+  4. Left Panel 
+  - Dark background with deep gray overlay
+*/
+.cinema-left {
+  background: #2A2A2A; /* Deep Gray for the left panel */
+  flex: 0 0 40%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  border-right: 1px solid #FFC300; /* Subtle gold border line */
+  position: relative;
+}
+
+/* Explanatory Textbox */
+.explanatory-textbox {
+  width: 90%;
+  padding: 15px;
+  background: #1F1F1F;  /* Slightly lighter than #2A2A2A for contrast */
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.explanatory-textbox p {
+  font-size: 1.2vw;
+  color: #BFBFBF; /* Subtle gray text for normal body copy */
+  text-align: center;
+  margin: 0;
+}
+
+/* Total Sats Box */
+.total-amount {
+  width: auto;
+  max-width: 90%;
+  padding: 10px;
+  background: #1F1F1F;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 150px;
+}
+
+/* Total Sats Text */
+.total-amount p {
+  font-size: 1.5vw;
+  color: #FFC300; /* Bold gold for total sats */
+  font-weight: 700;
+  text-shadow: 0 0 4px rgba(255,195,0,0.5);
+  text-align: center;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Live Ticker Headline */
+.live-ticker-headline {
+  font-size: 2.5vw;
+  color: #FFC300;
+  margin-bottom: 15px;
+  font-weight: 700;
+  text-shadow: 0 0 3px rgba(255,195,0,0.3);
+}
+
+/* If you use h1 in the left panel (not mandatory) */
+.cinema-left h1 {
+  font-size: 4vw;
+  color: #FFC300;
+  margin-bottom: 10px;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(255,195,0,0.5);
+}
+
+/* QR Container */
+.cinema-qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
+.cinema-qr-container img {
+  width: 30vw;
+  max-width: 300px;
+  border-radius: 8px;
+  /* Light gold glow around QR */
+  box-shadow: 0 4px 20px rgba(255,195,0,0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.cinema-qr-container img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 30px rgba(255,195,0,0.4);
+}
+
+/* Lightning Address */
+.lightning-address {
+  font-size: 1.625vw;
+  color: #FFC300;
+  word-break: break-all;
+  text-align: center;
+  margin-top: 5px;
+}
+
+/* Heroic Patrons */
+.heroic-patrons h2 {
+  font-size: 2vw;
+  color: #FFC300;
+  margin-bottom: 15px;
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 0 0 3px rgba(255,195,0,0.3);
+}
+
+.heroic-patrons ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.heroic-patrons li {
+  font-size: 1.4vw;
+  margin: 10px 0;
+  color: #BFBFBF; /* Subtle gray text */
+  font-weight: 400;
+}
+
+/* 
+  5. Right Panel 
+  - Main table area
+*/
+.cinema-right {
+  flex: 1;
+  background: #0C0C0C; /* Pure dark background for table side */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Table Container */
+.table-container {
+  width: 90%;
+  height: 90%;
+  overflow: auto;
+  background: #2A2A2A; /* Deep gray panel for the table container */
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Table Styles */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1.2vw;
+  color: #F2F2F2;   /* Off-white text for table content */
+  margin-top: 10px;
+}
+
+thead {
+  background: rgba(255, 195, 0, 0.1);
+}
+
+th, td {
+  padding: 10px;
+  border-bottom: 1px solid #3A3A3A;
+  text-align: left;
+}
+
+th {
+  font-weight: 600;
+  color: #FFC300;
+  border-bottom: 2px solid #FFC300;
+}
+
+tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Highlight for big donations */
+.highlight {
+  background: #404040 !important; /* A bit lighter gray to stand out */
+  color: #FFD; 
+  font-weight: bold;
+  border-left: 5px solid #FFC300; /* Gold highlight stripe */
+}
+
+/* 
+  6. Sound Control Button 
+*/
+.sound-control {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+#sound-toggle {
+  background: rgba(0,0,0,0.4);
+  color: #FFC300;
+  border: 1px solid #FFC300;
+  border-radius: 4px;
+  padding: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+#sound-toggle:hover {
+  background: rgba(0,0,0,0.6);
+  transform: scale(1.05);
+}
+
+/* Hover and Focus States for Table Rows */
+.table-container table tr:hover {
+  background: rgba(255, 195, 0, 0.05);
+}
+
+/* 
+  7. Scrollbar Styling 
+*/
+.table-container::-webkit-scrollbar {
+  width: 10px;
+}
+.table-container::-webkit-scrollbar-track {
+  background: #1F1F1F;
+}
+.table-container::-webkit-scrollbar-thumb {
+  background: #3A3A3A;
+  border-radius: 5px;
+}
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #4A4A4A;
+}
+
+/* 
+  8. Responsive Adjustments
+*/
+@media (max-width: 768px) {
+  .cinema-left h1 {
+    font-size: 7vw;
+  }
+
+  .heroic-patrons h2 {
+    font-size: 4vw;
+  }
+
+  .heroic-patrons li {
+    font-size: 2.5vw;
+  }
+
+  table {
+    font-size: 2.5vw;
+  }
+
+  .explanatory-textbox p {
+    font-size: 4vw;
+  }
+
+  .live-ticker-headline {
+    font-size: 5vw;
+  }
+
+  .lightning-address {
+    font-size: 3vw;
+  }
+
+  .total-amount p {
+    font-size: 3vw;
+  }
+}
