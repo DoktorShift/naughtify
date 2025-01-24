@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const transactionsBody = document.getElementById('cinema-transactions');
     const soundToggleBtn = document.getElementById('sound-toggle');
     const soundIcon = document.getElementById('sound-icon');
-    const lightningAddressElement = document.getElementById('lightning-address'); // New element
+    const lightningAddressElement = document.getElementById('lightning-address');
 
     // Constant for number of rows to display
     const ROWS_TO_DISPLAY = 15;
@@ -223,4 +223,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Accessibility: Initialize aria-label
     soundToggleBtn.setAttribute('aria-label', 'Mute Sounds');
+
+    // ------------- NEW GO BACK FUNCTION -------------
+    // This checks if there's any history to go back to;
+    // if not, it redirects to '/', which you can replace
+    // with any preferred fallback URL.
+
+    window.goBack = function() {
+      if (window.history.length > 1) {
+        console.log('Going back one step in history.');
+        window.history.back();
+      } else {
+        console.log('No browser history detected. Redirecting to fallback URL.');
+        window.location.href = 'https://donations.lnbot.de';
+      }
+    };
 });
