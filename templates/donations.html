@@ -56,14 +56,20 @@
                 </div>
 
                 <!-- Lightning Address Card -->
-                <div class="card lightning-card">
-                    <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address" data-address="{{ lightning_address }}" id="lightning-address-container">
-                        <span class="emoji">⚡️</span>
-                        <span class="address" id="lightning-address">{{ lightning_address }}</span>
-                    </div>
-                </div>
-            </div>
-
+        <div class="card lightning-card">
+          <!-- Copy-to-clipboard field for Lightning address -->
+          <div
+            class="copy-field"
+            onclick="copyText(this)"
+            title="Click to copy the Lightning Address"
+            data-address="{{ lightning_address }}"
+            id="lightning-address-container"
+          >
+            ⚡️ <span class="address" id="lightning-address">{{ lightning_address }}</span>
+          </div>
+        </div>
+      </div>
+            
             <!-- Donations Box -->
             <div class="donations-box">
                 <h2>Total Amount</h2>
