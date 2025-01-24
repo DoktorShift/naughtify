@@ -1,0 +1,348 @@
+/* 
+  Basic Page Styles 
+  - Marine-themed background & text
+--------------------------------------- */
+html, body {
+  margin: 0;
+  padding: 0;
+  /* A subtle blue gradient for the background */
+  background: linear-gradient(135deg, #002244 0%, #003366 100%);
+  color: #f0f8ff; /* Light, almost white text */
+  font-family: 'Arial', sans-serif;
+  overflow: hidden;
+}
+
+/*
+ * "Go Back" Button (Top-Left)
+ * - Transparent on load, bright yellow on hover
+*/
+.back-button-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 48px;
+  height: 48px;
+  z-index: 999;
+  cursor: pointer;
+}
+
+.back-button {
+  /* Start slightly hidden and smaller */
+  opacity: 0;
+  transform: scale(0.8);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+
+  /* Round button style */
+  background: rgba(0,0,0,0.2);
+  border: 2px solid #FFD700; /* Vibrant yellow border */
+  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFD700; /* Vibrant yellow for the arrow */
+}
+
+/* Show fully on hover */
+.back-button-container:hover .back-button {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Slightly darker background on hover */
+.back-button:hover {
+  background: rgba(0,0,0,0.3);
+}
+
+.back-button svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor; /* inherits button text color (#FFD700) */
+}
+
+/* 
+  Main Container 
+  - Splits screen into left and right sections
+*/
+.cinema-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  /* The background is already set on the body, so we keep it transparent here */
+  background: transparent;
+}
+
+/* Left & Right Sections */
+.cinema-left, .cinema-right {
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Left Panel */
+.cinema-left {
+  background: rgba(0, 20, 50, 0.9); /* A deeper marine overlay */
+  flex: 0 0 40%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  border-right: 2px solid #003366; /* Subtle border to match marine theme */
+  position: relative;
+}
+
+/* Explanatory Textbox */
+.explanatory-textbox {
+  width: 90%;
+  padding: 15px;
+  background: #001f33; /* A slightly lighter marine box */
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.explanatory-textbox p {
+  font-size: 1.2vw;
+  color: #cce7ff; /* Light, cool blue text */
+  text-align: center;
+  margin: 0;
+}
+
+/* Total Sats Box */
+.total-amount {
+  width: auto;
+  max-width: 90%;
+  padding: 10px;
+  background: #001f33;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3), 0 2px 4px rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 150px;
+}
+
+/* Total Sats Text */
+.total-amount p {
+  font-size: 1.5vw;
+  color: #FFD700; /* Vibrant yellow for the total sats */
+  font-weight: 700;
+  text-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+  text-align: center;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Live Ticker Headline */
+.live-ticker-headline {
+  font-size: 2.5vw;
+  color: #FFD700;
+  margin-bottom: 15px;
+  font-weight: 700;
+  text-shadow: 0 0 5px rgba(255,215,0,0.3);
+}
+
+/* Modernized Headline (if you ever use <h1> in left panel) */
+.cinema-left h1 {
+  font-size: 4vw;
+  color: #FFD700;
+  margin-bottom: 10px;
+  font-weight: 700;
+  text-shadow: 0 0 10px rgba(255,215,0,0.5);
+}
+
+/* QR Container */
+.cinema-qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
+.cinema-qr-container img {
+  width: 30vw;
+  max-width: 300px;
+  border-radius: 8px;
+  /* Yellow glow around QR */
+  box-shadow: 0 4px 20px rgba(255,215,0,0.2);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.cinema-qr-container img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 30px rgba(255,215,0,0.4);
+}
+
+/* Lightning Address */
+.lightning-address {
+  font-size: 1.625vw;
+  color: #FFD700;
+  word-break: break-all;
+  text-align: center;
+  margin-top: 5px;
+}
+
+/* Heroic Patrons */
+.heroic-patrons h2 {
+  font-size: 2vw;
+  color: #FFD700;
+  margin-bottom: 15px;
+  font-weight: 600;
+  text-align: center;
+  text-shadow: 0 0 5px rgba(255,215,0,0.3);
+}
+
+.heroic-patrons ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.heroic-patrons li {
+  font-size: 1.4vw;
+  margin: 10px 0;
+  color: #cce7ff;
+  font-weight: 400;
+}
+
+/* Right Panel */
+.cinema-right {
+  flex: 1;
+  background: rgba(0, 20, 50, 0.7);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Table Container */
+.table-container {
+  width: 90%;
+  height: 90%;
+  overflow: auto;
+  background: #002244;
+  border-radius: 10px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Table Styles */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1.2vw;
+  color: #f0f8ff;
+  margin-top: 10px;
+}
+
+thead {
+  background: rgba(0,0,0,0.3);
+}
+
+th, td {
+  padding: 10px;
+  border-bottom: 1px solid #003366;
+  text-align: left;
+}
+
+th {
+  font-weight: 600;
+  color: #FFD700;
+  border-bottom: 2px solid #FFD700;
+}
+
+tr:nth-child(even) {
+  background: rgba(0,0,0,0.1);
+}
+
+/* Highlighted row (big donation) */
+.highlight {
+  background: #003f66 !important;
+  color: #fffae1 !important;
+  font-weight: bold;
+  border-left: 5px solid #FFD700;
+}
+
+/* Sound Control Button */
+.sound-control {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+#sound-toggle {
+  background: rgba(0, 0, 0, 0.3);
+  color: #FFD700;
+  border: 2px solid #FFD700;
+  border-radius: 5px;
+  padding: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+#sound-toggle:hover {
+  background: rgba(0, 0, 0, 0.5);
+  transform: scale(1.05);
+}
+
+/* Hover and Focus States for Table Rows */
+.table-container table tr:hover {
+  background: rgba(255, 215, 0, 0.1);
+}
+
+/* Scrollbar Styling */
+.table-container::-webkit-scrollbar {
+  width: 10px;
+}
+.table-container::-webkit-scrollbar-track {
+  background: #001f33;
+}
+.table-container::-webkit-scrollbar-thumb {
+  background: #003366;
+  border-radius: 5px;
+}
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #194a80;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 768px) {
+  .cinema-left h1 {
+    font-size: 7vw;
+  }
+
+  .heroic-patrons h2 {
+    font-size: 4vw;
+  }
+
+  .heroic-patrons li {
+    font-size: 2.5vw;
+  }
+
+  table {
+    font-size: 2.5vw;
+  }
+
+  .explanatory-textbox p {
+    font-size: 4vw;
+  }
+
+  .live-ticker-headline {
+    font-size: 5vw;
+  }
+
+  .lightning-address {
+    font-size: 3vw;
+  }
+
+  .total-amount p {
+    font-size: 3vw;
+  }
+}
