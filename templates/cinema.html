@@ -1,70 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Cinema Mode</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/cinema.css') }}">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cinema Mode</title>
+
+  <!-- Reference your updated CSS file -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/cinema.css') }}">
 </head>
 <body>
-    <div class="cinema-container">
-        <!-- Left Section -->
-        <div class="cinema-left">
-            <!-- Explanatory Textbox -->
-            <div class="explanatory-textbox">
-                <p>
-                    Welcome to my Show! Here you can see real-time updates of patrons supporting my mission. Enjoy the show!
-                </p>
-            </div>
 
-            <!-- Live Ticker Headline -->
-            <h2 class="live-ticker-headline">Live⚡️Ticker</h2>
+  <!-- Go Back Button (Top-Left) -->
+  <div class="back-button-container" title="Go Back">
+    <button class="back-button" onclick="goBack()">
+      <!-- Simple SVG Arrow -->
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+        <path 
+          fill="currentColor"
+          d="M14.7 18.7c.4-.4.4-1 0-1.4L9.4 12l5.3-5.3
+             c.4-.4.4-1 0-1.4s-1-.4-1.4 0l-6 6c-.4.4-.4 1 
+             0 1.4l6 6c.4.3 1 .3 1.4 0z"
+        />
+      </svg>
+    </button>
+  </div>
 
-            <!-- QR Code and Lightning Address -->
-            <div class="cinema-qr-container">
-                <img id="cinema-qr" alt="QR Code"/>
-                <div id="lightning-address" class="lightning-address">lightning_address@domain.com</div>
-            </div>
-            
-            <!-- Total Sats -->
-            <div class="explanatory-textbox total-amount">
-                <p id="cinema-total">0 Sats</p>
-            </div>
+  <div class="cinema-container">
+    <!-- Left Section -->
+    <div class="cinema-left">
+      <!-- Explanatory Textbox -->
+      <div class="explanatory-textbox">
+          <p>
+              Welcome to my Show! Here you can see real-time updates of patrons supporting my mission. Enjoy the show!
+          </p>
+      </div>
 
-            <!-- Heroic Patrons -->
-            <div class="heroic-patrons">
-                <h2>Heroic Patrons</h2>
-                <ul id="heroic-patrons-list">
-                    <!-- Top 3 patrons will be dynamically inserted here -->
-                </ul>
-            </div>
+      <!-- Live Ticker Headline -->
+      <h2 class="live-ticker-headline">Live⚡️Ticker</h2>
+
+      <!-- QR Code and Lightning Address -->
+      <div class="cinema-qr-container">
+        <img id="cinema-qr" alt="QR Code"/>
+        
+        <!-- Copy-to-clipboard field for the Lightning address -->
+        <div
+          class="copy-field"
+          onclick="copyText(this)"
+          title="Click to copy the Lightning Address"
+          data-address="{{ lightning_address }}"
+          id="lightning-address-container"
+        >
+          ⚡️ <span class="address" id="lightning-address">{{ lightning_address }}</span>
         </div>
+      </div>
+      
+      <!-- Total Sats -->
+      <div class="explanatory-textbox total-amount">
+          <p id="cinema-total">0 Sats</p>
+      </div>
 
-        <!-- Right Section -->
-        <div class="cinema-right">
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 20%;">Time</th>
-                            <th style="width: 40%;">Memo</th>
-                            <th style="width: 20%;">Amount</th>
-                            <th style="width: 20%;">Likes</th>
-                        </tr>
-                    </thead>
-                    <tbody id="cinema-transactions">
-                        <!-- Recent donations inserted here -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
+      <!-- Heroic Patrons -->
+      <div class="heroic-patrons">
+          <h2>Heroic Patrons</h2>
+          <ul id="heroic-patrons-list">
+              <!-- Top 3 patrons will be dynamically inserted here -->
+          </ul>
+      </div>
     </div>
 
-    <!-- Sound Control -->
-    <div class="sound-control">
-        <button id="sound-toggle" title="Mute/Unmute"><span id="sound-icon">🔊</span></button>
+    <!-- Right Section -->
+    <div class="cinema-right">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 20%;">Time</th>
+              <th style="width: 40%;">Memo</th>
+              <th style="width: 20%;">Amount</th>
+              <th style="width: 20%;">Likes</th>
+            </tr>
+          </thead>
+          <tbody id="cinema-transactions">
+            <!-- Recent donations inserted here -->
+          </tbody>
+        </table>
+      </div>
     </div>
+  </div>
 
-    <script src="{{ url_for('static', filename='js/cinema.js') }}"></script>
+  <!-- Sound Control -->
+  <div class="sound-control">
+      <button id="sound-toggle" title="Mute/Unmute"><span id="sound-icon">🔊</span></button>
+  </div>
+
+  <!-- Reference your JavaScript file -->
+  <!-- 
+       IMPORTANT: The goBack() function must exist in your .js
+       so ensure it loads AFTER this HTML element 
+  -->
+  <script src="{{ url_for('static', filename='js/cinema.js') }}"></script>
 </body>
 </html>
