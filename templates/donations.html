@@ -1,143 +1,155 @@
-<!-- templates/donations.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Live⚡️Ticker Dashboard</title>
-    
-    <!-- Google Material Icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    
-    <!-- External CSS Files -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/settings.css') }}">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LN Guestbook</title>
+  
+  <!-- Google Material Icons & Font Awesome -->
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+  <link
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    rel="stylesheet"
+  />
+
+  <!-- Main CSS -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-    <div class="dashboard">
-        <!-- Header -->
-        <div class="header">
-            <h1>Live⚡️Ticker</h1>
-            <h5>Share payments in real-time.</h5>
-            
-            <!-- Dark Mode Toggle -->
-            <div class="toggle-container">
-                <label class="switch">
-                    <input type="checkbox" id="darkModeToggle" aria-label="Toggle Dark Mode">
-                    <span class="slider round"></span>
-                </label>
-            </div>
+  <div class="dashboard">
+    <!-- Header -->
+    <div class="header">
+      <h1>Lightning Guestbook</h1>
+      <h5>Sign our Guestbook with a Lightning Payment</h5>
+      
+      <!-- Dark Mode Toggle -->
+      <div class="toggle-container">
+        <label class="switch">
+          <input type="checkbox" id="darkModeToggle" aria-label="Toggle Dark Mode" />
+          <span class="slider round"></span>
+        </label>
+      </div>
 
-            <!-- Info Icon with Tooltip -->
-            <div class="info-tooltip">
-                <i class="material-icons info-icon">psychology_alt</i>
-                <span class="tooltip-text">Our Mission</span>
-                <a href="{{ information_url }}" target="_blank" class="info-link" aria-label="More about"></a>
-            </div>
-            
-            <!-- Cinema Mode Launch Button -->
-            <a href="{{ url_for('cinema_page') }}" class="cinema-button" title="Open Cinema Mode" target="_blank">
-                <i class="material-icons">theaters</i>
-            </a>
-        </div>
+      <!-- Info Icon with Tooltip -->
+      <div class="info-tooltip">
+        <i class="material-icons info-icon">psychology_alt</i>
+        <span class="tooltip-text">Our Mission</span>
+        <a href="#" target="_blank" class="info-link" aria-label="More about mission"></a>
+      </div>
 
-        <!-- Info Section -->
-        <div class="info-section">
-            <!-- QR Code and Lightning Address Container -->
-            <div class="info-container">
-                <!-- QR Code Card -->
-                <div class="card qr-card">
-                    <h5>Scan to send via Lightning Network.</h5>
-                    <!-- QR Code with Click Handler to Copy LNURL -->
-                    <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}" onclick="copyLnurl(this)" title="Click to copy the LNURL">
-                </div>
-
-                <!-- Lightning Address Card -->
-                <div class="card lightning-card">
-                    <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address" data-address="{{ lightning_address }}" id="lightning-address-container">
-                        <span class="emoji">⚡️</span>
-                        <span class="address" id="lightning-address">{{ lightning_address }}</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Donations Box -->
-            <div class="donations-box">
-                <h2>Total Amount</h2>
-                <div class="donation-amount" id="totalDonations">0 Sats</div>
-                
-                <!-- Logo source -->
-                <img src="{{ url_for('static', filename='assets/main_logo.png') }}" alt="Main Logo" class="main-logo">
-                
-                <div class="donation-history" id="donationHistory">Latest Patron: None yet.</div>
-            </div>
-        </div>
-
-        <!-- Donations Table with Likes and Dislikes -->
-        <div class="transactions">
-            <h2>Donations</h2>
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 20%;">Date</th>
-                        <th style="width: 50%;">Memo</th>
-                        <th style="width: 20%;">Amount</th>
-                        <th style="width: 10%;">Actions</th> 
-                    </tr>
-                </thead>
-                <tbody id="transactions">
-                    <tr>
-                        <td colspan="4" class="no-data">No donors yet.</td>
-                    </tr>
-                </tbody>
-            </table>
-            <div class="pagination" id="pagination"></div>
-        </div>
+      <!-- Cinema Mode Launch Button (Optional) -->
+      <a href="#" class="cinema-button" title="Open Cinema Mode" target="_blank">
+        <i class="material-icons">theaters</i>
+      </a>
     </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <div class="footer-content">
-            <div class="footer-section about">
-                <h3>About Us</h3>
-                <p>
-                    We collect and save money to support our community and enhance our services. Learn more about our mission and values.
-                </p>
-            </div>
-            <div class="footer-section links">
-                <h3>Quick Links</h3>
-                <ul>
-                    <li><a href="{{ information_url }}" target="_blank">Our Mission</a></li>
-                </ul>
-            </div>
-            <div class="footer-section social">
-                <h3>Connect with Us</h3>
-                <div class="social-icons">
-                    <a href="#" aria-label="Home"><i class="material-icons">home</i></a>
-                    <a href="#" aria-label="Email"><i class="material-icons">email</i></a>
-                    <a href="https://github.com/DoktorShift/naughtify" target="_blank" aria-label="GitHub">
-                        <i class="fab fa-github"></i>
-                    </a>
-                    <!-- Login Button in Footer -->
-                    <a href="{{ url_for('login') }}" class="login-button" title="Login" aria-label="Login">
-                        <i class="material-icons">key</i>
-                    </a>
-                </div>
-            </div>
+    <!-- Info Section -->
+    <div class="info-section">
+      <!-- QR + Lightning Container -->
+      <div class="info-container">
+        <!-- QR Code Card -->
+        <div class="card qr-card">
+          <h5>Scan & attach a memo to sign the guestbook</h5>
+          <!-- QR Code (Click = copy LNURL) -->
+          <img
+            src="data:image/png;base64,REPLACE_WITH_YOUR_QR"
+            alt="QR Code"
+            data-lnurl=""
+            onclick="copyLnurl(this)"
+            title="Click to copy LNURL"
+          />
         </div>
-        <div class="footer-bottom">
-            &copy; 2024 Naughtify. LICENSED under MIT.
+
+        <!-- Lightning Address Card -->
+        <div class="card lightning-card">
+          <div
+            class="copy-field"
+            onclick="copyText(this)"
+            title="Click to copy the Lightning Address"
+            data-address="lightning@example.com"
+            id="lightning-address-container"
+            data-lnurl=""
+          >
+            <span class="emoji">⚡️</span>
+            <span class="address" id="lightning-address">lightning@example.com</span>
+          </div>
         </div>
-    </footer>
+      </div>
 
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
+      <!-- Donations / Guestbook Box -->
+      <div class="donations-box">
+        <h2>Total Amount</h2>
+        <div class="donation-amount" id="totalDonations">0 Sats</div>
 
-    <!-- External JS Files -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+        <!-- Logo placeholder -->
+        <img src="placeholder_logo.png" alt="Main Logo" class="main-logo"/>
+
+        <div class="donation-history" id="donationHistory">Latest Entry: None yet.</div>
+      </div>
+    </div>
+
+    <!-- TransLikes => Guestbook Entries -->
+    <div class="transactions">
+      <h2>Guestbook Entries</h2>
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 20%;">Date</th>
+            <th style="width: 50%;">Message</th>
+            <th style="width: 20%;">Amount</th>
+            <th style="width: 10%;">Likes</th>
+          </tr>
+        </thead>
+        <tbody id="transactions">
+          <tr>
+            <td colspan="4" class="no-data">No entries yet.</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-content">
+      <div class="footer-section about">
+        <h3>About Us</h3>
+        <p>
+          We raise funds to support our community and enhance services. Learn more about our mission.
+        </p>
+      </div>
+      <div class="footer-section links">
+        <h3>Quick Links</h3>
+        <ul>
+          <li><a href="#">Our Mission</a></li>
+        </ul>
+      </div>
+      <div class="footer-section social">
+        <h3>Connect with Us</h3>
+        <div class="social-icons">
+          <a href="#" aria-label="Home"><i class="material-icons">home</i></a>
+          <a href="#" aria-label="Email"><i class="material-icons">email</i></a>
+          <a href="https://github.com/" target="_blank" aria-label="GitHub">
+            <i class="fab fa-github"></i>
+          </a>
+          <a href="#" class="login-button" title="Login" aria-label="Login">
+            <i class="material-icons">key</i>
+          </a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2024 BB Guestbook. Licensed under MIT.
+    </div>
+  </footer>
+
+  <!-- Toast Container -->
+  <div id="toast-container"></div>
+
+  <!-- External JS if needed -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <!-- Main Script -->
+  <script src="script.js"></script>
 </body>
 </html>
