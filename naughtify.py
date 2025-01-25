@@ -53,7 +53,7 @@ PAYMENTS_FETCH_INTERVAL = int(os.getenv("PAYMENTS_FETCH_INTERVAL", "60"))  # in 
 
 # Server Configuration
 APP_HOST = os.getenv("APP_HOST", "127.0.0.1")
-APP_PORT = int(os.getenv("APP_PORT", "5009"))
+APP_PORT = int(os.getenv("APP_PORT", "5011"))
 
 # Secret Key for Flask Sessions
 SECRET_KEY = os.getenv("SECRET_KEY", os.urandom(24))
