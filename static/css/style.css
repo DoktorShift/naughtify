@@ -347,7 +347,7 @@ table th, table td {
   transition: background 0.3s;
 }
 table th {
-  background-color: #fafafa;
+  background-colour;
   color: var(--text-color);
 }
 table td {
