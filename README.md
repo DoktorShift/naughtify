@@ -1,3 +1,7 @@
+> We got informed about Problems within Ubuntu 24.04 LTS and Python 3.12
+
+> We recommend ubuntu 22.04 LTS and PYthon 3.9 - 3.11
+
 # 🤖 **Naughtify** 🤖<!-- omit from toc -->
 
 LNbits Balance Monitor (aka. Naughtify) is your assistant for managing and monitoring your LNBits wallet. It connects to your LNbits instance and provides nearly real-time updates directly through Telegram. Additionally, the bot includes a dedicated view only transaction Overwatch as well as a LiveTicker Page specifically designed for static payment links.
