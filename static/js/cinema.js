@@ -230,12 +230,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // with any preferred fallback URL.
 
     window.goBack = function() {
-      if (window.history.length > 1) {
-        console.log('Going back one step in history.');
-        window.history.back();
-      } else {
-        console.log('No browser history detected. Redirecting to fallback URL.');
-        window.location.href = 'https://donations.lnbot.de';
-      }
-    };
-});
+  if (window.history.length > 1) {
+    console.log('Going back one step in history.');
+    window.history.back();
+  } else {
+    console.log('No browser history detected. Redirecting to base URL.');
+    // Redirect to Base-URL.
+    window.location.href = window.location.origin;
+  }
+};
