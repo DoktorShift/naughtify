@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>LN Guestbook</title>
+  <title>Business Bitcoin Guestbook</title>
   
   <!-- Google Material Icons & Font Awesome -->
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
@@ -13,13 +13,13 @@
   />
 
   <!-- Main CSS -->
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="/static/css/style.css" />
 </head>
 <body>
   <div class="dashboard">
     <!-- Header -->
     <div class="header">
-      <h1>Lightning Guestbook</h1>
+      <h1>Guestbook</h1>
       <h5>Sign our Guestbook with a Lightning Payment</h5>
       
       <!-- Dark Mode Toggle -->
@@ -34,11 +34,11 @@
       <div class="info-tooltip">
         <i class="material-icons info-icon">psychology_alt</i>
         <span class="tooltip-text">Our Mission</span>
-        <a href="#" target="_blank" class="info-link" aria-label="More about mission"></a>
+        <a href="https://business-bitcoin.de" target="_blank" class="info-link" aria-label="More about mission"></a>
       </div>
 
       <!-- Cinema Mode Launch Button (Optional) -->
-      <a href="#" class="cinema-button" title="Open Cinema Mode" target="_blank">
+      <a href="https://guestbook.business-bitcoin.de/cinema" class="cinema-button" title="Open Cinema Mode" target="_blank">
         <i class="material-icons">theaters</i>
       </a>
     </div>
@@ -49,25 +49,19 @@
       <div class="info-container">
         <!-- QR Code Card -->
         <div class="card qr-card">
-          <h5>Scan & attach a memo to sign the guestbook</h5>
-          <!-- QR Code (Click = copy LNURL) -->
-          <img
-            src="data:image/png;base64,REPLACE_WITH_YOUR_QR"
-            alt="QR Code"
-            data-lnurl=""
-            onclick="copyLnurl(this)"
-            title="Click to copy LNURL"
-          />
+          <h5>Scan to send via Lightning Network.</h5>
+          <!-- QR Code with Click Handler to Copy LNURL -->
+          <img src="data:image/png;base64,{{ qr_code_data }}" alt="QR Code" data-lnurl="{{ lnurl }}" onclick="copyLnurl(this)" title="Click to copy the LNURL">
         </div>
 
-       <!-- Lightning Address Card -->
-                <div class="card lightning-card">
-                    <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address" data-address="{{ lightning_address }}" id="lightning-address-container">
-                        <span class="emoji">⚡️</span>
-                        <span class="address" id="lightning-address">{{ lightning_address }}</span>
-                    </div>
-                </div>
-            </div>
+        <!-- Lightning Address Card -->
+        <div class="card lightning-card">
+          <div class="copy-field" onclick="copyText(this)" title="Click to copy the Lightning Address" data-address="{{ lightning_address }}" id="lightning-address-container">
+            <span class="emoji">⚡️</span>
+            <span class="address" id="lightning-address">{{ lightning_address }}</span>
+          </div>
+        </div>
+      </div>
 
       <!-- Donations / Guestbook Box -->
       <div class="donations-box">
@@ -109,21 +103,21 @@
       <div class="footer-section about">
         <h3>About Us</h3>
         <p>
-          We raise funds to support our community and enhance services. Learn more about our mission.
+          We raise funds to support our community and enhance Open Source Services.
         </p>
       </div>
       <div class="footer-section links">
         <h3>Quick Links</h3>
         <ul>
-          <li><a href="#">Our Mission</a></li>
+          <li><a href="https://business-bitcoin.de">Our Mission</a></li>
         </ul>
       </div>
       <div class="footer-section social">
         <h3>Connect with Us</h3>
         <div class="social-icons">
           <a href="#" aria-label="Home"><i class="material-icons">home</i></a>
-          <a href="#" aria-label="Email"><i class="material-icons">email</i></a>
-          <a href="https://github.com/" target="_blank" aria-label="GitHub">
+          <a href="mailto:info@business-bitcoin.de" aria-label="Email"><i class="material-icons">email</i></a>
+          <a href="https://github.com/DoktorShift" target="_blank" aria-label="GitHub">
             <i class="fab fa-github"></i>
           </a>
           <a href="#" class="login-button" title="Login" aria-label="Login">
@@ -133,7 +127,7 @@
       </div>
     </div>
     <div class="footer-bottom">
-      &copy; 2024 BB Guestbook. Licensed under MIT.
+    &copy; 2025 BB Guestbook. License <a href="https://github.com/DoktorShift/naughtify" target="_blank" rel="noopener noreferrer">MIT</a>
     </div>
   </footer>
 
@@ -143,6 +137,6 @@
   <!-- External JS if needed -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <!-- Main Script -->
-  <script src="script.js"></script>
+  <script src="/static/js/script.js"></script>
 </body>
 </html>
