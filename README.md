@@ -1,6 +1,6 @@
-> We got informed about Problems within Ubuntu 24.04 LTS and Python 3.12
+> We occured Problems within Ubuntu 24.04 LTS and Python 3.12
 
-> We recommend ubuntu 22.04 LTS and PYthon 3.9 - 3.11
+> We recommend Ubuntu 22.04 LTS and Python 3.9 - 3.11 for smooth installation
 
 # 🤖 **Naughtify** 🤖<!-- omit from toc -->
 
