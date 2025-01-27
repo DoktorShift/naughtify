@@ -1,0 +1,338 @@
+/* 
+  Softer Apple-Like Design
+  Colors:
+    - Body BG: #E9EAEC (Softer gray than pure white)
+    - Panel BG: #F2F2F5
+    - Text (Primary): #1D1D1F
+    - Accent Blue: #0071E3
+    - Secondary Text: #6E6E73
+    - Highlights or table row alt: #FAFAFB
+*/
+
+/* 1. Basic Page Styles */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #E9EAEC;      /* Soft gray background */
+  color: #1D1D1F;           /* Dark text color */
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, 
+               Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  overflow: hidden;
+}
+
+/* 2. "Go Back" Button (Top-Left) */
+.back-button-container {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  width: 44px;
+  height: 44px;
+  z-index: 999;
+  cursor: pointer;
+}
+
+.back-button {
+  background: #F2F2F5;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0071E3;
+  transition: background 0.2s, box-shadow 0.2s, transform 0.2s;
+}
+
+.back-button:hover {
+  background: #E2E2E7;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+  transform: scale(1.02);
+}
+
+.back-button svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor; /* #0071E3 */
+}
+
+/* 3. Container (Left & Right) */
+.cinema-container {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* Left & Right Sections */
+.cinema-left, .cinema-right {
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* 4. Left Panel */
+.cinema-left {
+  background: #F2F2F5; /* Light gray/white panel with minimal contrast */
+  flex: 0 0 40%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  border-right: 1px solid #DADADA;
+  position: relative;
+  overflow-y: auto; /* In case content is tall */
+  box-shadow: inset -1px 0 rgba(0,0,0,0.04);
+}
+
+/* Explanatory Textbox */
+.explanatory-textbox {
+  width: 90%;
+  padding: 15px;
+  background: #FAFAFB; /* Slightly lighter box within the panel */
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+.explanatory-textbox p {
+  font-size: 1.05rem;
+  color: #6E6E73; /* Subtle text color for normal paragraphs */
+  text-align: center;
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Total Sats Box */
+.total-amount {
+  width: auto;
+  max-width: 90%;
+  padding: 10px;
+  background: #FAFAFB;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 150px;
+}
+
+/* Total Sats Text */
+.total-amount p {
+  font-size: 1.25rem;
+  color: #0071E3;
+  font-weight: 600;
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* Live Ticker Headline */
+.live-ticker-headline {
+  font-size: 1.6rem;
+  color: #1D1D1F;
+  margin-bottom: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+
+/* QR Container */
+.cinema-qr-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
+.cinema-qr-container img {
+  width: 30vw;
+  max-width: 250px;
+  border-radius: 6px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.cinema-qr-container img:hover {
+  transform: scale(1.03);
+  box-shadow: 0 3px 12px rgba(0,0,0,0.15);
+}
+
+/* Lightning Address Copy Field */
+.copy-field {
+  background: #ECECEC;
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: #0071E3;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.copy-field:hover {
+  background: #DCDCDC;
+}
+
+.address {
+  margin-left: 5px;
+}
+
+/* Heroic Patrons */
+.heroic-patrons h2 {
+  font-size: 1.3rem;
+  color: #1D1D1F;
+  margin-bottom: 15px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.heroic-patrons ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  text-align: center;
+}
+
+.heroic-patrons li {
+  font-size: 0.95rem;
+  margin: 10px 0;
+  color: #6E6E73;
+  font-weight: 400;
+}
+
+/* 5. Right Panel */
+.cinema-right {
+  flex: 1;
+  background: #E9EAEC; /* same as main body background */
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow-y: auto;
+}
+
+/* Table Container */
+.table-container {
+  width: 90%;
+  height: 90%;
+  overflow: auto;
+  background: #F2F2F5;
+  border-radius: 8px;
+  box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+/* Table Styles */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 1rem;
+  color: #1D1D1F;
+  margin-top: 10px;
+}
+
+thead {
+  background: #ECECEC;
+}
+
+th, td {
+  padding: 10px;
+  border-bottom: 1px solid #DADADA;
+  text-align: left;
+}
+
+th {
+  font-weight: 500;
+  color: #6E6E73;
+  border-bottom: 2px solid #DADADA;
+}
+
+tr:nth-child(even) {
+  background: #FAFAFB;
+}
+
+/* Highlight (big donation) */
+.highlight {
+  background: #FFFBE2 !important; /* a soft pale yellow highlight */
+  color: #1D1D1F !important;
+  font-weight: 600;
+  border-left: 4px solid #0071E3; /* accent border */
+}
+
+/* 6. Sound Control Button */
+.sound-control {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+}
+
+#sound-toggle {
+  background: #F2F2F5;
+  color: #0071E3;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+
+#sound-toggle:hover {
+  background: #E2E2E7;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+}
+
+/* Hover and Focus States for Table Rows */
+.table-container table tr:hover {
+  background: #F1F1F3;
+}
+
+/* Scrollbar Styling */
+.table-container::-webkit-scrollbar {
+  width: 10px;
+}
+.table-container::-webkit-scrollbar-track {
+  background: #ECECEC;
+}
+.table-container::-webkit-scrollbar-thumb {
+  background: #CFCFCF;
+  border-radius: 5px;
+}
+.table-container::-webkit-scrollbar-thumb:hover {
+  background: #BFBFBF;
+}
+
+/* 7. Responsive Adjustments */
+@media (max-width: 768px) {
+  .cinema-left {
+    flex: 0 0 100%;
+    border-right: none;
+    box-shadow: none;
+  }
+  .cinema-right {
+    width: 100%;
+    margin-top: 10px;
+  }
+
+  .live-ticker-headline {
+    font-size: 1.2rem;
+  }
+
+  .explanatory-textbox p {
+    font-size: 0.95rem;
+  }
+
+  .total-amount p {
+    font-size: 1rem;
+  }
+
+  .heroic-patrons h2 {
+    font-size: 1.1rem;
+  }
+
+  table {
+    font-size: 0.9rem;
+  }
+}

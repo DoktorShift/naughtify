@@ -3,10 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Cinema Mode</title>
+  <title>Cinema Mode (Apple Design)</title>
 
-  <!-- Reference your updated CSS file -->
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/cinema.css') }}">
+  <!-- Link to the new CSS file -->
+  <link rel="stylesheet" href="cinema.css">
 </head>
 <body>
 
@@ -31,7 +31,7 @@
       <!-- Explanatory Textbox -->
       <div class="explanatory-textbox">
           <p>
-              Welcome to my Show! Here you can see real-time updates of patrons supporting my mission. Enjoy the show!
+              Welcome to our Cinema Mode. Here you can see real-time updates of patrons supporting our mission.
           </p>
       </div>
 
@@ -47,10 +47,10 @@
           class="copy-field"
           onclick="copyText(this)"
           title="Click to copy the Lightning Address"
-          data-address="{{ lightning_address }}"
+          data-address="lightning@appledesign.com"
           id="lightning-address-container"
         >
-          ⚡️ <span class="address" id="lightning-address">{{ lightning_address }}</span>
+          ⚡️ <span class="address" id="lightning-address">lightning@appledesign.com</span>
         </div>
       </div>
       
@@ -93,11 +93,22 @@
       <button id="sound-toggle" title="Mute/Unmute"><span id="sound-icon">🔊</span></button>
   </div>
 
-  <!-- Reference your JavaScript file -->
-  <!-- 
-       IMPORTANT: The goBack() function must exist in your .js
-       so ensure it loads AFTER this HTML element 
-  -->
-  <script src="{{ url_for('static', filename='js/cinema.js') }}"></script>
+  <!-- Example JS with goBack() + copyText() (minimal) -->
+  <script>
+    function goBack() {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.href = '/';
+      }
+    }
+    function copyText(el) {
+      const addr = el.dataset.address || '';
+      if (!addr) return;
+      navigator.clipboard.writeText(addr)
+        .then(() => alert(`Copied: ${addr}`))
+        .catch(err => console.error('Failed to copy', err));
+    }
+  </script>
 </body>
 </html>
